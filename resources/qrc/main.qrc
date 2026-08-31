@@ -94,6 +94,7 @@
         <file alias="components/entities/activity/deviceclass/Activity.qml">../../src/qml/components/entities/activity/deviceclass/Activity.qml</file>
         <file alias="components/entities/activity/LoadingScreen.qml">../../src/qml/components/entities/activity/LoadingScreen.qml</file>
         <file alias="components/entities/activity/MediaComponent.qml">../../src/qml/components/entities/activity/MediaComponent.qml</file>
+        <file alias="components/entities/activity/MediaStream.qml">../../src/qml/components/entities/activity/MediaStream.qml</file>
         <file alias="components/entities/button/deviceclass/Button.qml">../../src/qml/components/entities/button/deviceclass/Button.qml</file>
         <file alias="components/entities/climate/deviceclass/Climate.qml">../../src/qml/components/entities/climate/deviceclass/Climate.qml</file>
         <file alias="components/entities/light/deviceclass/Light.qml">../../src/qml/components/entities/light/deviceclass/Light.qml</file>

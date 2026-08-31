@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2022-2023 Unfolded Circle ApS and/or its affiliates. <hello@unfoldedcircle.com>
+// Copyright (c) 2022-2023 Unfolded Circle ApS and/or its affiliates. <hello@unfoldedcircle.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import QtQuick 2.15
@@ -22,9 +22,56 @@ EntityComponents.BaseDetail {
     id: activityBase
 
     property var pages: entityObj.ui.pages
+    property var backgroundConfig: entityObj.ui && entityObj.ui.background ? entityObj.ui.background : null
     property QtObject mediaWidgetEntityObj
     property bool resumeWindow: false
     property bool powerOffPressed: false
+
+    function backgroundSource(config) {
+        if (!config) {
+            return "";
+        }
+
+        let value = typeof config === "string" ? config : (config.image ? config.image : (config.source ? config.source : ""));
+        if (!value) {
+            return "";
+        }
+
+        const source = String(value);
+        if (source.indexOf("http://") === 0 ||
+                source.indexOf("https://") === 0 ||
+                source.indexOf("file:") === 0 ||
+                source.indexOf("qrc:/") === 0 ||
+                source.indexOf("image://") === 0) {
+            return source;
+        }
+
+        if (source.charAt(0) === "/") {
+            return "file://" + source;
+        }
+
+        return resource.getBackgroundImage(source);
+    }
+
+    function backgroundImageOpacity(config) {
+        if (!config || typeof config === "string" || config.opacity === undefined) {
+            return 1.0;
+        }
+        return Math.max(0, Math.min(1, Number(config.opacity)));
+    }
+
+    function backgroundOverlayOpacity(config) {
+        if (!config || typeof config === "string" || config.overlay_opacity === undefined) {
+            return 0.45;
+        }
+        return Math.max(0, Math.min(1, Number(config.overlay_opacity)));
+    }
+
+    function backgroundFillMode(config) {
+        return config && typeof config !== "string" && config.fill_mode === "fit"
+                ? Image.PreserveAspectFit
+                : Image.PreserveAspectCrop;
+    }
 
     function triggerCommand(entityId, cmdId, params) {
         let e = EntityController.get(entityId);
@@ -85,6 +132,31 @@ EntityComponents.BaseDetail {
                                             });
                 activityBase.mediaWidgetEntityObj = EntityController.get(item.media_player_id);
                 break;
+            case "media_stream": {
+                const streamConfig = item.stream ? item.stream : (item.media_stream ? item.media_stream : {});
+                const streamUrl = streamConfig.url ? streamConfig.url : (item.url ? item.url : "");
+                const streamComponent = Qt.createComponent("qrc:/components/entities/activity/MediaStream.qml");
+                const streamObject = streamComponent.createObject(container, {
+                                                                      "x": gridSizeW * item.location.x,
+                                                                      "y": gridSizeH * item.location.y,
+                                                                      "width": gridSizeW * (item.size ? (item.size.width ? item.size.width : 1) : 1),
+                                                                      "height": gridSizeH * (item.size ? (item.size.height ? item.size.height : 1) : 1),
+                                                                      "streamUrl": streamUrl,
+                                                                      "streamMuted": streamConfig.muted === undefined ? true : Boolean(streamConfig.muted),
+                                                                      "streamAutoPlay": streamConfig.autoplay === undefined ? true : Boolean(streamConfig.autoplay),
+                                                                      "streamFillMode": streamConfig.fill_mode ? streamConfig.fill_mode : "fit",
+                                                                      "streamTitle": item.text ? item.text : "",
+                                                                      "streamShowTitle": streamConfig.show_title === undefined ? true : Boolean(streamConfig.show_title),
+                                                                      "streamShowStatus": streamConfig.show_status === undefined ? true : Boolean(streamConfig.show_status),
+                                                                      "active": Qt.binding(function() {
+                                                                          return uiPages.currentIndex === index && activityBase.visible;
+                                                                      })
+                                                                  });
+                if (!streamObject) {
+                    console.error("Failed to create media_stream item for " + streamUrl + ": " + streamComponent.errorString());
+                }
+                break;
+            }
             case "sensor":
                 let sensorComponent = Qt.createComponent("qrc:/components/SensorWidget.qml");
                 sensorComponent.createObject(container, {
@@ -257,7 +329,6 @@ EntityComponents.BaseDetail {
 
     function powerOffCommand() {
         const res = checkActivityIncludedEntities(entityObj, false);
-
         if (EntityController.resumeWindow && !res.allIncludedEntitiesConnected) {
             ui.setTimeOut(500, () => {
                               activityBase.powerOffCommand();
@@ -312,6 +383,7 @@ EntityComponents.BaseDetail {
 
         function onUiConfigChanged() {
             activityBase.pages = entityObj.ui.pages;
+            activityBase.backgroundConfig = entityObj.ui && entityObj.ui.background ? entityObj.ui.background : null;
         }
 
         function onSliderConfigChanged() {
@@ -351,6 +423,24 @@ EntityComponents.BaseDetail {
                 voice.stop();
             }
         }
+    }
+
+    Image {
+        id: activityBackgroundImage
+        anchors.fill: parent
+        source: activityBase.backgroundSource(activityBase.backgroundConfig)
+        asynchronous: true
+        cache: true
+        fillMode: activityBase.backgroundFillMode(activityBase.backgroundConfig)
+        opacity: activityBase.backgroundImageOpacity(activityBase.backgroundConfig)
+        visible: source.toString() !== ""
+    }
+
+    Rectangle {
+        anchors.fill: activityBackgroundImage
+        color: colors.black
+        opacity: activityBase.backgroundOverlayOpacity(activityBase.backgroundConfig)
+        visible: activityBackgroundImage.visible
     }
 
     Rectangle {
@@ -517,7 +607,6 @@ EntityComponents.BaseDetail {
         path: Path {
             startX: -uiPages.width / 2 * (uiPages.count - 1)
             startY: uiPages.height / 2
-
             PathLine { x: -(uiPages.width / 2 * (uiPages.count - 1)) + (uiPages.width * uiPages.count); y: uiPages.height / 2 }
         }
 
@@ -667,8 +756,34 @@ EntityComponents.BaseDetail {
             width: uiPages.width
             height: uiPages.height
 
-            Component.onCompleted: {
-                parsePageItems(pages[index], index, gridContainer)
+            property var pageConfig: pages[index]
+            property var pageBackgroundConfig: pageConfig && pageConfig.background ? pageConfig.background : null
+
+            Image {
+                id: pageBackgroundImage
+                anchors.fill: parent
+                source: activityBase.backgroundSource(gridContainer.pageBackgroundConfig)
+                asynchronous: true
+                cache: true
+                fillMode: activityBase.backgroundFillMode(gridContainer.pageBackgroundConfig)
+                opacity: activityBase.backgroundImageOpacity(gridContainer.pageBackgroundConfig)
+                visible: source.toString() !== ""
+            }
+
+            Rectangle {
+                anchors.fill: pageBackgroundImage
+                color: colors.black
+                opacity: activityBase.backgroundOverlayOpacity(gridContainer.pageBackgroundConfig)
+                visible: pageBackgroundImage.visible
+            }
+
+            Item {
+                id: pageContent
+                anchors.fill: parent
+
+                Component.onCompleted: {
+                    parsePageItems(gridContainer.pageConfig, index, pageContent)
+                }
             }
 
             Text {
@@ -681,7 +796,7 @@ EntityComponents.BaseDetail {
                 horizontalAlignment: Text.AlignHCenter
                 anchors.centerIn: parent
                 anchors.verticalCenterOffset: -100
-                visible: pages[index].items.length === 0
+                visible: gridContainer.pageConfig.items.length === 0
             }
 
             Text {
@@ -692,7 +807,7 @@ EntityComponents.BaseDetail {
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
                 anchors { top: noComponentstitle.bottom; topMargin: 10; horizontalCenter: parent.horizontalCenter }
-                visible: pages[index].items.length === 0
+                visible: gridContainer.pageConfig.items.length === 0
             }
         }
     }
