@@ -2,7 +2,7 @@
 import QtQuick 2.15
 
 Item {
-    id: layer
+    id: rtspOverlay
     property string activityId: ""
     property string pageId: ""
     property int gridWidth: 4
@@ -53,20 +53,20 @@ Item {
     Timer {
         interval: 15000
         repeat: true
-        running: layer.active && layer.baseUrl !== "" && layer.viewToken !== ""
-        onTriggered: layer.reload()
+        running: rtspOverlay.active && rtspOverlay.baseUrl !== "" && rtspOverlay.viewToken !== ""
+        onTriggered: rtspOverlay.reload()
     }
     Repeater {
-        model: layer.widgets
+        model: rtspOverlay.widgets
         delegate: RtspTile {
             widget: modelData
-            baseUrl: layer.baseUrl
-            viewToken: layer.viewToken
-            active: layer.active
-            x: modelData.location.x * layer.width / Math.max(1, layer.gridWidth)
-            y: modelData.location.y * layer.height / Math.max(1, layer.gridHeight)
-            width: modelData.size.width * layer.width / Math.max(1, layer.gridWidth)
-            height: modelData.size.height * layer.height / Math.max(1, layer.gridHeight)
+            baseUrl: rtspOverlay.baseUrl
+            viewToken: rtspOverlay.viewToken
+            active: rtspOverlay.active
+            x: modelData.location.x * rtspOverlay.width / Math.max(1, rtspOverlay.gridWidth)
+            y: modelData.location.y * rtspOverlay.height / Math.max(1, rtspOverlay.gridHeight)
+            width: modelData.size.width * rtspOverlay.width / Math.max(1, rtspOverlay.gridWidth)
+            height: modelData.size.height * rtspOverlay.height / Math.max(1, rtspOverlay.gridHeight)
         }
     }
 }
