@@ -17,4 +17,12 @@ Item {
         onError: if (error !== MediaPlayer.NoError) root.playbackFailed()
         onStatusChanged: if (status === MediaPlayer.InvalidMedia) root.playbackFailed()
     }
+    // Some Qt 5 multimedia backends never report an explicit HLS error.
+    // Fall back to JPEG frames when playback cannot start in a reasonable time.
+    Timer {
+        interval: 14000
+        running: root.playbackUrl !== ""
+        repeat: false
+        onTriggered: if (video.playbackState !== MediaPlayer.PlayingState) root.playbackFailed()
+    }
 }
