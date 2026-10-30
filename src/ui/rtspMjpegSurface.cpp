@@ -119,7 +119,14 @@ void RtspMjpegSurface::consume(const QByteArray &bytes) {
     bool gotFrame = false;
     for (;;) {
         const int first = m_buffer.indexOf(soi);
-        if (first < 0) { m_buffer.clear(); break; }
+        if (first < 0) {
+            // Preserve a trailing FF in case the JPEG SOI (FF D8) is split
+            // across consecutive network chunks.
+            const bool partialSoi = !m_buffer.isEmpty()
+                && static_cast<unsigned char>(m_buffer.at(m_buffer.size() - 1)) == 0xff;
+            m_buffer = partialSoi ? QByteArray(1, char(0xff)) : QByteArray();
+            break;
+        }
         if (first > 0) m_buffer.remove(0, first);
         const int last = m_buffer.indexOf(eoi, 2);
         if (last < 0) break;
