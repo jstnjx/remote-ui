@@ -27,7 +27,7 @@ Rectangle {
             item.playbackUrl = tile.useFrames ? tile.jpegUrl : tile.streamUrl;
             if (!tile.useFrames) {
                 item.playbackFailed.connect(function() {
-                    console.warn("Qt Multimedia HLS unavailable; falling back to JPEG frames");
+                    console.warn("RTSP: native HLS unavailable, using JPEG fallback (lower frame rate)");
                     tile.nativeVideoFailed = true;
                 });
             }
