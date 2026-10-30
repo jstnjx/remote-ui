@@ -6,7 +6,7 @@ Rectangle {
     color: "black"
     radius: 6
     clip: true
-    property var widget
+    property var widget: ({ id: '', mode: 'hls', name: '' })
     property string baseUrl: ""
     property string viewToken: ""
     property bool active: false
