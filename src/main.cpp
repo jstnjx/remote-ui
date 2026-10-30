@@ -20,6 +20,8 @@
 #include "softwareupdate/softwareUpdate.h"
 #include "translation/translation.h"
 #include "ui/uiController.h"
+#include "ui/rtspMjpegSurface.h"
+#include <qqml.h>
 #include "voice.h"
 
 #ifdef Q_OS_UNIX
@@ -86,6 +88,7 @@ int main(int argc, char *argv[]) {
     qputenv("QT_VIRTUALKEYBOARD_STYLE", "remotestyle");
 
     QGuiApplication app(argc, argv);
+    qmlRegisterType<uc::ui::RtspMjpegSurface>("Rtsp.Simulator", 1, 0, "RtspMjpegSurface");
     // Heap allocated to control the destruction order: the engine must go before the controllers, see the end of main().
     auto engine = std::make_unique<QQmlApplicationEngine>();
 
