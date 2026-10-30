@@ -112,3 +112,29 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute 
 ## License
 
 The Remote-UI is published under the [GPL v3](LICENSE) open source license.
+
+## Native RTSP playback in the desktop simulator
+
+Activity pages can display camera streams saved in the
+[Core Simulator RTSP Widget Manager](https://github.com/jstnjx/core-simulator/tree/main/docker/rtsp-widget).
+This is an optional desktop simulator overlay; the stock Core API and Web Configurator remain unchanged.
+
+In `core-simulator/docker/.env`, configure `RTSP_WIDGET_VIEW_TOKEN` with a
+random value at least 16 characters long (separate from `RTSP_WIDGET_PASSWORD`).
+Start the simulator and its RTSP sidecar, then build this UI with `make macos`
+(or `make linux` on Linux). Run the native desktop app with:
+
+```bash
+export UC_TOKEN_PATH="/absolute/path/to/core-simulator/docker/ui-env/ws-token"
+export UC_SOCKET_URL="ws://127.0.0.1:8080/ws"
+export UC_RTSP_WIDGET_URL="http://127.0.0.1:8091"
+export UC_RTSP_WIDGET_TOKEN="the-same-RTSP_WIDGET_VIEW_TOKEN"
+. scripts/env/macos.sh
+make run-macos
+```
+
+The widget appears on its assigned **real** activity/page and follows the normal
+page and activity lifecycle. H.264 HLS is attempted using Qt Multimedia; if the
+Qt backend cannot load HLS, the native UI falls back to shared JPEG frames
+(at most 6 fps) from the sidecar. MJPEG-mode widgets use the JPEG fallback
+directly. Only a read-only view token is passed to QML; keep it private.

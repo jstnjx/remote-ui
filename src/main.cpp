@@ -4,6 +4,7 @@
 #include <QGuiApplication>
 #include <QMetaObject>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QScreen>
 #include <QQuickWindow>
 
@@ -134,6 +135,10 @@ int main(int argc, char *argv[]) {
     if (socketUrl.isEmpty()) {
         socketUrl = "ws://127.0.0.1:8080/ws";
     }
+
+    // Desktop simulator RTSP preview settings. Only a read-only viewer token goes to QML.
+    engine->rootContext()->setContextProperty("rtspWidgetUrl", qEnvironmentVariable("UC_RTSP_WIDGET_URL"));
+    engine->rootContext()->setContextProperty("rtspWidgetViewToken", qEnvironmentVariable("UC_RTSP_WIDGET_TOKEN"));
 
     uc::core::Api                          core(socketUrl, &app);
     uc::Config                             config(&core, &app);

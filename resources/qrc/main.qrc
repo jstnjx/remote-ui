@@ -96,6 +96,10 @@
         <file alias="components/entities/activity/deviceclass/Activity.qml">../../src/qml/components/entities/activity/deviceclass/Activity.qml</file>
         <file alias="components/entities/activity/LoadingScreen.qml">../../src/qml/components/entities/activity/LoadingScreen.qml</file>
         <file alias="components/entities/activity/MediaComponent.qml">../../src/qml/components/entities/activity/MediaComponent.qml</file>
+        <file alias="components/entities/activity/deviceclass/RtspActivityLayer.qml">../../src/qml/components/entities/activity/deviceclass/RtspActivityLayer.qml</file>
+        <file alias="components/entities/activity/deviceclass/RtspTile.qml">../../src/qml/components/entities/activity/deviceclass/RtspTile.qml</file>
+        <file alias="components/entities/activity/deviceclass/RtspVideoPlayer.qml">../../src/qml/components/entities/activity/deviceclass/RtspVideoPlayer.qml</file>
+        <file alias="components/entities/activity/deviceclass/RtspSnapshotPlayer.qml">../../src/qml/components/entities/activity/deviceclass/RtspSnapshotPlayer.qml</file>
         <file alias="components/entities/button/deviceclass/Button.qml">../../src/qml/components/entities/button/deviceclass/Button.qml</file>
         <file alias="components/entities/climate/deviceclass/Climate.qml">../../src/qml/components/entities/climate/deviceclass/Climate.qml</file>
         <file alias="components/entities/light/deviceclass/Light.qml">../../src/qml/components/entities/light/deviceclass/Light.qml</file>

@@ -793,6 +793,19 @@ EntityComponents.BaseDetail {
                 parsePageItems(pages[index], index, gridContainer)
             }
 
+            // Sidecar overlay uses the real Core activity/page IDs; no unsupported
+            // item is inserted into the prebuilt Core simulator's grid schema.
+            RtspActivityLayer {
+                id: rtspLayer
+                anchors.fill: parent
+                z: 30
+                activityId: activityBase.entityId
+                pageId: pages[index] ? pages[index].page_id : ""
+                gridWidth: pages[index] && pages[index].grid ? pages[index].grid.width : 4
+                gridHeight: pages[index] && pages[index].grid ? pages[index].grid.height : 6
+                active: activityBase.state === "open" && uiPages.currentIndex === index
+            }
+
             Text {
                 id: noComponentstitle
                 text: qsTr("Empty page")
@@ -803,7 +816,7 @@ EntityComponents.BaseDetail {
                 horizontalAlignment: Text.AlignHCenter
                 anchors.centerIn: parent
                 anchors.verticalCenterOffset: -100
-                visible: pages[index].items.length === 0
+                visible: pages[index].items.length === 0 && !rtspLayer.hasWidgets
             }
 
             Text {
