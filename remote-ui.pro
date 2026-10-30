@@ -141,6 +141,7 @@ HEADERS += \
     src/ui/group/groupItem.h \
     src/ui/inputController.h \
     src/ui/mediaImageProvider.h \
+    src/ui/rtspMjpegSurface.h \
     src/ui/notification.h \
     src/ui/onboardingController.h \
     src/ui/page/page.h \
@@ -208,6 +209,7 @@ SOURCES += \
         src/ui/iconFont.cpp \
         src/ui/inputController.cpp \
         src/ui/mediaImageProvider.cpp \
+        src/ui/rtspMjpegSurface.cpp \
         src/integration/integrationController.cpp \
         src/integration/integrationDrivers.cpp \
         src/integration/integrations.cpp \

@@ -10,29 +10,19 @@ Rectangle {
     property string baseUrl: ""
     property string viewToken: ""
     property bool active: false
-    property bool nativeVideoFailed: false
-    readonly property string query: "?view_token=" + encodeURIComponent(viewToken)
-    readonly property string streamUrl: baseUrl + "/hls/" + widget.id + "/index.m3u8" + query
-    readonly property string jpegUrl: baseUrl + "/snapshot/" + widget.id + ".jpg" + query
-    readonly property bool useFrames: widget.mode === "mjpeg" || nativeVideoFailed
+    // The native simulator uses one persistent JPEG stream regardless of
+    // the browser editor's HLS/MJPEG delivery setting.
+    readonly property string streamUrl: baseUrl + "/mjpeg/" + widget.id
 
     Loader {
         id: player
         anchors.fill: parent
         active: tile.active
-        source: tile.useFrames
-            ? "qrc:/components/entities/activity/deviceclass/RtspSnapshotPlayer.qml"
-            : "qrc:/components/entities/activity/deviceclass/RtspVideoPlayer.qml"
+        source: "qrc:/components/entities/activity/deviceclass/RtspVideoPlayer.qml"
         onLoaded: {
-            item.playbackUrl = tile.useFrames ? tile.jpegUrl : tile.streamUrl;
-            if (!tile.useFrames) {
-                item.playbackFailed.connect(function() {
-                    console.warn("RTSP: native HLS unavailable, using JPEG fallback (lower frame rate)");
-                    tile.nativeVideoFailed = true;
-                });
-            }
+            item.playbackUrl = tile.streamUrl;
+            item.playbackToken = tile.viewToken;
         }
-        onStatusChanged: if (status === Loader.Error && !tile.nativeVideoFailed) tile.nativeVideoFailed = true
     }
     Text {
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 7 }
