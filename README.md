@@ -138,3 +138,17 @@ page and activity lifecycle. H.264 HLS is attempted using Qt Multimedia; if the
 Qt backend cannot load HLS, the native UI falls back to shared JPEG frames
 (at most 6 fps) from the sidecar. MJPEG-mode widgets use the JPEG fallback
 directly. Only a read-only view token is passed to QML; keep it private.
+
+### Native RTSP playback: persistent MJPEG
+
+The Qt desktop simulator now uses a single persistent, read-only authenticated
+MJPEG connection per visible activity camera. Each decoded JPEG is rendered
+into the Qt Quick scene by a small C++ `QQuickPaintedItem` implementation.
+This avoids Qt 5 AVFoundation live HLS reporting `PlayingState` even while
+showing only one frame, and eliminates the previous 85 ms snapshot URL polls.
+It reconnects automatically after stalled or dropped streams and disconnects
+when an activity/page is hidden. The read-only token is sent in an HTTP
+Authorization header rather than in query strings or diagnostic URLs.
+HLS streaming remains available independently in the RTSP manager's browser
+player. The MJPEG renderer is intended for the desktop simulator only; it is
+not automatically installed on physical remotes.
