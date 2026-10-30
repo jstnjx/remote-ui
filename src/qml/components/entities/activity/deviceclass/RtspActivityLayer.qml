@@ -34,7 +34,10 @@ Item {
             }
             try {
                 const data = JSON.parse(xhr.responseText);
-                widgets = Array.isArray(data) ? data.filter(function(w) { return w.enabled; }) : [];
+                const next = Array.isArray(data) ? data.filter(function(w) { return w.enabled; }) : [];
+                // Keep the existing player instances alive when polling returns unchanged
+                // metadata, otherwise the HLS session would restart every 15 seconds.
+                if (JSON.stringify(next) !== JSON.stringify(widgets)) widgets = next;
             } catch (e) {
                 console.warn("Invalid RTSP widget response: " + e);
                 widgets = [];
