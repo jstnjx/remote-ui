@@ -1,3 +1,4 @@
+// Copyright (c) 2026 UCOS contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "rtspMjpegSurface.h"
 
@@ -124,7 +125,7 @@ void RtspMjpegSurface::consume(const QByteArray &bytes) {
             // across consecutive network chunks.
             const bool partialSoi = !m_buffer.isEmpty()
                 && static_cast<unsigned char>(m_buffer.at(m_buffer.size() - 1)) == 0xff;
-            m_buffer = partialSoi ? QByteArray(1, char(0xff)) : QByteArray();
+            m_buffer = partialSoi ? QByteArray(1, static_cast<char>(0xff)) : QByteArray();
             break;
         }
         if (first > 0) m_buffer.remove(0, first);
