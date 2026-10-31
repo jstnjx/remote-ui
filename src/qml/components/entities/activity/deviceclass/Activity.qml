@@ -190,9 +190,9 @@ EntityComponents.BaseDetail {
                                              });
                 break;
             case "video_stream": {
-                // The native renderer uses a direct RTSP URL supplied by Core.
-                // Core must resolve endpoint_ref into a short-lived, authorized
-                // value; the published stock Core doesn't support this yet.
+                // Core's page item must contain an opaque endpoint_ref only.
+                // Actual RTSP credentials stay in native C++ device storage.
+                // Stock Core does not yet accept this widget type.
                 if (!nativeRtspAvailable) {
                     console.warn("Native Video Stream requires UC_NATIVE_RTSP build");
                     break;
@@ -210,7 +210,7 @@ EntityComponents.BaseDetail {
                     "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
                     "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
                     "displayName": item.name || streamCfg.name || "Video Stream",
-                    "streamUrl": streamCfg.resolved_rtsp_url || "",
+                    "endpointRef": streamCfg.endpoint_ref || "",
                     "decodeWidth": streamCfg.decode_width || 640,
                     "maxFps": streamCfg.max_fps || 15,
                     "active": Qt.binding(function() {

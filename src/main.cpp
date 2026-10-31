@@ -23,6 +23,7 @@
 #include "ui/rtspMjpegSurface.h"
 #ifdef UC_NATIVE_RTSP
 #include "ui/native-rtsp/RtspNativeSurface.h"
+#include "ui/native-rtsp/RtspDeviceConfig.h"
 #endif
 #include <qqml.h>
 #include "voice.h"
@@ -149,6 +150,8 @@ int main(int argc, char *argv[]) {
     engine->rootContext()->setContextProperty("rtspWidgetUrl", qEnvironmentVariable("UC_RTSP_WIDGET_URL"));
     engine->rootContext()->setContextProperty("rtspWidgetViewToken", qEnvironmentVariable("UC_RTSP_WIDGET_TOKEN"));
 #ifdef UC_NATIVE_RTSP
+    RtspDeviceConfig nativeRtspConfig(&app);
+    engine->rootContext()->setContextProperty("nativeRtspConfig", &nativeRtspConfig);
     engine->rootContext()->setContextProperty("nativeRtspAvailable", true);
 #else
     engine->rootContext()->setContextProperty("nativeRtspAvailable", false);

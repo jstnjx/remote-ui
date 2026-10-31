@@ -12,31 +12,31 @@ class RtspDecodeWorker;
 // Input must be a direct rtsp:// or rtsps:// camera URL, not an HTTP sidecar.
 class RtspNativeSurface final : public QQuickPaintedItem {
     Q_OBJECT
-    Q_PROPERTY(QString rtspUrl READ rtspUrl WRITE setRtspUrl NOTIFY rtspUrlChanged)
+    Q_PROPERTY(QString endpointRef READ endpointRef WRITE setEndpointRef NOTIFY endpointRefChanged)
     Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged)
     Q_PROPERTY(int decodeWidth READ decodeWidth WRITE setDecodeWidth NOTIFY decodeWidthChanged)
     Q_PROPERTY(int maxFps READ maxFps WRITE setMaxFps NOTIFY maxFpsChanged)
 public:
     explicit RtspNativeSurface(QQuickItem *parent = nullptr);
     ~RtspNativeSurface() override;
-    QString rtspUrl() const { return m_rtspUrl; }
+    QString endpointRef() const { return m_endpointRef; }
     bool active() const { return m_active; }
     int decodeWidth() const { return m_decodeWidth; }
     int maxFps() const { return m_maxFps; }
-    void setRtspUrl(const QString &url);
+    void setEndpointRef(const QString &ref);
     void setActive(bool value);
     void setDecodeWidth(int value);
     void setMaxFps(int value);
     void paint(QPainter *painter) override;
 signals:
-    void rtspUrlChanged();
+    void endpointRefChanged();
     void activeChanged();
     void decodeWidthChanged();
     void maxFpsChanged();
 private:
     void start();
     void stop();
-    QString m_rtspUrl;
+    QString m_endpointRef;
     bool m_active = false;
     int m_decodeWidth = 640;
     int m_maxFps = 15;
