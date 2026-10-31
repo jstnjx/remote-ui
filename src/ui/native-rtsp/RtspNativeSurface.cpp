@@ -11,6 +11,10 @@ RtspNativeSurface::RtspNativeSurface(QQuickItem *parent)
     setFillColor(Qt::black);
     setOpaquePainting(true);
     setAntialiasing(false);
+    if (RtspDeviceConfig::instance()) {
+        QObject::connect(RtspDeviceConfig::instance(), &RtspDeviceConfig::revisionChanged,
+                         this, [this] { if (m_active) start(); });
+    }
     QObject::connect(this, &QQuickItem::visibleChanged, this, [this]() {
         if (m_active && isVisible()) start();
         else stop();

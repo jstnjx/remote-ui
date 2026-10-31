@@ -824,6 +824,36 @@ EntityComponents.BaseDetail {
                 parsePageItems(pages[index], index, gridContainer)
             }
 
+            // Temporary on-device camera placement until executable Core has
+            // first-class video_stream persistence. Names, position and an
+            // opaque endpoint_ref come from an owner-only local config file.
+            // RTSP URLs never cross into QML.
+            Repeater {
+                model: nativeRtspAvailable &&
+                       nativeRtspConfig.revision >= 0 &&
+                       !(pages[index] && pages[index].items &&
+                         pages[index].items.some(function(it) { return it.type === "video_stream"; }))
+                       ? nativeRtspConfig.widgetsForPage(
+                             activityBase.entityId,
+                             pages[index] ? pages[index].page_id : "")
+                       : []
+                delegate: RtspNativeTile {
+                    endpointRef: modelData.endpoint_ref
+                    displayName: modelData.name
+                    decodeWidth: modelData.decode_width
+                    maxFps: modelData.max_fps
+                    active: activityBase.state === "open" && uiPages.currentIndex === index
+                    x: modelData.location.x * gridContainer.width /
+                       Math.max(1, pages[index] && pages[index].grid ? pages[index].grid.width : 4)
+                    y: modelData.location.y * gridContainer.height /
+                       Math.max(1, pages[index] && pages[index].grid ? pages[index].grid.height : 6)
+                    width: modelData.size.width * gridContainer.width /
+                           Math.max(1, pages[index] && pages[index].grid ? pages[index].grid.width : 4)
+                    height: modelData.size.height * gridContainer.height /
+                            Math.max(1, pages[index] && pages[index].grid ? pages[index].grid.height : 6)
+                }
+            }
+
             // Sidecar overlay uses the real Core activity/page IDs; no unsupported
             // item is inserted into the prebuilt Core simulator's grid schema.
             RtspActivityLayer {

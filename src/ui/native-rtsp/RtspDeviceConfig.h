@@ -13,6 +13,7 @@ class RtspDeviceConfig final : public QObject {
     Q_PROPERTY(int revision READ revision NOTIFY revisionChanged)
 public:
     explicit RtspDeviceConfig(QObject *parent = nullptr);
+    ~RtspDeviceConfig() override;
     static RtspDeviceConfig *instance();
     int revision() const { return m_revision; }
     Q_INVOKABLE QVariantList widgetsForPage(const QString &activityId,

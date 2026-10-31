@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "RtspDeviceConfig.h"
 #include <QDir>
+#include <QFile>
+#include <QDebug>
+#include <QVariantMap>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -31,6 +34,8 @@ RtspDeviceConfig::RtspDeviceConfig(QObject *parent) : QObject(parent) {
         reload();
     }
 }
+
+RtspDeviceConfig::~RtspDeviceConfig() { if (s_instance == this) s_instance = nullptr; }
 
 RtspDeviceConfig *RtspDeviceConfig::instance() { return s_instance; }
 
@@ -63,7 +68,8 @@ void RtspDeviceConfig::reload() {
         while ((count = ::read(fd, chunk, sizeof(chunk))) > 0 &&
                bytes.size() + count <= 1024 * 1024)
             bytes.append(chunk, static_cast<int>(count));
-        if (count < 0 || bytes.size() > 1024 * 1024) bytes.clear();
+        if (count < 0 || bytes.size() > 1024 * 1024 ||
+            (count > 0 && bytes.size() + count > 1024 * 1024)) bytes.clear();
     }
     ::close(fd);
     if (!safe || bytes.isEmpty()) {
