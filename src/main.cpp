@@ -21,6 +21,9 @@
 #include "translation/translation.h"
 #include "ui/uiController.h"
 #include "ui/rtspMjpegSurface.h"
+#ifdef UC_NATIVE_RTSP
+#include "ui/native-rtsp/RtspNativeSurface.h"
+#endif
 #include <qqml.h>
 #include "voice.h"
 
@@ -89,6 +92,9 @@ int main(int argc, char *argv[]) {
 
     QGuiApplication app(argc, argv);
     qmlRegisterType<uc::ui::RtspMjpegSurface>("Rtsp.Simulator", 1, 0, "RtspMjpegSurface");
+#ifdef UC_NATIVE_RTSP
+    qmlRegisterType<RtspNativeSurface>("Rtsp.Native", 1, 0, "RtspNativeSurface");
+#endif
     // Heap allocated to control the destruction order: the engine must go before the controllers, see the end of main().
     auto engine = std::make_unique<QQmlApplicationEngine>();
 
@@ -142,6 +148,11 @@ int main(int argc, char *argv[]) {
     // Desktop simulator RTSP preview settings. Only a read-only viewer token goes to QML.
     engine->rootContext()->setContextProperty("rtspWidgetUrl", qEnvironmentVariable("UC_RTSP_WIDGET_URL"));
     engine->rootContext()->setContextProperty("rtspWidgetViewToken", qEnvironmentVariable("UC_RTSP_WIDGET_TOKEN"));
+#ifdef UC_NATIVE_RTSP
+    engine->rootContext()->setContextProperty("nativeRtspAvailable", true);
+#else
+    engine->rootContext()->setContextProperty("nativeRtspAvailable", false);
+#endif
 
     uc::core::Api                          core(socketUrl, &app);
     uc::Config                             config(&core, &app);

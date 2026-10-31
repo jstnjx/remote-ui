@@ -189,6 +189,37 @@ EntityComponents.BaseDetail {
                                                  "showName": item.select.show_name ? item.select.show_name : false
                                              });
                 break;
+            case "video_stream": {
+                // The native renderer uses a direct RTSP URL supplied by Core.
+                // Core must resolve endpoint_ref into a short-lived, authorized
+                // value; the published stock Core doesn't support this yet.
+                if (!nativeRtspAvailable) {
+                    console.warn("Native Video Stream requires UC_NATIVE_RTSP build");
+                    break;
+                }
+                const streamCfg = item.video_stream || {};
+                const nativeWidget = Qt.createComponent(
+                    "qrc:/components/entities/activity/deviceclass/RtspNativeTile.qml");
+                if (nativeWidget.status === Component.Error) {
+                    console.warn("Unable to load Video Stream component");
+                    break;
+                }
+                const nativeTile = nativeWidget.createObject(container, {
+                    "x": gridSizeW * item.location.x,
+                    "y": gridSizeH * item.location.y,
+                    "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                    "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                    "displayName": item.name || streamCfg.name || "Video Stream",
+                    "streamUrl": streamCfg.resolved_rtsp_url || "",
+                    "decodeWidth": streamCfg.decode_width || 640,
+                    "maxFps": streamCfg.max_fps || 15,
+                    "active": Qt.binding(function() {
+                        return activityBase.state === "open" && uiPages.currentIndex === index;
+                    })
+                });
+                if (!nativeTile) console.warn("Failed to instantiate Video Stream");
+                break;
+            }
             default:
                 console.log("Not implemented item type: " + item.type);
                 break;
@@ -803,7 +834,7 @@ EntityComponents.BaseDetail {
                 pageId: pages[index] ? pages[index].page_id : ""
                 gridWidth: pages[index] && pages[index].grid ? pages[index].grid.width : 4
                 gridHeight: pages[index] && pages[index].grid ? pages[index].grid.height : 6
-                active: activityBase.state === "open" && uiPages.currentIndex === index
+                active: !nativeRtspAvailable && activityBase.state === "open" && uiPages.currentIndex === index
             }
 
             Text {

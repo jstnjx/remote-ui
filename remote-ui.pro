@@ -21,6 +21,14 @@ macx {
 CONFIG += c++17 disable-desktop handwriting
 CONFIG += qtquickcompiler
 
+# Direct, on-device RTSP decoding. Disabled for the stock desktop simulator
+# unless the build explicitly sets UC_NATIVE_RTSP=1. Requires the cross
+# toolchain to provide matching ARM64 FFmpeg libraries and headers.
+equals($$(UC_NATIVE_RTSP), 1) {
+    DEFINES += UC_NATIVE_RTSP
+    include($$PWD/src/ui/native-rtsp/native-rtsp.pri)
+}
+
 QMAKE_CXXFLAGS_WARN_ON += \
     -Wold-style-cast \
     -Wfloat-equal \
