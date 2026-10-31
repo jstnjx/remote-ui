@@ -20,10 +20,11 @@ public:
                                            const QString &pageId) const;
     // C++ only (deliberately NOT Q_INVOKABLE): never return URLs to QML.
     QString resolveUrl(const QString &endpointRef) const;
+public slots:
+    void reload();
 signals:
     void revisionChanged();
 private:
-    void reload();
     QString m_path;
     QHash<QString, QString> m_urls;
     QVariantList m_items;
