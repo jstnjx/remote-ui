@@ -829,6 +829,7 @@ EntityComponents.BaseDetail {
             // opaque endpoint_ref come from an owner-only local config file.
             // RTSP URLs never cross into QML.
             Repeater {
+                id: nativeFallbackWidgets
                 model: nativeRtspAvailable &&
                        nativeRtspConfig.revision >= 0 &&
                        !(pages[index] && pages[index].items &&
@@ -877,7 +878,8 @@ EntityComponents.BaseDetail {
                 horizontalAlignment: Text.AlignHCenter
                 anchors.centerIn: parent
                 anchors.verticalCenterOffset: -100
-                visible: pages[index].items.length === 0 && !rtspLayer.hasWidgets
+                visible: pages[index].items.length === 0 && nativeFallbackWidgets.count === 0 && !rtspLayer.hasWidgets
+                         && nativeFallbackWidgets.count === 0
             }
 
             Text {
