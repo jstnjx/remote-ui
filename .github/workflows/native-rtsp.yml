@@ -1,0 +1,26 @@
+name: Native RTSP compile and config tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  linux-native:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt 5 and FFmpeg development headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qtbase5-dev qtdeclarative5-dev             libavformat-dev libavcodec-dev libavutil-dev libswscale-dev             pkg-config
+      - name: Compile headless native RTSP components
+        run: |
+          mkdir -p /tmp/uc-native-rtsp-test
+          cd /tmp/uc-native-rtsp-test
+          qmake "$GITHUB_WORKSPACE/src/ui/native-rtsp/test/native-rtsp.pro"
+          make -j2
+      - name: Test protected device config and QML-safe metadata
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: /tmp/uc-native-rtsp-test/native-rtsp-test
+      - name: Verify QML and QMake source wiring
+        run: bash scripts/verify-native-rtsp.sh
