@@ -1,6 +1,8 @@
+// Copyright (c) 2026 UCOS contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "RtspNativeSurface.h"
 #include "RtspDecodeWorker.h"
+#include "RtspDeviceConfig.h"
 #include <QPainter>
 #include <QTimer>
 #include <QtGlobal>
@@ -10,6 +12,10 @@ RtspNativeSurface::RtspNativeSurface(QQuickItem *parent)
     setFillColor(Qt::black);
     setOpaquePainting(true);
     setAntialiasing(false);
+    if (RtspDeviceConfig::instance()) {
+        QObject::connect(RtspDeviceConfig::instance(), &RtspDeviceConfig::revisionChanged,
+                         this, [this] { if (m_active) start(); });
+    }
     QObject::connect(this, &QQuickItem::visibleChanged, this, [this]() {
         if (m_active && isVisible()) start();
         else stop();
@@ -18,17 +24,21 @@ RtspNativeSurface::RtspNativeSurface(QQuickItem *parent)
 
 RtspNativeSurface::~RtspNativeSurface() { stop(); }
 
-void RtspNativeSurface::setRtspUrl(const QString &value) {
-    if (value == m_rtspUrl) return;
-    m_rtspUrl = value;
-    emit rtspUrlChanged();
+void RtspNativeSurface::setEndpointRef(const QString &value) {
+    if (value == m_endpointRef) return;
+    m_endpointRef = value;
+    emit endpointRefChanged();
     if (m_active) start();
 }
 void RtspNativeSurface::setActive(bool value) {
     if (value == m_active) return;
     m_active = value;
     emit activeChanged();
-    if (m_active) start(); else stop();
+    if (m_active) {
+        start();
+    } else {
+        stop();
+    }
 }
 void RtspNativeSurface::setDecodeWidth(int value) {
     value = qBound(160, value, 1280);
@@ -58,10 +68,13 @@ void RtspNativeSurface::start() {
     stop();
     m_frame = QImage();
     update();
-    if (!m_active || !isVisible() || m_rtspUrl.isEmpty()) return;
-    if (!m_rtspUrl.startsWith("rtsp://", Qt::CaseInsensitive) &&
-        !m_rtspUrl.startsWith("rtsps://", Qt::CaseInsensitive)) return;
-    auto *worker = new RtspDecodeWorker(m_rtspUrl, m_decodeWidth, m_maxFps);
+    if (!m_active || !isVisible() || m_endpointRef.isEmpty()) return;
+    const RtspDeviceConfig *config = RtspDeviceConfig::instance();
+    if (!config) return;
+    // Only the C++ decoder sees the URL. QML receives an opaque endpoint_ref.
+    const QString url = config->resolveUrl(m_endpointRef);
+    if (url.isEmpty()) return;
+    auto *worker = new RtspDecodeWorker(url, m_decodeWidth, m_maxFps);
     m_worker = worker;
     QObject::connect(worker, &RtspDecodeWorker::frameDecoded, this,
         [this, worker](const QImage &frame) {

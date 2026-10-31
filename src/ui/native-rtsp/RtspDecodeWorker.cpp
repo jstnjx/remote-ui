@@ -1,10 +1,6 @@
+// Copyright (c) 2026 UCOS contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "RtspDecodeWorker.h"
-
-#include <QElapsedTimer>
-#include <QtGlobal>
-#include <algorithm>
-#include <utility>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -13,6 +9,11 @@ extern "C" {
 #include <libavutil/time.h>
 #include <libswscale/swscale.h>
 }
+
+#include <QElapsedTimer>
+#include <QtGlobal>
+#include <algorithm>
+#include <utility>
 
 namespace {
 QString errorText(int code) {
@@ -56,7 +57,7 @@ void RtspDecodeWorker::run() {
         for (int remaining = retryMs;
              remaining > 0 && !m_stop.load(std::memory_order_acquire);
              remaining -= 50)
-            QThread::msleep(static_cast<unsigned long>(std::min(remaining, 50)));
+            QThread::msleep(static_cast<unsigned int>(std::min(remaining, 50)));
         retryMs = std::min(retryMs * 2, 8000);
     }
 }

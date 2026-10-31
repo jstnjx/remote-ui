@@ -9,7 +9,7 @@ Rectangle {
     color: "black"
     radius: 6
     clip: true
-    property string streamUrl: ""
+    property string endpointRef: ""
     property string displayName: "Video Stream"
     property bool active: false
     property int decodeWidth: 640
@@ -17,10 +17,10 @@ Rectangle {
 
     RtspNativeSurface {
         anchors.fill: parent
-        rtspUrl: tile.streamUrl
+        endpointRef: tile.endpointRef
         decodeWidth: tile.decodeWidth
         maxFps: tile.maxFps
-        active: tile.active && tile.visible && tile.streamUrl !== ""
+        active: tile.active && tile.visible && tile.endpointRef !== ""
     }
     Text {
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 7 }
@@ -30,6 +30,6 @@ Rectangle {
         elide: Text.ElideRight
         style: Text.Outline
         styleColor: "black"
-        visible: tile.streamUrl === ""
+        visible: tile.endpointRef === ""
     }
 }

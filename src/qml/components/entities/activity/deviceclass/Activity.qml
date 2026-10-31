@@ -190,9 +190,9 @@ EntityComponents.BaseDetail {
                                              });
                 break;
             case "video_stream": {
-                // The native renderer uses a direct RTSP URL supplied by Core.
-                // Core must resolve endpoint_ref into a short-lived, authorized
-                // value; the published stock Core doesn't support this yet.
+                // Core's page item must contain an opaque endpoint_ref only.
+                // Actual RTSP credentials stay in native C++ device storage.
+                // Stock Core does not yet accept this widget type.
                 if (!nativeRtspAvailable) {
                     console.warn("Native Video Stream requires UC_NATIVE_RTSP build");
                     break;
@@ -210,7 +210,7 @@ EntityComponents.BaseDetail {
                     "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
                     "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
                     "displayName": item.name || streamCfg.name || "Video Stream",
-                    "streamUrl": streamCfg.resolved_rtsp_url || "",
+                    "endpointRef": streamCfg.endpoint_ref || "",
                     "decodeWidth": streamCfg.decode_width || 640,
                     "maxFps": streamCfg.max_fps || 15,
                     "active": Qt.binding(function() {
@@ -824,6 +824,37 @@ EntityComponents.BaseDetail {
                 parsePageItems(pages[index], index, gridContainer)
             }
 
+            // Temporary on-device camera placement until executable Core has
+            // first-class video_stream persistence. Names, position and an
+            // opaque endpoint_ref come from an owner-only local config file.
+            // RTSP URLs never cross into QML.
+            Repeater {
+                id: nativeFallbackWidgets
+                model: nativeRtspAvailable &&
+                       nativeRtspConfig.revision >= 0 &&
+                       !(pages[index] && pages[index].items &&
+                         pages[index].items.some(function(it) { return it.type === "video_stream"; }))
+                       ? nativeRtspConfig.widgetsForPage(
+                             activityBase.entityId,
+                             pages[index] ? pages[index].page_id : "")
+                       : []
+                delegate: RtspNativeTile {
+                    endpointRef: modelData.endpoint_ref
+                    displayName: modelData.name
+                    decodeWidth: modelData.decode_width
+                    maxFps: modelData.max_fps
+                    active: activityBase.state === "open" && uiPages.currentIndex === index
+                    x: modelData.location.x * gridContainer.width /
+                       Math.max(1, pages[index] && pages[index].grid ? pages[index].grid.width : 4)
+                    y: modelData.location.y * gridContainer.height /
+                       Math.max(1, pages[index] && pages[index].grid ? pages[index].grid.height : 6)
+                    width: modelData.size.width * gridContainer.width /
+                           Math.max(1, pages[index] && pages[index].grid ? pages[index].grid.width : 4)
+                    height: modelData.size.height * gridContainer.height /
+                            Math.max(1, pages[index] && pages[index].grid ? pages[index].grid.height : 6)
+                }
+            }
+
             // Sidecar overlay uses the real Core activity/page IDs; no unsupported
             // item is inserted into the prebuilt Core simulator's grid schema.
             RtspActivityLayer {
@@ -847,7 +878,8 @@ EntityComponents.BaseDetail {
                 horizontalAlignment: Text.AlignHCenter
                 anchors.centerIn: parent
                 anchors.verticalCenterOffset: -100
-                visible: pages[index].items.length === 0 && !rtspLayer.hasWidgets
+                visible: pages[index].items.length === 0 && nativeFallbackWidgets.count === 0 && !rtspLayer.hasWidgets
+                         && nativeFallbackWidgets.count === 0
             }
 
             Text {
