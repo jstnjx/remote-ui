@@ -3,7 +3,7 @@
 CONFIG += c++17 link_pkgconfig
 PKGCONFIG += libavformat libavcodec libavutil libswscale
 INCLUDEPATH += $$PWD
-HEADERS += $PWD/RtspDecodeWorker.h \
-           $PWD/RtspNativeSurface.h
-SOURCES += $PWD/RtspDecodeWorker.cpp \
-           $PWD/RtspNativeSurface.cpp
+HEADERS += $$PWD/RtspDecodeWorker.h \
+           $$PWD/RtspNativeSurface.h
+SOURCES += $$PWD/RtspDecodeWorker.cpp \
+           $$PWD/RtspNativeSurface.cpp
