@@ -86,6 +86,12 @@ ucr2: ## Cross-compile the static Remote Two/3 (aarch64) binary in the Docker to
 	$(docker_build)
 	@echo "Install it on the device as described in docs/cross-compile.md"
 
+ucr2-native-rtsp: IMAGE = $(TOOLCHAIN_IMAGE)
+ucr2-native-rtsp: OUT_DIR = $(ROOT)/binaries/linux-arm64/release
+ucr2-native-rtsp: UC_NATIVE_RTSP = 1
+ucr2-native-rtsp: ## ARM64 Remote UI with direct camera RTSP/FFmpeg (requires target FFmpeg SDK)
+	$(docker_build)
+
 linux-x64: IMAGE = $(DESKTOP_IMAGE)
 linux-x64: OUT_DIR = $(ROOT)/binaries/linux-x64/release
 linux-x64: ## Build the static simulator in the Docker toolchain image (no Qt needed) -> binaries/linux-x64/release/remote-ui
@@ -192,7 +198,7 @@ define docker_build
 	git -C "$(ROOT)" submodule update --init --recursive
 	mkdir -p "$(ROOT)/build"
 	$(call ts_snapshot,$(ROOT)/build/.clean-ts-$@)
-	docker run --rm --user=$$(id -u):$$(id -g) -v "$(ROOT)":/sources "$(IMAGE)"
+	docker run --rm --user=$(id -u):$(id -g) -e UC_NATIVE_RTSP="$(UC_NATIVE_RTSP)" -v "$(ROOT)":/sources "$(IMAGE)"
 	cd "$(ROOT)" && git describe --match "v[0-9]*" --tags HEAD --always > "$(OUT_DIR)/version.txt"
 	$(call ts_restore,$(ROOT)/build/.clean-ts-$@)
 	@echo; echo "Build finished: $(OUT_DIR)/$(BIN) ($$(cat "$(OUT_DIR)/version.txt"))"
