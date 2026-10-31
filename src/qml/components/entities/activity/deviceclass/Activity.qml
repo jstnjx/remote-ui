@@ -834,7 +834,7 @@ EntityComponents.BaseDetail {
                 pageId: pages[index] ? pages[index].page_id : ""
                 gridWidth: pages[index] && pages[index].grid ? pages[index].grid.width : 4
                 gridHeight: pages[index] && pages[index].grid ? pages[index].grid.height : 6
-                active: activityBase.state === "open" && uiPages.currentIndex === index
+                active: !nativeRtspAvailable && activityBase.state === "open" && uiPages.currentIndex === index
             }
 
             Text {

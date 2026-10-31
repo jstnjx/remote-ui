@@ -223,4 +223,4 @@ define build
 	@echo "Run it with:  make run-$@   or:  . $(ENV_FILE) && \"$(subst $(ROOT)/,,$(OUT_DIR))/$(BIN)\""
 endef
 
-.PHONY: help linux linux-static macos macos-static linux-x64 windows-x64 ucr2 test run-linux run-linux-static run-macos run-macos-static run-linux-x64 clean clean-static clean-macos clean-macos-static clean-ucr2 clean-linux-x64 clean-windows-x64 clean-all translations-restore
+.PHONY: help linux linux-static macos macos-static linux-x64 windows-x64 ucr2 ucr2-native-rtsp test run-linux run-linux-static run-macos run-macos-static run-linux-x64 clean clean-static clean-macos clean-macos-static clean-ucr2 clean-linux-x64 clean-windows-x64 clean-all translations-restore
