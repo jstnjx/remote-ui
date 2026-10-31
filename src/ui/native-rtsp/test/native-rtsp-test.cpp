@@ -1,6 +1,5 @@
+// Copyright (c) 2026 UCOS contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "../RtspDeviceConfig.h"
-#include "../RtspNativeSurface.h"
 #include <QGuiApplication>
 #include <QTemporaryDir>
 #include <QFile>
@@ -9,6 +8,9 @@
 #include <QJsonArray>
 #include <QVariantMap>
 #include <QDebug>
+
+#include "../RtspDeviceConfig.h"
+#include "../RtspNativeSurface.h"
 
 static bool saveFixture(const QString &path, const QByteArray &contents) {
     QFile file(path);

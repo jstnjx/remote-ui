@@ -1,3 +1,4 @@
+// Copyright (c) 2026 UCOS contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "RtspNativeSurface.h"
 #include "RtspDecodeWorker.h"
@@ -33,7 +34,11 @@ void RtspNativeSurface::setActive(bool value) {
     if (value == m_active) return;
     m_active = value;
     emit activeChanged();
-    if (m_active) start(); else stop();
+    if (m_active) {
+        start();
+    } else {
+        stop();
+    }
 }
 void RtspNativeSurface::setDecodeWidth(int value) {
     value = qBound(160, value, 1280);

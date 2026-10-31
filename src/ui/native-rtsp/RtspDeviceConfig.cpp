@@ -1,3 +1,4 @@
+// Copyright (c) 2026 UCOS contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "RtspDeviceConfig.h"
 #include <QDir>
