@@ -80,8 +80,8 @@ jobs:
 
           page = Path("src/qml/components/Page.qml").read_text(encoding="utf-8")
           component = Path("src/qml/components/entities/activity/MediaComponent.qml").read_text(encoding="utf-8")
-          if re.search(r'\\bisComponentHorizontal\\s*:', page):
-              if not re.search(r'(?m)^\\s*property bool isComponentHorizontal\\s*:', component):
+          if re.search(r'\bisComponentHorizontal\s*:', page):
+              if not re.search(r'(?m)^\s*property bool isComponentHorizontal\s*:', component):
                   raise SystemExit("Page.qml assigns MediaComponent.isComponentHorizontal, which must remain a writable QML property")
           PY
 
