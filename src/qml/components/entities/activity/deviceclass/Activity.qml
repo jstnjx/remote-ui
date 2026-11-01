@@ -22,6 +22,7 @@ EntityComponents.BaseDetail {
     // Sensor-triggered text entry is scoped to the configured activity only.
     // This component controls its own prompt and native virtual keyboard.
     ActivityComponents.KeyboardTextPrompt {
+        id: keyboardTextPrompt
         activityId: activityBase.entityId
         activityActive: activityBase.state === "open" && activityBase.visible &&
                         entityObj.state === ActivityStates.On
@@ -133,6 +134,42 @@ EntityComponents.BaseDetail {
         items.forEach(function(item) {
             switch (item.type) {
             case "text":
+                // Text Buttons with WIDGET_TYPE;(optional entity_id) become
+                // native, standalone controls without a Core API schema change.
+                const widgetText = typeof item.text === "string" ? item.text.trim() : "";
+                const widgetBits = widgetText.split(";");
+                const widgetKind = widgetBits[0].trim().toUpperCase();
+                const specialTypes = ["ACTIVITY_LAUNCHER", "ACTIVITY_SWITCHER",
+                                      "KEYBOARD_SHORTCUT", "KEYBOARD",
+                                      "APP_LAUNCHER", "GAME_LAUNCHER"];
+                if (specialTypes.indexOf(widgetKind) >= 0) {
+                    const specialComponent = Qt.createComponent(
+                        "qrc:/components/entities/activity/SpecialWidget.qml");
+                    if (specialComponent.status === Component.Ready) {
+                        specialComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "widgetType": widgetKind,
+                            "targetEntityId": widgetBits.length > 1 ? widgetBits.slice(1).join(";").trim() : "",
+                            "fallbackMediaPlayerId": Qt.binding(function() {
+                                return Config.activityArtworkSources[entityObj.id] ||
+                                       (activityBase.mediaWidgetEntityObj ? activityBase.mediaWidgetEntityObj.id : "");
+                            }),
+                            "launchActivity": function(id) {
+                                activityBase.triggerCommand(id, "activity.start", {});
+                            },
+                            "openKeyboard": function(id) {
+                                keyboardTextPrompt.openManual(id);
+                            }
+                        });
+                    } else {
+                        console.warn("Cannot create special text widget:", widgetKind);
+                    }
+                    break;
+                }
+
                 // A stock Text widget containing an rtsp:// URL becomes a video
                 // widget. This keeps the Core-API UI schema unchanged.
                 if (typeof item.text === "string" && item.text.trim().toLowerCase().indexOf("rtsp://") === 0) {

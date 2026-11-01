@@ -17,6 +17,7 @@ Item {
     property bool activityActive: false
     property var prompted: ({})
     property var activeRule: null
+    property bool manualMode: false
     property string currentPrompt: qsTr("Enter text on the media player?")
 
     readonly property var rules: Config.keyboardRules.filter(function(rule) {
@@ -88,8 +89,19 @@ Item {
         }
     }
 
+    // Called by a keyboard shortcut Text Button. The manual invocation shares
+    // the same native keyboard as sensor automation, but needs no sensor.
+    function openManual(mediaId) {
+        if (!activityActive) return;
+        const media = EntityController.get(mediaId);
+        if (!media || media.getTypeAsString() !== "media_player") return;
+        manualMode = true;
+        activeRule = {id: "manual", mediaPlayerIds: [mediaId]};
+        textPopup.open();
+    }
+
     function submitText() {
-        if (!activityActive || !activeRule || !ruleOn(activeRule)) {
+        if (!activityActive || !activeRule || (!manualMode && !ruleOn(activeRule))) {
             textEntry.showError(qsTr("The activity or sensor is no longer active."));
             return;
         }
@@ -189,6 +201,7 @@ Item {
         }
 
         onClosed: {
+            manualMode = false;
             keyboard.hide();
             keyboardNavigation.releaseControl();
             textEntry.inputValue = "";
