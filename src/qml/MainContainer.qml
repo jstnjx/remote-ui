@@ -731,8 +731,8 @@ Item {
         // Keep the stock status bar, battery and global overlays above this.
         z: 0
         asynchronous: true
-        active: Config.redesignedHomeEnabled && pages.count > 0 &&
-                pages.currentIndex === 0 && !ui.editMode &&
+        active: Config.redesignedHomeEnabled && !ui.profile.restricted &&
+                pages.count > 0 && pages.currentIndex === 0 && !ui.editMode &&
                 !mainContainerBlockingMouseArea.enabled
         visible: active && status === Loader.Ready && item !== null
         source: "qrc:/components/home/HomePage.qml"
