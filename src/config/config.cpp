@@ -506,6 +506,76 @@ void Config::setHideMediaPlayerControls(bool value) {
     emit hideMediaPlayerControlsChanged();
 }
 
+bool Config::getRedesignedHomeEnabled() {
+    return m_settings->value("ui/redesignedHomeEnabled", false).toBool();
+}
+
+void Config::setRedesignedHomeEnabled(bool value) {
+    if (getRedesignedHomeEnabled() == value) return;
+    m_settings->setValue("ui/redesignedHomeEnabled", value);
+    emit homeSettingsChanged();
+}
+
+int Config::getHomeScreenLayout() {
+    return m_settings->value("ui/homeScreenLayout", 0).toInt();
+}
+
+void Config::setHomeScreenLayout(int value) {
+    const int bounded = qBound(0, value, 3);
+    if (getHomeScreenLayout() == bounded) return;
+    m_settings->setValue("ui/homeScreenLayout", bounded);
+    emit homeSettingsChanged();
+}
+
+bool Config::getHomeShowClock() {
+    return m_settings->value("ui/homeShowClock", true).toBool();
+}
+
+void Config::setHomeShowClock(bool value) {
+    if (getHomeShowClock() == value) return;
+    m_settings->setValue("ui/homeShowClock", value);
+    emit homeSettingsChanged();
+}
+
+bool Config::getHomeShowMedia() {
+    return m_settings->value("ui/homeShowMedia", true).toBool();
+}
+
+void Config::setHomeShowMedia(bool value) {
+    if (getHomeShowMedia() == value) return;
+    m_settings->setValue("ui/homeShowMedia", value);
+    emit homeSettingsChanged();
+}
+
+bool Config::getHomeShowActivities() {
+    return m_settings->value("ui/homeShowActivities", true).toBool();
+}
+
+void Config::setHomeShowActivities(bool value) {
+    if (getHomeShowActivities() == value) return;
+    m_settings->setValue("ui/homeShowActivities", value);
+    emit homeSettingsChanged();
+}
+
+bool Config::getHomeShowQuickControls() {
+    return m_settings->value("ui/homeShowQuickControls", true).toBool();
+}
+
+void Config::setHomeShowQuickControls(bool value) {
+    if (getHomeShowQuickControls() == value) return;
+    m_settings->setValue("ui/homeShowQuickControls", value);
+    emit homeSettingsChanged();
+}
+
+bool Config::getHomeShowPageIndicators() {
+    return m_settings->value("ui/homeShowPageIndicators", true).toBool();
+}
+
+void Config::setHomeShowPageIndicators(bool value) {
+    if (getHomeShowPageIndicators() == value) return;
+    m_settings->setValue("ui/homeShowPageIndicators", value);
+    emit homeSettingsChanged();
+}
 bool Config::getShowMediaShuffle() {
     return m_settings->value("ui/showMediaShuffle", !getHideMediaPlayerControls()).toBool();
 }

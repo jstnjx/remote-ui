@@ -70,6 +70,11 @@ Settings.Page {
                     icon: "uc:list"
                 },
                 {
+                    itemTitle: QT_TR_NOOP("Home screen"),
+                    page: "HomeScreen",
+                    icon: "uc:house"
+                },
+                {
                     itemTitle: QT_TR_NOOP("Media player widgets"),
                     page: "MediaWidgets",
                     icon: "uc:music"
