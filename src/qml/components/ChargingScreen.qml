@@ -5,6 +5,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 
 import Battery 1.0
+import Config 1.0
 
 import "qrc:/components" as Components
 
@@ -170,6 +171,7 @@ Popup {
     Item {
         id: clock
         width: ui.width-80; height: width
+        visible: !Config.digitalScreensaverClock
         anchors.centerIn: parent
 
         property int hours: ui.time.getHours()
@@ -254,6 +256,52 @@ Popup {
             antialiasing: true
         }
 
+    }
+
+    // Use the same screensaver surface, dismiss gestures and charging
+    // indicator as the analog clock. Match the configured 12/24-hour format.
+    Item {
+        id: digitalClock
+        width: parent.width - 40
+        height: 240
+        anchors.centerIn: parent
+        visible: Config.digitalScreensaverClock
+
+        Column {
+            anchors.centerIn: parent
+            width: parent.width
+            spacing: 12
+
+            Text {
+                width: parent.width
+                text: Qt.formatTime(ui.time, Config.clock24h ? "HH:mm" : "hh:mm AP")
+                color: colors.offwhite
+                font: fonts.primaryFont(84)
+                horizontalAlignment: Text.AlignHCenter
+                fontSizeMode: Text.Fit
+                minimumPixelSize: 50
+                elide: Text.ElideRight
+            }
+
+            Text {
+                width: parent.width
+                text: Qt.formatDate(ui.time, "dddd, d MMMM")
+                color: colors.light
+                font: fonts.primaryFont(25)
+                horizontalAlignment: Text.AlignHCenter
+                fontSizeMode: Text.Fit
+                minimumPixelSize: 16
+                elide: Text.ElideRight
+            }
+
+            Text {
+                width: parent.width
+                text: Qt.formatTime(ui.time, "ss")
+                color: colors.red
+                font: fonts.primaryFont(28)
+                horizontalAlignment: Text.AlignHCenter
+            }
+        }
     }
 
     Item {

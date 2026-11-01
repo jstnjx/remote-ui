@@ -338,6 +338,18 @@ void Config::setSoundVolume(int volume) {
     }
 }
 
+bool Config::getDigitalScreensaverClock() {
+    return m_settings->value("ui/digitalScreensaverClock", false).toBool();
+}
+
+void Config::setDigitalScreensaverClock(bool enabled) {
+    if (getDigitalScreensaverClock() == enabled) {
+        return;
+    }
+    m_settings->setValue("ui/digitalScreensaverClock", enabled);
+    emit digitalScreensaverClockChanged();
+}
+
 void Config::setDisplayAutoBrightness(bool enabled) {
     if (m_displayAutoBrightness != enabled) {
         int id = m_core->setDisplayCfg(getDisplayBrightness(), enabled);

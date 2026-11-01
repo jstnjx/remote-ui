@@ -132,7 +132,10 @@ EntityComponents.BaseDetail {
         const gridSizeH = uiPages.height / gridHeight
 
         items.forEach(function(item) {
-            switch (item.type) {
+            // Custom widgets are created dynamically from user-edited UI pages.
+            // A broken widget must not abort rendering of every subsequent item.
+            try {
+                switch (item.type) {
             case "text":
                 // Text Buttons with WIDGET_TYPE;(optional entity_id) become
                 // native, standalone controls without a Core API schema change.
@@ -259,6 +262,9 @@ EntityComponents.BaseDetail {
             default:
                 console.log("Not implemented item type: " + item.type);
                 break;
+                }
+            } catch (error) {
+                console.warn("Activity widget failed:", item.type, String(error));
             }
         });
     }
