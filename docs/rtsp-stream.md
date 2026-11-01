@@ -13,7 +13,7 @@ URLs are recognized only when the Text widget's text starts with `rtsp://` (case
 
 ## Runtime requirements
 
-- **FFmpeg must be executable on the remote.** The player first checks the optional `UC_RTSP_FFMPEG` environment variable, then `ffmpeg` alongside the `remote-ui` executable (to support custom UI packages containing `bin/ffmpeg`), then `ffmpeg` on `PATH`. This change does **not** install FFmpeg or its runtime libraries.
+- **Install the `UCR2-RTSP-install` archive**, not the basic `UCR2-static` build. It includes a static ARM64 `bin/ffmpeg` executable next to `bin/remote-ui`, with an upstream SHA-256 checksum verified during packaging. No external streaming server, additional firmware service or GStreamer is required. Installing only the UI binary produces the message "FFmpeg is not installed on the remote".
 - RTSP is read directly from the camera over TCP and decoded locally. No other host or RTSP relay is required.
 - The component uses FFmpeg's rawvideo output and Qt's RGB565 painted item. It does not require GStreamer or FFmpeg *development* libraries at build time.
 - It requests 320×180 at 10 fps without audio. **Use an H.264 low-resolution camera substream** when possible. Decoding a high-resolution source still uses CPU even though output is downscaled.
@@ -22,10 +22,29 @@ URLs are recognized only when the Text widget's text starts with `rtsp://` (case
 
 ## Limitations
 
-- On-device playback cannot be verified without a real Remote Two/3 with FFmpeg installed. If the tile says FFmpeg is not installed, the custom UI binary alone cannot decode the camera stream; package a compatible executable in `bin/ffmpeg` with its needed libraries, or use firmware that provides it.
+- On-device playback cannot be verified without a real Remote Two/3. The bundled FFmpeg is statically linked for ARM64; decoding performance and runtime permissions still need to be checked on hardware.
 - This is a **remote-ui-only convention** layered on top of the stock Text widget. The stock Web Configurator will still call it Text and may preview the URL as text. A native `video_stream` configuration type would require changes outside remote-ui.
 - The video is decoded in software unless the installed FFmpeg binary transparently supports hardware acceleration. Avoid multiple simultaneous streams and monitor CPU/battery usage.
 
 ## Building
 
-Build `remote-ui` using `make ucr2` and install the resulting custom UI archive as described in [cross-compile.md](cross-compile.md). This change adds no extra build-time libraries beyond Qt Quick.
+The GitHub Actions **Build & Release** workflow publishes an install-ready `*UCR2-RTSP-install*.tar.gz` file to the [Development Build](https://github.com/jstnjx/remote-ui/releases/tag/latest). **Upload that archive directly** using the Remote's Core API. Do not repack the basic UCR2 static build:
+
+```bash
+curl -fSL -u web-configurator \
+  -F "file=@remote-ui-RTSP-install.tar.gz" \
+  "http://REMOTE-IP/api/system/install/ui?void_warranty=yes"
+```
+
+Replace the example filename with the downloaded UCR2-RTSP-install archive. Review the [custom UI installation/warranty notes](cross-compile.md) first.
+
+To compile and package it yourself:
+
+```bash
+make ucr2
+bash tools/package-rtsp-ui.sh binaries/linux-arm64/release/remote-ui remote-ui-rtsp-install.tar.gz
+```
+
+The packaging script downloads [Shaka's pinned static ARM64 FFmpeg](https://github.com/shaka-project/static-ffmpeg-binaries/releases/tag/n8.1.2-1), verifies its SHA-256, sets executable permissions, and packages it as `bin/ffmpeg`. It also includes build and license information under `data/ffmpeg-source.txt`.
+
+FFmpeg does not need to be downloaded by the Remote at runtime. The decoder and UI run entirely on the device.
