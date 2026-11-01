@@ -28,11 +28,14 @@ Item {
     readonly property bool minimal: Config.homeScreenLayout === 3
     readonly property var selectedActions: {
         const result = [];
+        if (Config.homeShowMedia && mediaPlayer && mediaFocus)
+            result.push({type:"media", id: mediaPlayer.id});
         if (Config.homeShowActivities) {
-            for (let i = 0; i < Math.min(activityIds.length, 4); ++i)
+            const activityLimit = minimal ? Math.min(activityIds.length, 4) : activityIds.length;
+            for (let i = 0; i < activityLimit; ++i)
                 result.push({type:"activity", id: activityIds[i]});
         }
-        if (Config.homeShowMedia && mediaPlayer)
+        if (Config.homeShowMedia && mediaPlayer && !mediaFocus)
             result.push({type:"media", id: mediaPlayer.id});
         if (Config.homeShowQuickControls) {
             for (let i = 0; i < Math.min(quickIds.length, 4); ++i)
@@ -59,6 +62,11 @@ Item {
         }
         mediaPlayer = chosen;
         if (selectedIndex >= selectedActions.length) selectedIndex = Math.max(0, selectedActions.length - 1);
+    }
+
+    function isSelected(type, id) {
+        const action = selectedActions[selectedIndex];
+        return action && action.type === type && action.id === id;
     }
 
     function openEntity(id) {
@@ -177,12 +185,12 @@ Item {
                     spacing: 12
                     visible: Config.homeShowActivities
                     Repeater {
-                        model: home.activityIds.slice(0, 4)
+                        model: home.activityIds
                         delegate: Home.ActivityTile {
                             width: (modernGrid.width - modernGrid.spacing) / 2
                             height: 140
                             entityId: modelData
-                            selected: home.selectedActions.length > index && home.selectedActions[index].type === "activity" && home.selectedIndex === index
+                            selected: home.isSelected("activity", modelData)
                             onTriggered: home.openEntity(id)
                         }
                     }
@@ -205,6 +213,7 @@ Item {
                     width: parent.width
                     height: 405
                     large: true
+                    selected: home.isSelected("media", home.mediaPlayer ? home.mediaPlayer.id : "")
                     player: home.mediaPlayer
                     openPlayer: function() { home.openMedia(); }
                 }
@@ -252,13 +261,13 @@ Item {
                     columns: 2
                     spacing: 12
                     Repeater {
-                        model: home.activityIds.slice(0, 4)
+                        model: home.activityIds
                         delegate: Home.ActivityTile {
                             width: (compactGrid.width - compactGrid.spacing) / 2
                             height: 98
                             compact: true
                             entityId: modelData
-                            selected: home.selectedIndex === index
+                            selected: home.isSelected("activity", modelData)
                             onTriggered: home.openEntity(id)
                         }
                     }
@@ -274,6 +283,7 @@ Item {
                 Home.MediaCard {
                     width: parent.width
                     height: 160
+                    selected: home.isSelected("media", home.mediaPlayer ? home.mediaPlayer.id : "")
                     player: home.mediaPlayer
                     openPlayer: function() { home.openMedia(); }
                 }
@@ -298,7 +308,7 @@ Item {
                             height: 97
                             compact: true
                             entityId: modelData
-                            selected: home.selectedIndex === index
+                            selected: home.isSelected("activity", modelData)
                             onTriggered: home.openEntity(id)
                         }
                     }
@@ -331,8 +341,7 @@ Item {
                             height: 95
                             compact: true
                             entityId: modelData
-                            selected: home.selectedActions.length > 0 &&
-                                      home.selectedActions[home.selectedIndex].id === modelData
+                            selected: home.isSelected("quick", modelData)
                             onTriggered: home.openEntity(id)
                         }
                     }
