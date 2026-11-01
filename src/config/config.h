@@ -11,6 +11,7 @@
 #include <QRandomGenerator>
 #include <QSettings>
 #include <QTimeZone>
+#include <QVariantMap>
 #include <QVariantList>
 
 #include "../core/core.h"
@@ -106,6 +107,13 @@ class Config : public QObject {
                    mediaCoverflowDefaultChanged)
     Q_PROPERTY(bool hideMediaPlayerControls READ getHideMediaPlayerControls WRITE setHideMediaPlayerControls NOTIFY
                    hideMediaPlayerControlsChanged)
+    Q_PROPERTY(bool showMediaShuffle READ getShowMediaShuffle WRITE setShowMediaShuffle NOTIFY mediaControlsChanged)
+    Q_PROPERTY(bool showMediaRepeat READ getShowMediaRepeat WRITE setShowMediaRepeat NOTIFY mediaControlsChanged)
+    Q_PROPERTY(bool showMediaBrowser READ getShowMediaBrowser WRITE setShowMediaBrowser NOTIFY mediaControlsChanged)
+    Q_PROPERTY(bool showMediaSource READ getShowMediaSource WRITE setShowMediaSource NOTIFY mediaControlsChanged)
+    Q_PROPERTY(int mediaWidgetLayout READ getMediaWidgetLayout WRITE setMediaWidgetLayout NOTIFY mediaWidgetLayoutChanged)
+    Q_PROPERTY(QVariantMap activityArtworkSources READ getActivityArtworkSources WRITE setActivityArtworkSources NOTIFY
+                   activityArtworkSourcesChanged)
     Q_PROPERTY(int rtspFrameRate READ getRtspFrameRate WRITE setRtspFrameRate NOTIFY rtspFrameRateChanged)
     Q_PROPERTY(int rtspResolution READ getRtspResolution WRITE setRtspResolution NOTIFY rtspResolutionChanged)
     Q_PROPERTY(bool rtspAutoQuality READ getRtspAutoQuality WRITE setRtspAutoQuality NOTIFY rtspAutoQualityChanged)
@@ -211,6 +219,18 @@ class Config : public QObject {
 
     bool getHideMediaPlayerControls();
     void setHideMediaPlayerControls(bool value);
+    bool getShowMediaShuffle();
+    void setShowMediaShuffle(bool value);
+    bool getShowMediaRepeat();
+    void setShowMediaRepeat(bool value);
+    bool getShowMediaBrowser();
+    void setShowMediaBrowser(bool value);
+    bool getShowMediaSource();
+    void setShowMediaSource(bool value);
+    int getMediaWidgetLayout();
+    void setMediaWidgetLayout(int value);
+    QVariantMap getActivityArtworkSources();
+    void setActivityArtworkSources(const QVariantMap& value);
 
     int  getRtspFrameRate();
     void setRtspFrameRate(int value);
@@ -402,6 +422,9 @@ class Config : public QObject {
     void fillMediaArtworkChanged();
     void mediaCoverflowDefaultChanged();
     void hideMediaPlayerControlsChanged();
+    void mediaControlsChanged();
+    void mediaWidgetLayoutChanged();
+    void activityArtworkSourcesChanged();
     void rtspFrameRateChanged();
     void rtspResolutionChanged();
     void rtspAutoQualityChanged();

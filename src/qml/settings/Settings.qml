@@ -70,6 +70,11 @@ Settings.Page {
                     icon: "uc:list"
                 },
                 {
+                    itemTitle: QT_TR_NOOP("Media player widgets"),
+                    page: "MediaWidgets",
+                    icon: "uc:music"
+                },
+                {
                     itemTitle: QT_TR_NOOP("Keyboard input automation"),
                     page: "KeyboardPrompt",
                     icon: "uc:keyboard"

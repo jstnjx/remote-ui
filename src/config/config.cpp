@@ -494,6 +494,67 @@ void Config::setHideMediaPlayerControls(bool value) {
     emit hideMediaPlayerControlsChanged();
 }
 
+bool Config::getShowMediaShuffle() {
+    return m_settings->value("ui/showMediaShuffle", !getHideMediaPlayerControls()).toBool();
+}
+
+void Config::setShowMediaShuffle(bool value) {
+    if (getShowMediaShuffle() == value) return;
+    m_settings->setValue("ui/showMediaShuffle", value);
+    emit mediaControlsChanged();
+}
+
+bool Config::getShowMediaRepeat() {
+    return m_settings->value("ui/showMediaRepeat", !getHideMediaPlayerControls()).toBool();
+}
+
+void Config::setShowMediaRepeat(bool value) {
+    if (getShowMediaRepeat() == value) return;
+    m_settings->setValue("ui/showMediaRepeat", value);
+    emit mediaControlsChanged();
+}
+
+bool Config::getShowMediaBrowser() {
+    return m_settings->value("ui/showMediaBrowser", !getHideMediaPlayerControls()).toBool();
+}
+
+void Config::setShowMediaBrowser(bool value) {
+    if (getShowMediaBrowser() == value) return;
+    m_settings->setValue("ui/showMediaBrowser", value);
+    emit mediaControlsChanged();
+}
+
+bool Config::getShowMediaSource() {
+    return m_settings->value("ui/showMediaSource", !getHideMediaPlayerControls()).toBool();
+}
+
+void Config::setShowMediaSource(bool value) {
+    if (getShowMediaSource() == value) return;
+    m_settings->setValue("ui/showMediaSource", value);
+    emit mediaControlsChanged();
+}
+
+int Config::getMediaWidgetLayout() {
+    return qBound(0, m_settings->value("ui/mediaWidgetLayout", 0).toInt(), 3);
+}
+
+void Config::setMediaWidgetLayout(int value) {
+    const int bounded = qBound(0, value, 3);
+    if (getMediaWidgetLayout() == bounded) return;
+    m_settings->setValue("ui/mediaWidgetLayout", bounded);
+    emit mediaWidgetLayoutChanged();
+}
+
+QVariantMap Config::getActivityArtworkSources() {
+    return m_settings->value("ui/activityArtworkSources").toMap();
+}
+
+void Config::setActivityArtworkSources(const QVariantMap& value) {
+    if (getActivityArtworkSources() == value) return;
+    m_settings->setValue("ui/activityArtworkSources", value);
+    emit activityArtworkSourcesChanged();
+}
+
 int Config::getRtspFrameRate() {
     return qBound(5, m_settings->value("ui/rtspFrameRate", 10).toInt(), 30);
 }
