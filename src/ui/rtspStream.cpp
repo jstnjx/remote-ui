@@ -5,7 +5,9 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QPainter>
+#include <QRegularExpression>
 #include <QStandardPaths>
+#include <QStringList>
 #include <QUrl>
 
 RtspStream::RtspStream(QQuickItem *parent) : QQuickPaintedItem(parent), m_process(this) {
@@ -29,14 +31,17 @@ RtspStream::RtspStream(QQuickItem *parent) : QQuickPaintedItem(parent), m_proces
     });
 
     connect(&m_process, &QProcess::readyReadStandardOutput, this, &RtspStream::readFrames);
-    // Always drain stderr; FFmpeg output can contain credentials in an RTSP URL,
-    // so it is intentionally neither logged nor shown on the device.
+    // Keep a bounded buffer of FFmpeg diagnostics. Never log or display raw
+    // stderr: error lines can contain camera credentials embedded in the URL.
     connect(&m_process, &QProcess::readyReadStandardError, this, [this] {
-        m_process.readAllStandardError();
+        m_diagnostics.append(m_process.readAllStandardError());
+        if (m_diagnostics.size() > 8192) {
+            m_diagnostics = m_diagnostics.right(8192);
+        }
     });
     connect(&m_process, &QProcess::errorOccurred, this, &RtspStream::onProcessError);
     connect(&m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-            [this](int, QProcess::ExitStatus) { onProcessFinished(); });
+            &RtspStream::onProcessFinished);
 }
 
 RtspStream::~RtspStream() {
@@ -95,6 +100,7 @@ void RtspStream::stopStream() {
     m_retryTimer.stop();
     m_watchdogTimer.stop();
     m_buffer.clear();
+    m_diagnostics.clear();
     m_frame = QImage();
     setPlaying(false);
     setError(QString());
@@ -138,7 +144,7 @@ void RtspStream::startStream() {
     const QStringList arguments = {
         QStringLiteral("-hide_banner"), QStringLiteral("-loglevel"), QStringLiteral("error"),
         QStringLiteral("-nostdin"), QStringLiteral("-rtsp_transport"), QStringLiteral("tcp"),
-        QStringLiteral("-rw_timeout"), QStringLiteral("5000000"),
+        QStringLiteral("-timeout"), QStringLiteral("5000000"),
         QStringLiteral("-i"), m_source,
         QStringLiteral("-map"), QStringLiteral("0:v:0"),
         QStringLiteral("-an"), QStringLiteral("-sn"), QStringLiteral("-dn"),
@@ -150,6 +156,7 @@ void RtspStream::startStream() {
     };
 
     m_buffer.clear();
+    m_diagnostics.clear();
     setError(QString());
     m_process.start(program, arguments, QIODevice::ReadOnly);
     m_watchdogTimer.start();
@@ -180,15 +187,95 @@ void RtspStream::readFrames() {
     }
 }
 
-void RtspStream::onProcessError(QProcess::ProcessError) {
-    if (m_active) {
-        setError(tr("Video decoder failed. Retrying..."));
-        m_watchdogTimer.stop();
-        m_retryTimer.start();
+QString RtspStream::failureDetail(int exitCode, QProcess::ExitStatus exitStatus) const {
+    // Check known failures before showing the final FFmpeg line, which is
+    // frequently just "Error opening input files".
+    const QString lower = QString::fromUtf8(m_diagnostics).toLower();
+    if (lower.contains(QStringLiteral("401 unauthorized")) ||
+        lower.contains(QStringLiteral("401 (unauthorized")) ||
+        lower.contains(QStringLiteral("server returned 401")) ||
+        lower.contains(QStringLiteral("403 forbidden"))) {
+        return tr("Camera authentication failed (401/403). Check RTSP credentials.");
     }
+    if (lower.contains(QStringLiteral("404 not found")) || lower.contains(QStringLiteral("404 (not found"))) {
+        return tr("Camera stream not found (404). Check the RTSP path.");
+    }
+    if (lower.contains(QStringLiteral("461 unsupported transport")) ||
+        lower.contains(QStringLiteral("unsupported transport"))) {
+        return tr("Camera rejected RTSP over TCP (461).");
+    }
+    if (lower.contains(QStringLiteral("connection refused"))) {
+        return tr("RTSP connection refused. Check camera host and port.");
+    }
+    if (lower.contains(QStringLiteral("connection timed out")) ||
+        lower.contains(QStringLiteral("timed out"))) {
+        return tr("RTSP connection timed out. Check camera network access.");
+    }
+    if (lower.contains(QStringLiteral("network is unreachable")) ||
+        lower.contains(QStringLiteral("no route to host"))) {
+        return tr("Camera network unreachable from the remote.");
+    }
+    if (lower.contains(QStringLiteral("option not found")) ||
+        lower.contains(QStringLiteral("unrecognized option"))) {
+        return tr("FFmpeg does not support an input option.");
+    }
+    if (lower.contains(QStringLiteral("no such filter")) ||
+        lower.contains(QStringLiteral("error reinitializing filters")) ||
+        lower.contains(QStringLiteral("error while filtering"))) {
+        return tr("FFmpeg video filter failed.");
+    }
+    if (lower.contains(QStringLiteral("unknown decoder")) ||
+        lower.contains(QStringLiteral("decoder not found")) ||
+        lower.contains(QStringLiteral("unsupported codec"))) {
+        return tr("Camera video codec is not supported.");
+    }
+    if (exitStatus == QProcess::CrashExit) {
+        return tr("FFmpeg was terminated (signal/crash). Try an H.264 low-resolution camera substream.");
+    }
+
+    // Show one short, sanitized diagnostic when FFmpeg reports a new error.
+    // Never expose RTSP URLs or usernames/passwords in the UI.
+    QString diagnostic = QString::fromUtf8(m_diagnostics);
+    const QRegularExpression rtspUrl(QStringLiteral("rtsps?://[^\\s\\\"'<>]+"),
+                                     QRegularExpression::CaseInsensitiveOption);
+    diagnostic.replace(rtspUrl, QStringLiteral("[RTSP URL]"));
+    const QUrl url(m_source);
+    if (!url.password().isEmpty()) {
+        diagnostic.replace(url.password(), QStringLiteral("[redacted]"));
+        diagnostic.replace(QString::fromUtf8(QUrl::toPercentEncoding(url.password())), QStringLiteral("[redacted]"));
+    }
+    if (!url.userName().isEmpty()) {
+        diagnostic.replace(url.userName(), QStringLiteral("[redacted]"));
+    }
+    const QStringList lines = diagnostic.split(QRegularExpression(QStringLiteral("[\\r\\n]+")),
+                                               Qt::SkipEmptyParts);
+    if (!lines.isEmpty()) {
+        return tr("FFmpeg: %1").arg(lines.last().trimmed().left(180));
+    }
+    return tr("FFmpeg exited (code %1). Check the camera stream.").arg(exitCode);
 }
 
-void RtspStream::onProcessFinished() {
+void RtspStream::onProcessError(QProcess::ProcessError error) {
+    if (!m_active) {
+        return;
+    }
+    if (error == QProcess::FailedToStart) {
+        setError(tr("FFmpeg could not start. Check ARM64 compatibility and file permissions."));
+    } else if (error == QProcess::Crashed) {
+        setError(tr("FFmpeg crashed or was terminated. Try a low-resolution H.264 stream."));
+    } else {
+        setError(tr("FFmpeg process error (%1).").arg(static_cast<int>(error)));
+    }
+    m_watchdogTimer.stop();
+    m_retryTimer.start();
+}
+
+void RtspStream::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus) {
+    // Read stderr that arrived between the last readyRead signal and exit.
+    m_diagnostics.append(m_process.readAllStandardError());
+    if (m_diagnostics.size() > 8192) {
+        m_diagnostics = m_diagnostics.right(8192);
+    }
     m_watchdogTimer.stop();
     m_buffer.clear();
     m_frame = QImage();
@@ -196,7 +283,7 @@ void RtspStream::onProcessFinished() {
     update();
     if (m_active) {
         if (m_error.isEmpty()) {
-            setError(tr("Stream disconnected. Reconnecting..."));
+            setError(failureDetail(exitCode, exitStatus));
         }
         m_retryTimer.start();
     }

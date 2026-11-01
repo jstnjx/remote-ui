@@ -18,7 +18,7 @@ URLs are recognized only when the Text widget's text starts with `rtsp://` (case
 - The component uses FFmpeg's rawvideo output and Qt's RGB565 painted item. It does not require GStreamer or FFmpeg *development* libraries at build time.
 - It requests 320×180 at 10 fps without audio. **Use an H.264 low-resolution camera substream** when possible. Decoding a high-resolution source still uses CPU even though output is downscaled.
 - Playback starts only when the activity detail is open on the visible page, the activity is not Off, and power mode is Normal. It stops on page switch, activity close/off, or power-mode change. Network loss triggers a retry after 3 seconds; a 12-second video stall restarts FFmpeg.
-- The decoder error is displayed on the tile without printing the RTSP address or credentials to logs.
+- Connection, authorization, path, timeout, and decoder failures are shown on the tile. A short sanitized FFmpeg diagnostic may also appear; RTSP URLs and login credentials are removed before display. Raw stderr is never logged.
 
 ## Limitations
 
@@ -48,3 +48,9 @@ bash tools/package-rtsp-ui.sh binaries/linux-arm64/release/remote-ui remote-ui-r
 The packaging script downloads [Shaka's pinned static ARM64 FFmpeg](https://github.com/shaka-project/static-ffmpeg-binaries/releases/tag/n8.1.2-1), verifies its SHA-256, sets executable permissions, and packages it as `bin/ffmpeg`. It also includes build and license information under `data/ffmpeg-source.txt`.
 
 FFmpeg does not need to be downloaded by the Remote at runtime. The decoder and UI run entirely on the device.
+
+## Connection troubleshooting
+
+The player uses RTSP-over-TCP and FFmpeg's RTSP-specific `-timeout 5000000` (5 seconds). The earlier `-rw_timeout` option is not reliably supported with RTSP. If the stream still stops, the tile now reports a more specific reason (authentication, bad path, network, unsupported codec, or sanitized FFmpeg stderr).
+
+Test the same RTSP URL on a computer in the same network using VLC/ffplay, preferably with an H.264 low-resolution substream. If that works but the remote says `Connection timed out`, verify the remote can reach the camera over Wi-Fi. Do not post URLs containing passwords in bug reports.
