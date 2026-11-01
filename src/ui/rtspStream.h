@@ -1,3 +1,4 @@
+// Copyright (c) 2026 jstnjx
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
