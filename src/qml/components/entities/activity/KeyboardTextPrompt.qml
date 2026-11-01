@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-
 import Config 1.0
 import Entity.Controller 1.0
-
 import "qrc:/components" as Components
 
-// A sensor-triggered, dismissible offer. The keyboard is never opened without
-// user interaction, and the same On state cannot repeatedly reopen the offer.
+// Per-activity, multi-sensor keyboard automation. Sensors need not appear in
+// activity.includedEntities; the page widgets and configured sensor IDs work.
 Item {
     id: keyboardBridge
     width: 0
@@ -17,135 +15,149 @@ Item {
 
     property string activityId: ""
     property bool activityActive: false
-    property var sensorEntity: null
-    property bool promptedThisOn: false
+    property var prompted: ({})
+    property var activeRule: null
+    property string currentPrompt: qsTr("Enter text on the media player?")
 
-    function sensorIsConfigured() {
-        return Config.keyboardActivityId === activityId &&
-               Config.keyboardSensorId !== "" &&
-               Config.keyboardMediaPlayerId !== "";
-    }
-
-    function refreshSensor() {
-        if (!sensorIsConfigured()) {
-            sensorEntity = null;
-            promptedThisOn = false;
-            offerPopup.close();
-            textPopup.close();
-            return;
-        }
-        const activity = EntityController.get(activityId);
-        if (!activity || activity.includedEntities.indexOf(Config.keyboardSensorId) < 0) {
-            sensorEntity = null;
-            return;
-        }
-
-        const sensor = EntityController.get(Config.keyboardSensorId);
-        if (!sensor || sensor.getTypeAsString() !== "sensor") {
-            sensorEntity = null;
-            return;
-        }
-        if (sensorEntity !== sensor) {
-            sensorEntity = sensor;
-            promptedThisOn = false;
-        }
-        evaluateSensor();
-    }
-
-    function evaluateSensor() {
-        const value = sensorEntity ? String(sensorEntity.rawValue).trim().toLowerCase() : "";
-        if (value === "off") {
-            promptedThisOn = false;
-            offerPopup.close();
-            textPopup.close();
-            return;
-        }
-        if (value !== "on" || !activityActive || promptedThisOn || !sensorIsConfigured()) {
-            return;
-        }
-        const target = EntityController.get(Config.keyboardMediaPlayerId);
-        if (!target || target.getTypeAsString() !== "media_player") {
-            return;
-        }
-
-        promptedThisOn = true;
-        offerPopup.menuItems = [{
-            title: qsTr("Open keyboard"),
-            icon: "uc:keyboard",
-            callback: function() {
-                textPopup.open();
+    readonly property var rules: Config.keyboardRules.filter(function(rule) {
+        return rule.activityId === activityId;
+    })
+    readonly property var watchedSensorIds: {
+        const ids = [];
+        for (let i = 0; i < rules.length; ++i) {
+            const sensors = rules[i].sensorIds || [];
+            for (let j = 0; j < sensors.length; ++j) {
+                if (ids.indexOf(sensors[j]) < 0) ids.push(sensors[j]);
             }
-        }];
-        offerPopup.open();
+        }
+        return ids;
+    }
+
+    function ruleKey(rule) {
+        return rule.id || rule.activityId;
+    }
+
+    function ruleOn(rule) {
+        const sensors = rule.sensorIds || [];
+        for (let i = 0; i < sensors.length; ++i) {
+            const sensor = EntityController.get(sensors[i]);
+            if (sensor && sensor.getTypeAsString() === "sensor" &&
+                    String(sensor.rawValue).trim().toLowerCase() === "on") return true;
+        }
+        return false;
+    }
+
+    function evaluate() {
+        if (!activityActive) {
+            offerPopup.close();
+            textPopup.close();
+            return;
+        }
+        // Keep the currently entered text stable until its popup closes.
+        for (let i = 0; i < rules.length; ++i) {
+            const rule = rules[i];
+            const key = ruleKey(rule);
+            if (!ruleOn(rule)) {
+                if (prompted[key]) {
+                    const updated = Object.assign({}, prompted);
+                    delete updated[key];
+                    prompted = updated;
+                }
+                if (activeRule && ruleKey(activeRule) === key) {
+                    offerPopup.close();
+                    textPopup.close();
+                    activeRule = null;
+                }
+                continue;
+            }
+            if (!prompted[key] && !offerPopup.opened && !textPopup.opened &&
+                    (rule.mediaPlayerIds || []).length > 0) {
+                const updated = Object.assign({}, prompted);
+                updated[key] = true;
+                prompted = updated;
+                activeRule = rule;
+                currentPrompt = rule.prompt || qsTr("Enter text on the media player?");
+                offerPopup.menuItems = [{
+                    title: qsTr("Open keyboard"),
+                    icon: "uc:keyboard",
+                    callback: function() { textPopup.open(); }
+                }];
+                offerPopup.open();
+                break;
+            }
+        }
     }
 
     function submitText() {
-        if (!sensorIsConfigured() || !activityActive ||
-                !sensorEntity || String(sensorEntity.rawValue).toLowerCase() !== "on") {
+        if (!activityActive || !activeRule || !ruleOn(activeRule)) {
             textEntry.showError(qsTr("The activity or sensor is no longer active."));
             return;
         }
-
-        const target = EntityController.get(Config.keyboardMediaPlayerId);
-        if (!target || target.getTypeAsString() !== "media_player" ||
-                !EntityController.mayCommandEntity(target.enabled)) {
-            textEntry.showError(qsTr("The media player is unavailable."));
-            return;
-        }
-
         const value = textEntry.inputValue;
         if (value.length === 0) {
             textEntry.showError(qsTr("Enter some text first."));
             return;
         }
-
-        // Send text as one command, not one command per keystroke.
-        EntityController.onEntityCommand(target.id, "keyboard.text_set", {text: value});
+        const players = activeRule.mediaPlayerIds || [];
+        let sent = 0;
+        for (let i = 0; i < players.length; ++i) {
+            const target = EntityController.get(players[i]);
+            if (target && target.getTypeAsString() === "media_player" &&
+                    EntityController.mayCommandEntity(target.enabled)) {
+                EntityController.onEntityCommand(target.id, "keyboard.text_set", {text: value});
+                sent++;
+            }
+        }
+        if (!sent) {
+            textEntry.showError(qsTr("No selected media player is available."));
+            return;
+        }
         keyboard.hide();
         textPopup.close();
     }
 
-    Component.onCompleted: refreshSensor()
-    onActivityIdChanged: refreshSensor()
-    onActivityActiveChanged: {
-        if (!activityActive) {
-            offerPopup.close();
-            textPopup.close();
-        } else {
-            evaluateSensor();
-        }
-    }
-
-    Connections {
-        target: Config
-        function onKeyboardActivityIdChanged() { keyboardBridge.refreshSensor(); }
-        function onKeyboardSensorIdChanged() { keyboardBridge.refreshSensor(); }
-        function onKeyboardMediaPlayerIdChanged() { keyboardBridge.refreshSensor(); }
-    }
+    onActivityActiveChanged: evaluate()
+    onActivityIdChanged: { prompted = ({}); evaluate(); }
+    onRulesChanged: evaluate()
+    Component.onCompleted: evaluate()
 
     Connections {
         target: EntityController
         function onEntityLoaded(success, entityId) {
-            if (success && (entityId === Config.keyboardSensorId ||
-                            entityId === Config.keyboardMediaPlayerId ||
-                            entityId === keyboardBridge.activityId)) {
-                keyboardBridge.refreshSensor();
-            }
+            if (success && keyboardBridge.watchedSensorIds.indexOf(entityId) >= 0) keyboardBridge.evaluate();
         }
     }
 
-    Connections {
-        target: sensorEntity
-        ignoreUnknownSignals: true
-        function onValueChanged() { keyboardBridge.evaluateSensor(); }
-        function onStateChanged() { keyboardBridge.evaluateSensor(); }
+    // Observe changes to every chosen sensor, even when it does not appear in
+    // the activity's includedEntities list.
+    Repeater {
+        model: keyboardBridge.watchedSensorIds
+        delegate: Item {
+            width: 0
+            height: 0
+            property var sensorObj: EntityController.get(modelData)
+            Connections {
+                target: sensorObj
+                ignoreUnknownSignals: true
+                function onValueChanged() { keyboardBridge.evaluate(); }
+            }
+            Connections {
+                target: EntityController
+                function onEntityLoaded(success, entityId) {
+                    if (success && entityId === modelData) {
+                        sensorObj = EntityController.get(entityId);
+                        keyboardBridge.evaluate();
+                    }
+                }
+            }
+        }
     }
 
     // Reuse the remote's existing menu popup for the one-time question.
     Components.PopupMenu {
         id: offerPopup
         parent: Overlay.overlay
-        title: qsTr("Enter text on the media player?")
+        title: keyboardBridge.currentPrompt
     }
 
     // InputField uses the remote's existing Qt Virtual Keyboard and keyboard

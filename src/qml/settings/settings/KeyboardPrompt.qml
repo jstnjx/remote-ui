@@ -3,100 +3,148 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-
 import Config 1.0
 import Entity.Controller 1.0
-
 import "qrc:/settings" as Settings
 import "qrc:/components" as Components
 
-// One activity, its binary On/Off sensor, and a configured media player.
-// A blank selection disables prompting; none of the choices sends commands.
 Settings.Page {
     id: settingsPage
     scrollTarget: flickable
-    initialFocusItem: activityRow
+    initialFocusItem: ruleRow
 
+    property int ruleIndex: -1
     property var selectionHandler: null
+    readonly property var rules: Config.keyboardRules
+    readonly property var rule: ruleIndex >= 0 && ruleIndex < rules.length ? rules[ruleIndex] : null
 
-    function selectedName(entityId) {
-        if (!entityId) {
-            return qsTr("Not selected");
-        }
-        const entity = EntityController.get(entityId);
-        return entity ? entity.name : qsTr("Unavailable");
+    function nameOf(entityId) {
+        if (!entityId) return qsTr("Not selected");
+        const obj = EntityController.get(entityId);
+        return obj ? obj.name : entityId;
     }
 
-    function showPicker(kind) {
-        pickerModel.clear();
-        pickerModel.append({name: qsTr("None (disabled)"), value: ""});
+    function namesOf(ids) {
+        if (!ids || ids.length === 0) return qsTr("Not selected");
+        if (ids.length === 1) return nameOf(ids[0]);
+        return qsTr("%1 selected").arg(ids.length);
+    }
 
-        let ids = [];
-        if (kind === "activity") {
-            ids = EntityController.getIdsByType("activity");
-        } else if (kind === "media_player") {
-            ids = EntityController.getIdsByType("media_player");
-        } else if (kind === "sensor") {
-            const activity = EntityController.get(Config.keyboardActivityId);
-            if (activity) {
-                const included = activity.includedEntities;
-                for (let i = 0; i < included.length; ++i) {
-                    const sensor = EntityController.get(included[i]);
-                    if (!sensor || sensor.getTypeAsString() !== "sensor") {
-                        continue;
-                    }
-                    // Binary sensors always report the raw "on"/"off" values.
-                    // Custom sensors may also directly report On/Off.
-                    const raw = String(sensor.rawValue).toLowerCase();
-                    if (sensor.getDeviceClass().toLowerCase() === "binary" ||
-                            raw === "on" || raw === "off") {
-                        ids.push(sensor.id);
+    function editRule(part, value) {
+        if (!rule) return;
+        const all = Config.keyboardRules.slice();
+        const updated = Object.assign({}, all[ruleIndex]);
+        updated[part] = value;
+        if (part === "activityId") updated.sensorIds = [];
+        all[ruleIndex] = updated;
+        Config.keyboardRules = all;
+    }
+
+    function addRule() {
+        const all = Config.keyboardRules.slice();
+        all.push({id: "rule-" + Date.now() + "-" + Math.floor(Math.random() * 1000000),
+                  activityId: "", sensorIds: [], mediaPlayerIds: [],
+                  prompt: qsTr("Enter text on the media player?")});
+        Config.keyboardRules = all;
+        ruleIndex = all.length - 1;
+    }
+
+    function removeRule() {
+        if (!rule) return;
+        const all = Config.keyboardRules.slice();
+        all.splice(ruleIndex, 1);
+        Config.keyboardRules = all;
+        ruleIndex = all.length ? Math.min(ruleIndex, all.length - 1) : -1;
+    }
+
+    function sensorChoices() {
+        // No dependency on activity.includedEntities: Core can keep sensors
+        // outside that list. Include configured sensors and page sensor tiles.
+        const ids = EntityController.getIdsByType("sensor").slice();
+        const activity = rule ? EntityController.get(rule.activityId) : null;
+        if (activity && activity.ui && activity.ui.pages) {
+            const pages = activity.ui.pages;
+            for (let p = 0; p < pages.length; ++p) {
+                const items = pages[p].items || [];
+                for (let i = 0; i < items.length; ++i) {
+                    const item = items[i];
+                    if (item.type === "sensor" && item.sensor && item.sensor.sensor_id &&
+                            ids.indexOf(item.sensor.sensor_id) < 0) {
+                        ids.push(item.sensor.sensor_id);
+                        EntityController.load(item.sensor.sensor_id);
                     }
                 }
             }
         }
-
+        const result = [];
         for (let i = 0; i < ids.length; ++i) {
-            const e = EntityController.get(ids[i]);
-            if (e) {
-                pickerModel.append({name: e.name, value: e.id});
+            const obj = EntityController.get(ids[i]);
+            if (!obj) {
+                result.push(ids[i]);
+                continue;
             }
+            const raw = String(obj.rawValue).trim().toLowerCase();
+            if (obj.getDeviceClass().toLowerCase() === "binary" ||
+                    raw === "on" || raw === "off") result.push(ids[i]);
         }
+        return result;
+    }
 
-        const chosen = kind === "activity" ? Config.keyboardActivityId
-                                           : kind === "sensor" ? Config.keyboardSensorId
-                                                               : Config.keyboardMediaPlayerId;
-        let currentIndex = 0;
-        for (let i = 0; i < pickerModel.count; ++i) {
-            if (pickerModel.get(i).value === chosen) {
-                currentIndex = i;
-                break;
-            }
+    function openPicker(part) {
+        if (!rule) return;
+        pickerModel.clear();
+        let ids = part === "activityId" ? EntityController.getIdsByType("activity") :
+                  part === "sensorIds" ? sensorChoices() :
+                  EntityController.getIdsByType("media_player");
+        const multiple = part !== "activityId";
+        const selected = multiple ? (rule[part] || []) : [];
+        if (!multiple) pickerModel.append({name: qsTr("None"), value: ""});
+        for (let i = 0; i < ids.length; ++i) {
+            const checked = selected.indexOf(ids[i]) >= 0;
+            pickerModel.append({name: (checked ? "✓  " : "") + nameOf(ids[i]), value: ids[i]});
         }
-
         selectionHandler = function(value) {
-            if (kind === "activity") {
-                Config.keyboardActivityId = value;
-            } else if (kind === "sensor") {
-                Config.keyboardSensorId = value;
+            if (!multiple) {
+                editRule(part, value);
             } else {
-                Config.keyboardMediaPlayerId = value;
+                const chosen = (rule[part] || []).slice();
+                const i = chosen.indexOf(value);
+                if (i < 0) chosen.push(value);
+                else chosen.splice(i, 1);
+                editRule(part, chosen);
+                for (let j = 0; j < pickerModel.count; ++j) {
+                    const item = pickerModel.get(j);
+                    pickerModel.setProperty(j, "name",
+                                            ((chosen.indexOf(item.value) >= 0) ? "✓  " : "") + nameOf(item.value));
+                }
+                if (pickerLoader.item) pickerLoader.item.popupListmodel.reload();
             }
         };
         pickerLoader.setSource("qrc:/components/PopupList.qml", {
-            title: kind === "activity" ? qsTr("Select activity")
-                 : kind === "sensor" ? qsTr("Select On/Off sensor")
-                                      : qsTr("Select media player"),
-            listModel: pickerModel,
-            showSearch: pickerModel.count > 8,
-            initialSelected: currentIndex,
-            currentValue: chosen
+            title: part === "activityId" ? qsTr("Activity") :
+                   part === "sensorIds" ? qsTr("On/Off sensors") : qsTr("Media players"),
+            listModel: pickerModel, showSearch: pickerModel.count > 8,
+            closeOnSelected: !multiple
         });
     }
 
-    ListModel {
-        id: pickerModel
+    function openRulePicker() {
+        pickerModel.clear();
+        const current = Config.keyboardRules;
+        for (let i = 0; i < current.length; ++i) {
+            pickerModel.append({
+                name: nameOf(current[i].activityId) + " — " + (current[i].prompt || qsTr("Keyboard")),
+                value: String(i)
+            });
+        }
+        selectionHandler = function(value) { ruleIndex = parseInt(value, 10); };
+        pickerLoader.setSource("qrc:/components/PopupList.qml", {
+            title: qsTr("Choose keyboard rule"), listModel: pickerModel,
+            showSearch: pickerModel.count > 8
+        });
     }
+
+    ListModel { id: pickerModel }
 
     Flickable {
         id: flickable
@@ -104,63 +152,133 @@ Settings.Page {
         contentWidth: width
         contentHeight: rows.height
         clip: true
-
         ColumnLayout {
             id: rows
             width: parent.width
             spacing: 0
 
             Components.MenuRow {
-                id: activityRow
-                text: qsTr("Activity")
-                value: settingsPage.selectedName(Config.keyboardActivityId)
+                id: ruleRow
+                text: qsTr("Rule")
+                value: rule ? (settingsPage.nameOf(rule.activityId) + " (" + (ruleIndex + 1) + "/" + rules.length + ")") :
+                              qsTr("No rules")
+                selected: activeFocus && ui.keyNavigationActive
                 chevron: true
                 keypadActivatable: true
+                enabled: rules.length > 0
+                onClicked: settingsPage.openRulePicker()
+                KeyNavigation.down: addRuleButton
+            }
+            Components.Divider {}
+
+            Components.Button {
+                id: addRuleButton
+                Layout.fillWidth: true
+                Layout.leftMargin: 20
+                Layout.rightMargin: 20
+                text: qsTr("Add rule")
+                trigger: function() { settingsPage.addRule(); }
+                KeyNavigation.up: ruleRow
+                KeyNavigation.down: activityRow
+            }
+
+            Components.MenuRow {
+                id: activityRow
+                text: qsTr("Activity")
+                enabled: rule !== null
+                value: rule ? nameOf(rule.activityId) : ""
+                chevron: true
                 selected: activeFocus && ui.keyNavigationActive
-                onClicked: settingsPage.showPicker("activity")
+                keypadActivatable: true
+                onClicked: settingsPage.openPicker("activityId")
+                KeyNavigation.up: addRuleButton
                 KeyNavigation.down: sensorRow
             }
             Components.Divider {}
 
             Components.MenuRow {
                 id: sensorRow
-                text: qsTr("On/Off sensor")
-                value: settingsPage.selectedName(Config.keyboardSensorId)
-                enabled: Config.keyboardActivityId !== ""
+                text: qsTr("On/Off sensors (any On)")
+                value: rule ? namesOf(rule.sensorIds) : ""
+                enabled: rule !== null && rule.activityId !== ""
                 chevron: true
-                keypadActivatable: true
                 selected: activeFocus && ui.keyNavigationActive
-                onClicked: settingsPage.showPicker("sensor")
+                keypadActivatable: true
+                onClicked: settingsPage.openPicker("sensorIds")
                 KeyNavigation.up: activityRow
-                KeyNavigation.down: playerRow
+                KeyNavigation.down: targetRow
             }
             Components.Divider {}
 
             Components.MenuRow {
-                id: playerRow
-                text: qsTr("Target media player")
-                value: settingsPage.selectedName(Config.keyboardMediaPlayerId)
+                id: targetRow
+                text: qsTr("Target media players")
+                value: rule ? namesOf(rule.mediaPlayerIds) : ""
+                enabled: rule !== null
                 chevron: true
-                keypadActivatable: true
                 selected: activeFocus && ui.keyNavigationActive
-                onClicked: settingsPage.showPicker("media_player")
+                keypadActivatable: true
+                onClicked: settingsPage.openPicker("mediaPlayerIds")
                 KeyNavigation.up: sensorRow
+                KeyNavigation.down: promptInput.inputField
             }
             Components.Divider {}
 
             Text {
                 Layout.fillWidth: true
                 Layout.leftMargin: 20
+                Layout.topMargin: 14
+                text: qsTr("Prompt text")
+                color: colors.textPrimary
+                font: fonts.label()
+            }
+            Components.InputField {
+                id: promptInput
+                Layout.fillWidth: true
+                Layout.leftMargin: 20
                 Layout.rightMargin: 20
-                Layout.topMargin: 22
-                width: parent.width - 40
+                enabled: rule !== null
+                moveInput: false
+                keyboardFollowsFocus: true
+                label: qsTr("Prompt")
+                inputValue: rule ? rule.prompt : ""
+                navUp: targetRow
+                navDown: savePromptButton
+            }
+            Components.Button {
+                id: savePromptButton
+                Layout.fillWidth: true
+                Layout.leftMargin: 20
+                Layout.rightMargin: 20
+                enabled: rule !== null
+                text: qsTr("Save prompt text")
+                trigger: function() { editRule("prompt", promptInput.inputValue.trim()); keyboard.hide(); }
+                KeyNavigation.up: promptInput.inputField
+                KeyNavigation.down: deleteRuleButton
+            }
+            Components.Button {
+                id: deleteRuleButton
+                Layout.fillWidth: true
+                Layout.leftMargin: 20
+                Layout.rightMargin: 20
+                enabled: rule !== null
+                variant: "destructive"
+                text: qsTr("Delete selected rule")
+                trigger: function() { settingsPage.removeRule(); }
+                KeyNavigation.up: savePromptButton
+            }
+            Text {
+                Layout.fillWidth: true
+                Layout.leftMargin: 20
+                Layout.rightMargin: 20
+                Layout.topMargin: 14
                 wrapMode: Text.WordWrap
                 font: fonts.help()
                 color: colors.textSecondary
-                text: qsTr("When the selected sensor reports On while the activity is open, "
-                           + "a one-time prompt offers the native keyboard. Text is sent to "
-                           + "the selected media player with keyboard.text_set. "
-                           + "The prompt can be dismissed until the sensor changes to Off and On again.")
+                text: qsTr("Each rule applies only in its selected activity. Any selected sensor changing "
+                           + "to On offers the keyboard once, until all sensors return to Off. "
+                           + "Text is submitted to all selected media players. "
+                           + "In multi-select lists, select entries to toggle them, then press Back.")
             }
         }
     }
@@ -168,19 +286,19 @@ Settings.Page {
     Loader {
         id: pickerLoader
         anchors.fill: parent
-
         Connections {
             target: pickerLoader.item
             ignoreUnknownSignals: true
             function onItemSelected(value) {
-                if (settingsPage.selectionHandler) {
-                    settingsPage.selectionHandler(value);
-                }
+                if (settingsPage.selectionHandler) settingsPage.selectionHandler(value);
             }
             function onDone() {
                 settingsPage.selectionHandler = null;
                 pickerLoader.source = "";
             }
         }
+    }
+    Component.onCompleted: {
+        ruleIndex = rules.length ? 0 : -1;
     }
 }

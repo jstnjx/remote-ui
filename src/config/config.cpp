@@ -546,6 +546,35 @@ void Config::setKeyboardMediaPlayerId(const QString& value) {
     emit keyboardMediaPlayerIdChanged();
 }
 
+QVariantList Config::getKeyboardRules() {
+    if (m_settings->contains("ui/keyboardRules")) {
+        return m_settings->value("ui/keyboardRules").toList();
+    }
+
+    // Migrate the original single-rule preferences without losing their values.
+    const QString activity = getKeyboardActivityId();
+    const QString sensor = getKeyboardSensorId();
+    const QString player = getKeyboardMediaPlayerId();
+    if (activity.isEmpty() || sensor.isEmpty() || player.isEmpty()) {
+        return QVariantList();
+    }
+    QVariantMap rule;
+    rule.insert("id", QStringLiteral("legacy"));
+    rule.insert("activityId", activity);
+    rule.insert("sensorIds", QStringList{sensor});
+    rule.insert("mediaPlayerIds", QStringList{player});
+    rule.insert("prompt", QStringLiteral("Enter text on the media player?"));
+    return QVariantList{rule};
+}
+
+void Config::setKeyboardRules(const QVariantList& rules) {
+    if (getKeyboardRules() == rules) {
+        return;
+    }
+    m_settings->setValue("ui/keyboardRules", rules);
+    emit keyboardRulesChanged();
+}
+
 int Config::getResumeTimeoutWindowSec() {
     return m_settings->value("ui/resumeTimeoutWindow", 2).toInt();
 }
