@@ -105,6 +105,7 @@ class Config : public QObject {
                    mediaCoverflowDefaultChanged)
     Q_PROPERTY(bool hideMediaPlayerControls READ getHideMediaPlayerControls WRITE setHideMediaPlayerControls NOTIFY
                    hideMediaPlayerControlsChanged)
+    Q_PROPERTY(int rtspFrameRate READ getRtspFrameRate WRITE setRtspFrameRate NOTIFY rtspFrameRateChanged)
 
     Q_PROPERTY(int resumeTimeoutWindowSec READ getResumeTimeoutWindowSec WRITE setResumeTimeoutWindowSec NOTIFY
                    resumeTimeoutWindowSecChanged)
@@ -202,6 +203,9 @@ class Config : public QObject {
 
     bool getHideMediaPlayerControls();
     void setHideMediaPlayerControls(bool value);
+
+    int  getRtspFrameRate();
+    void setRtspFrameRate(int value);
 
     int  getResumeTimeoutWindowSec();
     void setResumeTimeoutWindowSec(int value);
@@ -375,6 +379,7 @@ class Config : public QObject {
     void fillMediaArtworkChanged();
     void mediaCoverflowDefaultChanged();
     void hideMediaPlayerControlsChanged();
+    void rtspFrameRateChanged();
     void resumeTimeoutWindowSecChanged(int value);
     void touchSliderEnabledChanged();
     void touchSliderGainVolumeChanged();

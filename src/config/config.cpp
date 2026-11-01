@@ -3,6 +3,8 @@
 
 #include "config.h"
 
+#include <QtGlobal>
+
 #include <algorithm>
 
 #include "../logging.h"
@@ -490,6 +492,20 @@ void Config::setHideMediaPlayerControls(bool value) {
 
     m_settings->setValue("ui/hideMediaPlayerControls", value);
     emit hideMediaPlayerControlsChanged();
+}
+
+int Config::getRtspFrameRate() {
+    return qBound(5, m_settings->value("ui/rtspFrameRate", 10).toInt(), 30);
+}
+
+void Config::setRtspFrameRate(int value) {
+    const int frameRate = qBound(5, value, 30);
+    if (getRtspFrameRate() == frameRate) {
+        return;
+    }
+
+    m_settings->setValue("ui/rtspFrameRate", frameRate);
+    emit rtspFrameRateChanged();
 }
 
 int Config::getResumeTimeoutWindowSec() {

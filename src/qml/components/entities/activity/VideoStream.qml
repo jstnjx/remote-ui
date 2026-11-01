@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick 2.15
 import Rtsp 1.0
+import Config 1.0
 
 Rectangle {
     id: widget
@@ -15,6 +16,7 @@ Rectangle {
         id: stream
         anchors.fill: parent
         source: widget.streamUrl
+        frameRate: Config.rtspFrameRate
         active: widget.streamActive && widget.visible
     }
 

@@ -11,12 +11,23 @@ The custom UI renders an RTSP stream inside an existing **Text** widget on an ac
 
 URLs are recognized only when the Text widget's text starts with `rtsp://` (case-insensitive, ignoring surrounding whitespace). Authentication may be embedded as `rtsp://username:password@host:554/path`; be aware that widget text is stored in the activity configuration as **plain text**, so use a camera account with restricted permissions. Escape special characters in credentials according to URL encoding rules.
 
+## Configure frame rate
+
+On the remote, open **Settings → User interface → RTSP stream frame rate**.
+Choose **5, 10, 15, 20, 25, or 30 FPS**. The default is **10 FPS**.
+
+The selection is saved locally via the existing UI settings store and applies
+to all RTSP video widgets. If a stream is already playing, FFmpeg restarts
+automatically with the selected frame rate; no activity or remote restart is
+needed. Higher frame rates consume more CPU and battery, so use a low-resolution
+H.264 camera substream for smoother playback.
+
 ## Runtime requirements
 
 - **Install the `UCR2-RTSP-install` archive**, not the basic `UCR2-static` build. It includes a static ARM64 `bin/ffmpeg` executable next to `bin/remote-ui`, with an upstream SHA-256 checksum verified during packaging. No external streaming server, additional firmware service or GStreamer is required. Installing only the UI binary produces the message "FFmpeg is not installed on the remote".
 - RTSP is read directly from the camera over TCP and decoded locally. No other host or RTSP relay is required.
 - The component uses FFmpeg's rawvideo output and Qt's RGB565 painted item. It does not require GStreamer or FFmpeg *development* libraries at build time.
-- It requests 320×180 at 10 fps without audio. **Use an H.264 low-resolution camera substream** when possible. Decoding a high-resolution source still uses CPU even though output is downscaled.
+- It requests 320×180 without audio, at the configured frame rate (10 FPS by default). **Use an H.264 low-resolution camera substream** when possible. Decoding a high-resolution source still uses CPU even though output is downscaled.
 - Playback starts only when the activity detail is open on the visible page, the activity is not Off, and power mode is Normal. It stops on page switch, activity close/off, or power-mode change. Network loss triggers a retry after 3 seconds; a 12-second video stall restarts FFmpeg.
 - Connection, authorization, path, timeout, and decoder failures are shown on the tile. A short sanitized FFmpeg diagnostic may also appear; RTSP URLs and login credentials are removed before display. Raw stderr is never logged.
 
