@@ -185,9 +185,14 @@ EntityComponents.BaseDetail {
                                                 "entityId": item.media_player_id,
                                                 "gridWidth": gridWidth,
                                                 "gridHeight": gridHeight,
-                                                "aspectFit": !Config.fillMediaArtwork
+                                                "aspectFit": !Config.fillMediaArtwork,
+                                                "artworkEntityId": Qt.binding(function() {
+                                                    const chosen = Config.activityArtworkSources[entityObj.id];
+                                                    return chosen || item.media_player_id;
+                                                })
                                             });
-                activityBase.mediaWidgetEntityObj = EntityController.get(item.media_player_id);
+                activityBase.mediaWidgetEntityObj =
+                    EntityController.get(Config.activityArtworkSources[entityObj.id] || item.media_player_id);
                 break;
             case "sensor":
                 let sensorComponent = Qt.createComponent("qrc:/components/SensorWidget.qml");

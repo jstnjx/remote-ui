@@ -42,17 +42,25 @@ Rectangle {
     readonly property int requiredTextArea: 120
     property int gridWidth: 4
     property int gridHeight: 6
-    property int baseFontSize: 24
+    readonly property int baseFontSize: Config.mediaWidgetLayout === 3 ? 30 : 24
 
     property string entityId
+    property string artworkEntityId: ""
     property QtObject entityObj
+    property QtObject displayEntityObj: entityObj
+    readonly property bool artworkOnly: Config.mediaWidgetLayout === 2
+    readonly property bool compact: Config.mediaWidgetLayout === 1
+    readonly property bool expanded: Config.mediaWidgetLayout === 3
+    readonly property bool hasAnyControl: Config.showMediaShuffle || Config.showMediaRepeat ||
+                                          Config.showMediaBrowser || Config.showMediaSource
 
-    readonly property int controlsContainerHeight: mediaComponent.height >= 320 && !Config.hideMediaPlayerControls ? 80 : 0
+    readonly property int controlsContainerHeight: !artworkOnly && !compact && hasAnyControl &&
+                                                  mediaComponent.height >= (expanded ? 240 : 320) ? 80 : 0
     property double mediaInfoHeight: mediaTitle.implicitHeight + mediaArtist.implicitHeight + progressContainer.implicitHeight + controlsContainerHeight + 60
 
-    property bool isComponentHorizontal: mediaComponent.height < 260
+    readonly property bool isComponentHorizontal: compact || (!artworkOnly && mediaComponent.height < 260)
     property bool isSpaceForMediaInfo: {
-        return mediaComponent.height >= 240;
+        return !artworkOnly && (compact ? mediaComponent.height >= 100 : mediaComponent.height >= 240);
     }
 
     property alias mediaImage: mediaImage
@@ -63,9 +71,20 @@ Rectangle {
         if (!entityObj && entityId !== "") {
             EntityController.load(entityId);
         }
+        loadDisplayEntity();
+    }
+
+    function loadDisplayEntity() {
+        if (!artworkEntityId || artworkEntityId === entityId) {
+            displayEntityObj = entityObj;
+            return;
+        }
+        displayEntityObj = EntityController.get(artworkEntityId) || entityObj;
+        if (!EntityController.get(artworkEntityId)) EntityController.load(artworkEntityId);
     }
 
     Component.onCompleted: ensureEntityLoaded()
+    onArtworkEntityIdChanged: loadDisplayEntity()
     onEntityIdChanged: ensureEntityLoaded()
 
     Connections {
@@ -75,6 +94,10 @@ Rectangle {
         function onEntityLoaded(success, loadedId) {
             if (success && loadedId === mediaComponent.entityId && !mediaComponent.entityObj) {
                 mediaComponent.entityObj = EntityController.get(loadedId);
+                mediaComponent.loadDisplayEntity();
+            }
+            if (success && loadedId === mediaComponent.artworkEntityId) {
+                mediaComponent.displayEntityObj = EntityController.get(loadedId);
             }
         }
     }
@@ -103,11 +126,13 @@ Rectangle {
 
     MediaPlayerComponents.ImageLoader {
         id: mediaImage
-        width: mediaComponent.isComponentHorizontal ? parent.width / 3 : parent.width
-        height: mediaComponent.isSpaceForMediaInfo ? (parent.height - mediaInfoHeight) : parent.height
+        width: mediaComponent.artworkOnly ? parent.width :
+               mediaComponent.isComponentHorizontal ? parent.width / 3 : parent.width
+        height: mediaComponent.artworkOnly ? parent.height :
+                mediaComponent.isSpaceForMediaInfo ? (parent.height - mediaInfoHeight) : parent.height
         aspectFit: true
         alignCentered: true
-        url: entityObj.mediaImage
+        url: displayEntityObj ? displayEntityObj.mediaImage : ""
         anchors { top: parent.top; horizontalCenter: mediaComponent.isComponentHorizontal ? undefined : parent.horizontalCenter; left: mediaComponent.isComponentHorizontal ? parent.left : undefined }
         scale: 1
 
@@ -252,7 +277,7 @@ Rectangle {
 
         Text {
             id: mediaTitleText
-            text: entityObj.mediaTitle
+            text: displayEntityObj ? displayEntityObj.mediaTitle : ""
             color: colors.offwhite
             font: fonts.primaryFont(mediaComponent.baseFontSize, "Bold")
             maximumLineCount: 1
@@ -262,7 +287,7 @@ Rectangle {
 
     Text {
         id: mediaArtist
-        text: entityObj.mediaArtist
+        text: displayEntityObj ? displayEntityObj.mediaArtist : ""
         color: colors.offwhite
         font: fonts.secondaryFont(Math.max(22, mediaComponent.baseFontSize * 0.8))
         width: mediaTitle.width
@@ -280,12 +305,13 @@ Rectangle {
         width: mediaTitle.width
         implicitHeight: childrenRect.height
         anchors { top: mediaComponent.isComponentHorizontal ? undefined : mediaArtist.bottom; topMargin: 5; bottom: mediaComponent.isComponentHorizontal ? mediaImage.bottom : undefined; bottomMargin: 5; left: mediaTitle.left }
-        visible: entityObj.hasAllFeatures([MediaPlayerFeatures.Media_duration, MediaPlayerFeatures.Media_position]) && entityObj.mediaDuration !== 0 && mediaTitle.visible
+        visible: displayEntityObj && displayEntityObj.hasAllFeatures([MediaPlayerFeatures.Media_duration, MediaPlayerFeatures.Media_position]) &&
+                 displayEntityObj.mediaDuration !== 0 && mediaTitle.visible && !mediaComponent.compact
         enabled: visible
 
         Text {
             id: mediaPositionText
-            text: mediaComponent.formatTime(entityObj.mediaPosition)
+            text: mediaComponent.formatTime(displayEntityObj ? displayEntityObj.mediaPosition : 0)
             color: colors.offwhite
             horizontalAlignment: Text.AlignLeft
             font: fonts.secondaryFont(22)
@@ -293,7 +319,7 @@ Rectangle {
         }
 
         Text {
-            text: "-" + mediaComponent.formatTime(entityObj.mediaDuration-entityObj.mediaPosition)
+            text: "-" + mediaComponent.formatTime(displayEntityObj ? displayEntityObj.mediaDuration-displayEntityObj.mediaPosition : 0)
             color: colors.offwhite
             horizontalAlignment: Text.AlignRight
             font: fonts.secondaryFont(22)
@@ -379,6 +405,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
             size: 60
+            visible: Config.showMediaShuffle
             color: entityObj.shuffleIsOn ? colors.offwhite : colors.light
             icon: "uc:shuffle"
 
@@ -392,6 +419,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
             size: 60
+            visible: Config.showMediaRepeat
             color: entityObj.repeatMode === MediaPlayerRepeatMode.OFF ? colors.light : colors.offwhite
             icon: "uc:repeat"
 
@@ -437,7 +465,8 @@ Rectangle {
             size: 60
             color: colors.offwhite
             icon: "uc:album-collection"
-            visible: entityObj.hasFeature(MediaPlayerFeatures.Browse_media) || entityObj.hasFeature(MediaPlayerFeatures.Search_media)
+            visible: Config.showMediaBrowser &&
+                     (entityObj.hasFeature(MediaPlayerFeatures.Browse_media) || entityObj.hasFeature(MediaPlayerFeatures.Search_media))
 
             Components.HapticMouseArea {
                 anchors.fill: parent
@@ -451,7 +480,8 @@ Rectangle {
             size: 60
             color: colors.offwhite
             icon: "uc:grid-2"
-            visible: entityObj.hasFeature(MediaPlayerFeatures.Select_source) && entityObj.sourceList.length !== 0
+            visible: Config.showMediaSource &&
+                     entityObj.hasFeature(MediaPlayerFeatures.Select_source) && entityObj.sourceList.length !== 0
 
             Components.HapticMouseArea {
                 anchors.fill: parent
