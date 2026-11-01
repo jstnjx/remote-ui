@@ -3,8 +3,9 @@
 
 #include "config.h"
 
-#include <algorithm>
 #include <QtGlobal>
+
+#include <algorithm>
 
 #include "../logging.h"
 
