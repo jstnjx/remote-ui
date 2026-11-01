@@ -242,6 +242,10 @@ KeyboardStyle {
                 sourceSize.height: enterKeyIconSize.height * keyIconScale
                 smooth: false
                 source: {
+                    // The user-facing keyboard Send action uses the native
+                    // return-arrow graphic instead of the uppercase word.
+                    if (root.keyboardSendMode)
+                        return resourcePrefix + "images/enter-868482.svg";
                     switch (control.actionId) {
                     case EnterKeyAction.Go:
                     case EnterKeyAction.Send:
@@ -258,7 +262,7 @@ KeyboardStyle {
             Text {
                 id: enterKeyText
                 visible: text.length !== 0
-                text: root.keyboardSendMode ? qsTr("Send") : (control.actionId !== EnterKeyAction.None ? control.displayText : "")
+                text: root.keyboardSendMode ? "" : (control.actionId !== EnterKeyAction.None ? control.displayText : "")
                 clip: true
                 fontSizeMode: Text.HorizontalFit
                 horizontalAlignment: Text.AlignHCenter

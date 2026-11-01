@@ -86,15 +86,46 @@ Item {
         if (!ui.profile.restricted) loadSecondContainer("qrc:/components/SettingsNew.qml");
     }
 
+    // Follow the real selected tile rather than jumping to the bottom after
+    // four items. This keeps D-pad focus visible with arbitrarily many pages.
+    function visualForAction(action) {
+        if (!action) return null;
+        if (action.type === "activity") {
+            const index = activityIds.indexOf(action.id);
+            return modern ? modernRepeater.itemAt(index) :
+                   minimal ? minimalRepeater.itemAt(index) :
+                             compactRepeater.itemAt(index);
+        }
+        if (action.type === "media")
+            return mediaFocus ? largeMedia : minimal ? minimalMedia : standardMedia;
+        if (action.type === "quick")
+            return quickRepeater.itemAt(quickIds.indexOf(action.id));
+        if (action.type === "settings")
+            return settingsTile;
+        return null;
+    }
+
+    function ensureSelectedVisible() {
+        if (!scroll || !visible) return;
+        const target = visualForAction(selectedActions[selectedIndex]);
+        if (!target || !target.visible || target.height <= 0) return;
+        const top = target.mapToItem(scroll.contentItem, 0, 0).y;
+        const bottom = top + target.height;
+        const margin = 12;
+        const maxY = Math.max(0, scroll.contentHeight - scroll.height);
+        if (top < scroll.contentY + margin)
+            scroll.contentY = Math.max(0, top - margin);
+        else if (bottom > scroll.contentY + scroll.height - margin)
+            scroll.contentY = Math.min(maxY, bottom - scroll.height + margin);
+    }
+
     function moveSelection(step) {
         if (!selectedActions.length) return;
         selectedIndex = (selectedIndex + step + selectedActions.length) % selectedActions.length;
-        // Keep the selected rows visible during D-pad navigation.
-        if (selectedIndex > 3 && !minimal)
-            scroll.contentY = Math.max(0, scroll.contentHeight - scroll.height);
-        else
-            scroll.contentY = 0;
+        Qt.callLater(ensureSelectedVisible);
     }
+
+    onSelectedIndexChanged: Qt.callLater(ensureSelectedVisible)
 
     function activateSelected() {
         if (!selectedActions.length) return;
@@ -123,62 +154,62 @@ Item {
     }
 
     Rectangle { anchors.fill: parent; color: colors.bg }
-    // Absorb taps on unused space; never pass them to the legacy page below.
     MouseArea { anchors.fill: parent }
 
     Flickable {
         id: scroll
-        anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom }
-        anchors.topMargin: 48
-        anchors.bottomMargin: 36
+        anchors {
+            left: parent.left; right: parent.right
+            top: parent.top; bottom: parent.bottom
+            topMargin: 48
+            bottomMargin: Config.homeShowPageIndicators && home.pageCount > 1 ? 54 : 16
+        }
         contentWidth: width
-        contentHeight: content.implicitHeight + 28
+        contentHeight: body.implicitHeight + 28
         boundsBehavior: Flickable.StopAtBounds
         clip: true
 
         Column {
-            id: content
+            id: body
             x: 20
-            width: parent.width - 40
-            spacing: 20
+            width: Math.max(0, scroll.width - 40)
+            spacing: 16
 
-            // Stock page language: one prominent display treatment, centered
-            // on black. The status bar clock is hidden while this is active.
+            // The top-bar time is suppressed in the redesigned home.
             Item {
                 width: parent.width
-                height: home.minimal ? 310 : 150
+                height: home.minimal ? 222 : 124
                 visible: Config.homeShowClock
-
                 Column {
                     anchors.centerIn: parent
                     width: parent.width
                     spacing: 4
-
                     Text {
                         width: parent.width
                         text: Qt.formatTime(ui.time, Config.clock24h ? "HH:mm" : "hh:mm AP")
-                        color: colors.textPrimary
                         font: fonts.display(home.minimal ? 90 : 56)
+                        color: colors.textPrimary
                         horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
                     }
                     Text {
                         width: parent.width
                         text: Qt.formatDate(ui.time, "ddd, d MMM")
-                        color: colors.textSecondary
                         font: fonts.value()
+                        color: colors.textSecondary
                         horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
                     }
                 }
             }
 
-            // Layout 0: Modern Grid — the balanced default.
+            // Modern Grid: two columns sized from the available inner width.
             Column {
                 width: parent.width
-                spacing: 12
-                visible: home.modern
+                spacing: 10
+                visible: home.modern && Config.homeShowActivities
                 Text {
                     text: qsTr("Activities")
-                    visible: Config.homeShowActivities
                     color: colors.textPrimary
                     font: fonts.heading()
                 }
@@ -186,13 +217,13 @@ Item {
                     id: modernGrid
                     width: parent.width
                     columns: 2
-                    spacing: 12
-                    visible: Config.homeShowActivities
+                    spacing: 10
                     Repeater {
+                        id: modernRepeater
                         model: home.activityIds
                         delegate: Home.ActivityTile {
-                            width: (modernGrid.width - modernGrid.spacing) / 2
-                            height: 178
+                            width: Math.max(0, (modernGrid.width - modernGrid.spacing) / 2)
+                            height: 158
                             entityId: modelData
                             selected: home.isSelected("activity", modelData)
                             onTriggered: home.openEntity(id)
@@ -200,75 +231,92 @@ Item {
                     }
                 }
                 Text {
-                    visible: Config.homeShowActivities && home.activityIds.length === 0
+                    visible: home.activityIds.length === 0
                     text: qsTr("No configured activities")
                     color: colors.textSecondary
                     font: fonts.help()
                 }
             }
 
-            // Layout 1: Media Focus — artwork and transport first.
+            // Media Focus: enough vertical room for 170px artwork, up to two
+            // lines of metadata and a separate 64px transport control band.
             Column {
                 width: parent.width
-                spacing: 12
+                spacing: 10
                 visible: home.mediaFocus && Config.homeShowMedia
-                Text { text: qsTr("Now playing"); color: colors.textPrimary; font: fonts.heading() }
+                Text {
+                    text: qsTr("Now playing")
+                    color: colors.textPrimary
+                    font: fonts.heading()
+                }
                 Home.MediaCard {
+                    id: largeMedia
                     width: parent.width
-                    height: 405
+                    height: 402
                     large: true
-                    selected: home.isSelected("media", home.mediaPlayer ? home.mediaPlayer.id : "")
                     player: home.mediaPlayer
+                    selected: home.isSelected("media", home.mediaPlayer ? home.mediaPlayer.id : "")
                     openPlayer: function() { home.openMedia(); }
                 }
             }
 
-            // Layout 2: room-style hub. Its quick controls use configured entities.
-            Column {
+            // Living Room Hub: a bounded summary, no fabricated room details.
+            Rectangle {
                 width: parent.width
-                spacing: 12
+                height: 130
+                radius: ui.cornerRadiusSmall
+                color: colors.surface
                 visible: home.hub
-                Rectangle {
-                    width: parent.width
-                    height: 150
-                    radius: ui.cornerRadiusSmall
-                    color: colors.surface
-
-                    Column {
-                        anchors { left: parent.left; leftMargin: 20; verticalCenter: parent.verticalCenter }
-                        spacing: 8
-                        Text { text: qsTr("Home"); color: colors.textPrimary; font: fonts.title() }
-                        Text {
-                            text: qsTr("%1 activities · %2 controls").arg(home.activityIds.length).arg(home.quickIds.length)
-                            color: colors.textSecondary
-                            font: fonts.help()
-                        }
-                    }
-                    Components.Icon {
-                        anchors { right: parent.right; rightMargin: 20; verticalCenter: parent.verticalCenter }
-                        icon: "uc:house"
+                Column {
+                    anchors { left: parent.left; leftMargin: 20; verticalCenter: parent.verticalCenter }
+                    width: parent.width - 120
+                    spacing: 4
+                    Text {
+                        width: parent.width
+                        text: qsTr("Home")
+                        font: fonts.title()
                         color: colors.textPrimary
-                        size: 80
+                        elide: Text.ElideRight
                     }
+                    Text {
+                        width: parent.width
+                        text: qsTr("%1 activities · %2 controls").arg(home.activityIds.length).arg(home.quickIds.length)
+                        font: fonts.help()
+                        color: colors.textSecondary
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                        wrapMode: Text.WordWrap
+                    }
+                }
+                Components.Icon {
+                    anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
+                    icon: "uc:house"
+                    color: colors.textPrimary
+                    size: 80
                 }
             }
 
-            // Alternative compact activities list for Media Focus / Living Room Hub.
+            // Media Focus / Hub: compact 2-column activity list.
             Column {
                 width: parent.width
-                spacing: 12
+                spacing: 10
                 visible: (home.mediaFocus || home.hub) && Config.homeShowActivities
-                Text { text: qsTr("Activities"); color: colors.textPrimary; font: fonts.heading() }
+                Text {
+                    text: qsTr("Activities")
+                    font: fonts.heading()
+                    color: colors.textPrimary
+                }
                 Grid {
                     id: compactGrid
                     width: parent.width
                     columns: 2
-                    spacing: 12
+                    spacing: 10
                     Repeater {
+                        id: compactRepeater
                         model: home.activityIds
                         delegate: Home.ActivityTile {
-                            width: (compactGrid.width - compactGrid.spacing) / 2
-                            height: 130
+                            width: Math.max(0, (compactGrid.width - compactGrid.spacing) / 2)
+                            height: 98
                             compact: true
                             entityId: modelData
                             selected: home.isSelected("activity", modelData)
@@ -278,38 +326,47 @@ Item {
                 }
             }
 
-            // Modern Grid / Hub now-playing card.
+            // The standard media card fits artwork, title and controls in
+            // distinct areas, even with lengthy media metadata.
             Column {
                 width: parent.width
-                spacing: 12
-                visible: !home.mediaFocus && !home.minimal && Config.homeShowMedia
-                Text { text: qsTr("Now playing"); color: colors.textPrimary; font: fonts.heading() }
+                spacing: 10
+                visible: (home.modern || home.hub) && Config.homeShowMedia
+                Text {
+                    text: qsTr("Now playing")
+                    font: fonts.heading()
+                    color: colors.textPrimary
+                }
                 Home.MediaCard {
+                    id: standardMedia
                     width: parent.width
-                    height: 180
-                    selected: home.isSelected("media", home.mediaPlayer ? home.mediaPlayer.id : "")
+                    height: 182
                     player: home.mediaPlayer
+                    selected: home.isSelected("media", home.mediaPlayer ? home.mediaPlayer.id : "")
                     openPlayer: function() { home.openMedia(); }
                 }
             }
 
-            // Minimal: a deliberately empty canvas above the activity dock.
-            Item { width: parent.width; height: 70; visible: home.minimal }
-
-            // Minimal always shows an activity dock if enabled.
+            // Minimal uses a four-icon dock rather than compressed text rows.
+            Item {
+                width: parent.width
+                height: 32
+                visible: home.minimal
+            }
             Column {
                 width: parent.width
-                spacing: 12
+                spacing: 10
                 visible: home.minimal && Config.homeShowActivities
                 Row {
                     id: minimalDock
                     width: parent.width
                     spacing: 10
                     Repeater {
+                        id: minimalRepeater
                         model: home.activityIds.slice(0, 4)
                         delegate: Home.ActivityTile {
-                            width: (minimalDock.width - 3 * minimalDock.spacing) / 4
-                            height: 130
+                            width: Math.max(0, (minimalDock.width - 3 * minimalDock.spacing) / 4)
+                            height: 96
                             compact: true
                             entityId: modelData
                             selected: home.isSelected("activity", modelData)
@@ -318,77 +375,106 @@ Item {
                     }
                 }
             }
-
-            // Optional media on the otherwise minimal home layout.
             Home.MediaCard {
+                id: minimalMedia
                 width: parent.width
-                height: 180
+                height: 182
                 visible: home.minimal && Config.homeShowMedia
                 player: home.mediaPlayer
+                selected: home.isSelected("media", home.mediaPlayer ? home.mediaPlayer.id : "")
                 openPlayer: function() { home.openMedia(); }
             }
 
-            // Shared native quick-access tiles, populated with configured entities.
+            // Quick controls: four 100px-class icons; do not force labels into
+            // narrow columns. Keep the native Settings fallback as a full row.
             Column {
                 width: parent.width
-                spacing: 12
+                spacing: 10
                 visible: Config.homeShowQuickControls
-                Text { text: qsTr("Quick controls"); color: colors.textPrimary; font: fonts.heading(); visible: !home.minimal }
-                Row {
-                    id: quickRow
+                Text {
+                    text: qsTr("Quick controls")
+                    visible: !home.minimal
+                    font: fonts.heading()
+                    color: colors.textPrimary
+                }
+                Grid {
+                    id: quickGrid
                     width: parent.width
+                    columns: 4
                     spacing: 10
                     Repeater {
+                        id: quickRepeater
                         model: home.quickIds.slice(0, 4)
                         delegate: Home.ActivityTile {
-                            width: (quickRow.width - 3 * quickRow.spacing) / 4
-                            height: 130
+                            width: Math.max(0, (quickGrid.width - 3 * quickGrid.spacing) / 4)
+                            height: 96
                             compact: true
                             entityId: modelData
                             selected: home.isSelected("quick", modelData)
                             onTriggered: home.openEntity(id)
                         }
                     }
-                    Rectangle {
-                        visible: home.quickIds.length === 0 && !ui.profile.restricted
-                        width: 190; height: 80
-                        radius: ui.cornerRadiusSmall
-                        color: colors.surface
-                        Components.Selectable {
-                            selected: home.isSelected("settings", "")
-                            style: "fill"
-                        }
+                }
+                Rectangle {
+                    id: settingsTile
+                    width: parent.width
+                    height: 80
+                    radius: ui.cornerRadiusSmall
+                    color: colors.surface
+                    visible: home.quickIds.length === 0 && !ui.profile.restricted
+                    Components.Selectable {
+                        selected: home.isSelected("settings", "")
+                        style: "fill"
+                    }
+                    Row {
+                        anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
+                        spacing: 12
                         Components.Icon {
-                            icon: "uc:gear"; size: 45; color: colors.textPrimary
-                            anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                            icon: "uc:gear"
+                            size: 60
+                            color: colors.textPrimary
                         }
                         Text {
+                            anchors.verticalCenter: parent.verticalCenter
                             text: qsTr("Settings")
-                            color: colors.textPrimary
                             font: fonts.label()
-                            anchors { left: parent.left; leftMargin: 65; verticalCenter: parent.verticalCenter }
+                            color: colors.textPrimary
                         }
-                        Components.HapticMouseArea { anchors.fill: parent; onClicked: home.openSettings() }
+                    }
+                    Components.HapticMouseArea {
+                        anchors.fill: parent
+                        onClicked: home.openSettings()
                     }
                 }
             }
+        }
+    }
 
-            // Real page indicators, tied to the existing page model.
-            Row {
-                width: parent.width
-                height: 26
-                spacing: 14
-                visible: Config.homeShowPageIndicators && home.pageCount > 1
-                anchors.horizontalCenter: parent.horizontalCenter
-                Repeater {
-                    model: Math.min(home.pageCount, 8)
-                    delegate: Rectangle {
-                        width: 10; height: 10; radius: 5
+    // Page dots remain visible independently of long scrollable home sections.
+    Item {
+        id: pageFooter
+        width: parent.width
+        height: 44
+        anchors.bottom: parent.bottom
+        visible: Config.homeShowPageIndicators && home.pageCount > 1
+        Row {
+            anchors.centerIn: parent
+            spacing: 0
+            Repeater {
+                model: Math.min(home.pageCount, 8)
+                delegate: Item {
+                    width: 44
+                    height: 44
+                    Rectangle {
+                        width: 10
+                        height: 10
+                        radius: 5
                         color: index === 0 ? colors.textPrimary : colors.textSecondary
-                        Components.HapticMouseArea {
-                            anchors.fill: parent
-                            onClicked: home.pageChange(index)
-                        }
+                        anchors.centerIn: parent
+                    }
+                    Components.HapticMouseArea {
+                        anchors.fill: parent
+                        onClicked: home.pageChange(index)
                     }
                 }
             }

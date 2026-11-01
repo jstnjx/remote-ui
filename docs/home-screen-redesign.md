@@ -42,6 +42,30 @@ This aligns with `docs/design-system.md`, including 20 px content gutters, non-d
 - Editing mode and the original page menu temporarily hide the new overlay. On failure to instantiate the optional `HomePage.qml`, the original page stays visible and functional.
 - No ucOS, Core API, device API or Web Configurator schema changes are needed.
 
+## Layout sizing and overflow protection
+
+All four layouts are bounded to the actual device viewport (480×800 on Remote 3
+and 480×854 on Remote Two) rather than a fixed simulator mockup size:
+
+- The content area uses a clipped `Flickable` whose height is derived from the
+  visible layout's implicit content height; activity lists can grow and scroll
+  without painting over adjacent cards.
+- Modern Grid and the compact Media Focus / Hub grids compute tile widths from
+  the available width and 10px gutter. Quick controls and the Minimal dock
+  display icons only when their tiles are too narrow for the native 30px labels.
+- Compact media keeps artwork, one-line metadata and the transport row in
+  separate regions. Media Focus reserves distinct vertical bands for album
+  artwork, up to two lines of title, artist and transport controls.
+- Page indicators remain in a fixed 44px bottom region, separate from the
+  scrolling content; the scroll viewport reserves space for them.
+- D-pad focus scrolls the **actual selected tile** into view rather than jumping
+  to the bottom after the fourth activity.
+- All tiles and artwork regions use `clip: true`, and long metadata is elided.
+  A geometry sanity check runs in Code Guidelines CI.
+
+The Qt build check does not render the UI, so real-device confirmation remains
+necessary after installing the revised version.
+
 ## Recovery
 
 If the new layout does not behave correctly, open **Settings → Home screen → Use redesigned home screen = Off**. This does not remove data, settings, or activity configuration. The default remains the stock UI even after installation.

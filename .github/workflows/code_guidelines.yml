@@ -85,6 +85,11 @@ jobs:
                   raise SystemExit("Page.qml assigns MediaComponent.isComponentHorizontal, which must remain a writable QML property")
           PY
 
+      # Guard the 480x800 Remote 3 layout against old overlapping / overflow
+      # geometry and textual SEND keys without needing a device on CI.
+      - name: Verify home layout geometry and native send icon
+        run: python test/ui/home_layout_sanity.py
+
       - name: cpplint
         shell: python
         run: |
