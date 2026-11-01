@@ -11,6 +11,7 @@ import QtQuick.Layouts 1.15
 
 import Entity.Controller 1.0
 import Entity.MediaPlayer 1.0
+import Config 1.0
 import Haptic 1.0
 
 import "qrc:/components" as Components
@@ -46,7 +47,7 @@ Rectangle {
     property string entityId
     property QtObject entityObj
 
-    readonly property int controlsContainerHeight: mediaComponent.height >= 320 ? 80 : 0
+    readonly property int controlsContainerHeight: mediaComponent.height >= 320 && !Config.hideMediaPlayerControls ? 80 : 0
     property double mediaInfoHeight: mediaTitle.implicitHeight + mediaArtist.implicitHeight + progressContainer.implicitHeight + controlsContainerHeight + 60
 
     property bool isComponentHorizontal: mediaComponent.height < 260

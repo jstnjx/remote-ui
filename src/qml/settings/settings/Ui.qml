@@ -158,6 +158,26 @@ Settings.Page {
                 }
             }
 
+            /** HIDE MEDIA PLAYER WIDGET CONTROLS **/
+            Components.SettingRow {
+                title: qsTr("Hide media player controls")
+                help: qsTr("Hide shuffle, repeat, media browser and source buttons below media player widgets.")
+
+                Components.Switch {
+                    id: hideMediaControlsSwitch
+                    icon: "uc:check"
+                    checked: Config.hideMediaPlayerControls
+                    trigger: function() {
+                        Config.hideMediaPlayerControls = !Config.hideMediaPlayerControls;
+                    }
+
+                    /** KEYBOARD NAVIGATION **/
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: hideMediaControlsSwitch
+                    KeyNavigation.down: mediaCoverflowSwitch
+                }
+            }
+
             /** MEDIA BROWSER COVERFLOW DEFAULT **/
             Components.SettingRow {
                 showDivider: false

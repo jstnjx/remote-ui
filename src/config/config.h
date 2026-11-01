@@ -103,6 +103,8 @@ class Config : public QObject {
     Q_PROPERTY(bool fillMediaArtwork READ getFillMediaArtwork WRITE setFillMediaArtwork NOTIFY fillMediaArtworkChanged)
     Q_PROPERTY(bool mediaCoverflowDefault READ getMediaCoverflowDefault WRITE setMediaCoverflowDefault NOTIFY
                    mediaCoverflowDefaultChanged)
+    Q_PROPERTY(bool hideMediaPlayerControls READ getHideMediaPlayerControls WRITE setHideMediaPlayerControls NOTIFY
+                   hideMediaPlayerControlsChanged)
 
     Q_PROPERTY(int resumeTimeoutWindowSec READ getResumeTimeoutWindowSec WRITE setResumeTimeoutWindowSec NOTIFY
                    resumeTimeoutWindowSecChanged)
@@ -197,6 +199,9 @@ class Config : public QObject {
 
     bool getMediaCoverflowDefault();
     void setMediaCoverflowDefault(bool value);
+
+    bool getHideMediaPlayerControls();
+    void setHideMediaPlayerControls(bool value);
 
     int  getResumeTimeoutWindowSec();
     void setResumeTimeoutWindowSec(int value);
@@ -369,6 +374,7 @@ class Config : public QObject {
     void openActivityOnApiStartChanged();
     void fillMediaArtworkChanged();
     void mediaCoverflowDefaultChanged();
+    void hideMediaPlayerControlsChanged();
     void resumeTimeoutWindowSecChanged(int value);
     void touchSliderEnabledChanged();
     void touchSliderGainVolumeChanged();
