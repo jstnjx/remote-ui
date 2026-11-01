@@ -124,6 +124,31 @@ EntityComponents.BaseDetail {
         items.forEach(function(item) {
             switch (item.type) {
             case "text":
+                // A stock Text widget containing an rtsp:// URL becomes a video
+                // widget. This keeps the Core-API UI schema unchanged.
+                if (typeof item.text === "string" && item.text.trim().toLowerCase().indexOf("rtsp://") === 0) {
+                    let streamComponent = Qt.createComponent("qrc:/components/entities/activity/VideoStream.qml");
+                    if (streamComponent.status === Component.Ready) {
+                        streamComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "streamUrl": item.text.trim(),
+                            "streamActive": Qt.binding(function() {
+                                return activityBase.state === "open"
+                                    && activityBase.visible
+                                    && uiPages.currentIndex === index
+                                    && entityObj.state !== ActivityStates.Off
+                                    && Power.powerMode === PowerModes.Normal;
+                            })
+                        });
+                    } else {
+                        console.warn("Unable to create RTSP video component");
+                    }
+                    break;
+                }
+                // Regular text widgets retain the original button renderer.
             case "icon":
                 let component = Qt.createComponent("qrc:/components/ButtonIcon.qml");
                 component.createObject(container, {
