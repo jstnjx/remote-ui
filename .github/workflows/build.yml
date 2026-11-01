@@ -221,6 +221,24 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+      # Publish a ready-to-install UCR2 archive containing remote-ui plus a
+      # pinned, checksum-verified static ARM64 FFmpeg executable.
+      - name: Create RTSP UI installation archive
+        if: matrix.config.artifact == 'UCR2'
+        shell: bash
+        run: |
+          bash "${{ env.PROJECT_NAME }}/tools/package-rtsp-ui.sh" \
+            "${{ env.UC_BIN }}/remote-ui" \
+            "remote-ui-${{ github.sha }}-UCR2-RTSP-install.tar.gz" \
+            "0.1.1"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.config.artifact == 'UCR2'
+        with:
+          name: remote-ui-${{ github.sha }}-UCR2-RTSP-install
+          path: remote-ui-${{ github.sha }}-UCR2-RTSP-install.tar.gz
+          if-no-files-found: error
+          retention-days: 3
       # Release notes for the release job, built from the conventional commits since the last tag.
       # Attention: artifact names must be unique, only one matrix entry may create and upload the changelog!
       - name: Setup Node.js
