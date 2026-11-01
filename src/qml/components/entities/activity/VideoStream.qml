@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick 2.15
+import QtQuick.Controls 2.15
 import Rtsp 1.0
 import Config 1.0
 
@@ -11,13 +12,16 @@ Rectangle {
 
     property string streamUrl: ""
     property bool streamActive: false
+    onStreamActiveChanged: if (!streamActive) fullscreenPopup.close()
 
     RtspStream {
         id: stream
         anchors.fill: parent
         source: widget.streamUrl
         frameRate: Config.rtspFrameRate
-        active: widget.streamActive && widget.visible
+        resolution: Config.rtspResolution
+        autoQuality: Config.rtspAutoQuality
+        active: widget.streamActive && widget.visible && !fullscreenPopup.opened
     }
 
     // Match the remote's native LoadingScreen: two off-white dots rotating
@@ -71,5 +75,84 @@ Rectangle {
         wrapMode: Text.WordWrap
         horizontalAlignment: Text.AlignHCenter
         visible: stream.active && !stream.playing && stream.error !== ""
+    }
+
+    Text {
+        anchors { left: parent.left; bottom: parent.bottom; margins: 5 }
+        visible: Config.rtspShowStats && stream.active
+        color: colors.offwhite
+        font.pixelSize: 13
+        text: stream.actualFps.toFixed(1) + " FPS · " +
+              (stream.cpuPercent < 0 ? "CPU N/A" : stream.cpuPercent.toFixed(0) + "% CPU") +
+              " · " + stream.effectiveWidth + "×" + stream.effectiveHeight
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        onClicked: if (widget.streamActive) fullscreenPopup.open()
+    }
+
+    Popup {
+        id: fullscreenPopup
+        parent: Overlay.overlay
+        width: parent.width
+        height: parent.height
+        x: 0
+        y: 0
+        modal: true
+        padding: 0
+        closePolicy: Popup.CloseOnEscape
+        background: Rectangle { color: "black" }
+
+        contentItem: Item {
+            RtspStream {
+                id: fullscreenStream
+                anchors.fill: parent
+                source: widget.streamUrl
+                frameRate: Config.rtspFrameRate
+                resolution: Config.rtspResolution
+                autoQuality: Config.rtspAutoQuality
+                active: fullscreenPopup.opened && widget.streamActive
+            }
+
+            Text {
+                anchors.centerIn: parent
+                width: parent.width - 40
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                color: colors.offwhite
+                text: fullscreenStream.error !== "" ? fullscreenStream.error : qsTr("Connecting…")
+                visible: !fullscreenStream.playing
+            }
+
+            Rectangle {
+                anchors { top: parent.top; right: parent.right; margins: 12 }
+                width: 68
+                height: 68
+                radius: width / 2
+                color: "#88000000"
+                Text {
+                    anchors.centerIn: parent
+                    text: "×"
+                    font.pixelSize: 42
+                    color: "white"
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: fullscreenPopup.close()
+                }
+            }
+
+            Text {
+                anchors { left: parent.left; bottom: parent.bottom; margins: 12 }
+                visible: Config.rtspShowStats
+                color: colors.offwhite
+                font.pixelSize: 18
+                text: fullscreenStream.actualFps.toFixed(1) + " FPS · " +
+                      (fullscreenStream.cpuPercent < 0 ? "CPU N/A" :
+                       fullscreenStream.cpuPercent.toFixed(0) + "% CPU") +
+                      " · " + fullscreenStream.effectiveWidth + "×" + fullscreenStream.effectiveHeight
+            }
+        }
     }
 }

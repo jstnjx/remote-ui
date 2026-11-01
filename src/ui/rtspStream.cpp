@@ -3,6 +3,7 @@
 #include "rtspStream.h"
 
 #include <QCoreApplication>
+#include <QFile>
 #include <QFileInfo>
 #include <QPainter>
 #include <QRegularExpression>
@@ -11,6 +12,10 @@
 #include <QUrl>
 #include <QtGlobal>
 
+#ifdef Q_OS_LINUX
+#include <unistd.h>
+#endif
+
 RtspStream::RtspStream(QQuickItem *parent) : QQuickPaintedItem(parent), m_process(this) {
     setFillColor(Qt::black);
     setAntialiasing(false);
@@ -18,6 +23,8 @@ RtspStream::RtspStream(QQuickItem *parent) : QQuickPaintedItem(parent), m_proces
     m_retryTimer.setSingleShot(true);
     m_retryTimer.setInterval(3000);
     connect(&m_retryTimer, &QTimer::timeout, this, &RtspStream::startStream);
+    m_statsTimer.setInterval(1000);
+    connect(&m_statsTimer, &QTimer::timeout, this, &RtspStream::updateStats);
 
     m_watchdogTimer.setSingleShot(true);
     m_watchdogTimer.setInterval(12000);
@@ -68,34 +75,51 @@ void RtspStream::setSource(const QString &source) {
     }
 }
 
-void RtspStream::setFrameRate(int frameRate) {
-    const int bounded = qBound(5, frameRate, 30);
-    if (m_frameRate == bounded) {
-        return;
-    }
-    m_frameRate = bounded;
-    emit frameRateChanged();
-
-    if (!m_active) {
-        return;
-    }
-
-    // A live FFmpeg process cannot change its fps filter in place. Restart
-    // it immediately, without showing a false "decoder crashed" error.
+void RtspStream::reconfigure() {
+    if (!m_active) return;
     m_retryTimer.stop();
     m_watchdogTimer.stop();
+    m_statsTimer.stop();
     m_buffer.clear();
     m_diagnostics.clear();
     m_frame = QImage();
+    m_actualFps = 0;
     setPlaying(false);
     setError(QString());
     update();
-
     if (m_process.state() == QProcess::NotRunning) {
         startStream();
     } else {
         m_reconfigurePending = true;
         m_process.kill();
+    }
+}
+
+void RtspStream::setFrameRate(int frameRate) {
+    const int bounded = qBound(5, frameRate, 30);
+    if (m_frameRate == bounded) return;
+    m_frameRate = bounded;
+    emit frameRateChanged();
+    reconfigure();
+}
+
+void RtspStream::setResolution(int resolution) {
+    const int bounded = qBound(0, resolution, 2);
+    if (m_resolution == bounded) return;
+    m_resolution = bounded;
+    m_effectiveResolution = bounded;
+    m_hotSamples = 0;
+    emit resolutionChanged();
+    reconfigure();
+}
+
+void RtspStream::setAutoQuality(bool enabled) {
+    if (m_autoQuality == enabled) return;
+    m_autoQuality = enabled;
+    emit autoQualityChanged();
+    if (!enabled && m_effectiveResolution != m_resolution) {
+        m_effectiveResolution = m_resolution;
+        reconfigure();
     }
 }
 
@@ -130,6 +154,11 @@ void RtspStream::setError(const QString &error) {
 
 void RtspStream::stopStream() {
     m_reconfigurePending = false;
+    m_statsTimer.stop();
+    m_framesShown = 0;
+    m_actualFps = 0;
+    m_cpuPercent = -1;
+    emit statsChanged();
     m_retryTimer.stop();
     m_watchdogTimer.stop();
     m_buffer.clear();
@@ -171,6 +200,20 @@ void RtspStream::startStream() {
         return;
     }
 
+    // Choose a fixed RGB565 output size. Only the FFmpeg process owns decoded frames.
+    static const int widths[] = {320, 480, 640};
+    static const int heights[] = {180, 270, 360};
+    m_frameWidth = widths[m_effectiveResolution];
+    m_frameHeight = heights[m_effectiveResolution];
+    m_frameBytes = m_frameWidth * m_frameHeight * 2;
+    m_framesShown = 0;
+    m_lastCpuTicks = -1;
+    m_cpuPercent = -1;
+    m_actualFps = 0;
+    m_statsClock.start();
+    m_statsTimer.start();
+    emit statsChanged();
+
     // Decode at the configured fps to a small RGB565 buffer to limit RAM, GPU uploads,
     // and software rendering work. The camera's own low-resolution substream
     // is recommended because decoding its source resolution still costs CPU.
@@ -182,8 +225,8 @@ void RtspStream::startStream() {
         QStringLiteral("-map"), QStringLiteral("0:v:0"),
         QStringLiteral("-an"), QStringLiteral("-sn"), QStringLiteral("-dn"),
         QStringLiteral("-vf"),
-        QStringLiteral("fps=%1,scale=320:180:force_original_aspect_ratio=decrease:flags=fast_bilinear,"
-                       "pad=320:180:(ow-iw)/2:(oh-ih)/2").arg(m_frameRate),
+        QStringLiteral("fps=%1,scale=%2:%3:force_original_aspect_ratio=decrease:flags=fast_bilinear,"
+                       "pad=%2:%3:(ow-iw)/2:(oh-ih)/2").arg(m_frameRate).arg(m_frameWidth).arg(m_frameHeight),
         QStringLiteral("-pix_fmt"), QStringLiteral("rgb565le"),
         QStringLiteral("-f"), QStringLiteral("rawvideo"), QStringLiteral("pipe:1")
     };
@@ -200,23 +243,70 @@ void RtspStream::readFrames() {
 
     // Keep only the newest complete frame. Remove whole frames to preserve
     // frame boundaries even if stdout ends with a partial frame.
-    const int completeFrames = m_buffer.size() / FrameBytes;
+    const int completeFrames = m_buffer.size() / m_frameBytes;
     if (completeFrames > 1) {
-        m_buffer.remove(0, (completeFrames - 1) * FrameBytes);
+        m_buffer.remove(0, (completeFrames - 1) * m_frameBytes);
     }
-    if (m_buffer.size() < FrameBytes) {
+    if (m_buffer.size() < m_frameBytes) {
         return;
     }
 
     // copy() owns pixel storage after we reuse m_buffer.
-    m_frame = QImage(reinterpret_cast<const uchar *>(m_buffer.constData()), FrameWidth, FrameHeight,
-                     FrameWidth * 2, QImage::Format_RGB16).copy();
-    m_buffer.remove(0, FrameBytes);
+    m_frame = QImage(reinterpret_cast<const uchar *>(m_buffer.constData()), m_frameWidth, m_frameHeight,
+                     m_frameWidth * 2, QImage::Format_RGB16).copy();
+    m_buffer.remove(0, m_frameBytes);
     if (!m_frame.isNull()) {
         m_watchdogTimer.start();
+        ++m_framesShown;
         setError(QString());
         setPlaying(true);
         update();
+    }
+}
+
+void RtspStream::updateStats() {
+    const qint64 ms = m_statsClock.elapsed();
+    if (ms < 500) return;
+    m_actualFps = 1000.0 * m_framesShown / ms;
+    m_framesShown = 0;
+
+#ifdef Q_OS_LINUX
+    // /proc/<pid>/stat supplies cumulative user/system CPU ticks for this FFmpeg process.
+    // Read after the closing ')' because the command name can contain spaces.
+    const qint64 pid = static_cast<qint64>(m_process.processId());
+    if (pid > 0) {
+        QFile proc(QStringLiteral("/proc/%1/stat").arg(pid));
+        if (proc.open(QIODevice::ReadOnly)) {
+            const QByteArray raw = proc.readAll();
+            const int end = raw.lastIndexOf(')');
+            if (end >= 0) {
+                const QList<QByteArray> fields = raw.mid(end + 2).split(' ');
+                if (fields.size() > 12) {
+                    const qint64 ticks = fields[11].toLongLong() + fields[12].toLongLong();
+                    const qint64 ticksPerSecond = static_cast<qint64>(sysconf(_SC_CLK_TCK));
+                    if (m_lastCpuTicks >= 0 && ticksPerSecond > 0 && ticks >= m_lastCpuTicks) {
+                        m_cpuPercent = 100000.0 * (ticks - m_lastCpuTicks) / (ticksPerSecond * ms);
+                    }
+                    m_lastCpuTicks = ticks;
+                }
+            }
+        }
+    }
+#endif
+    m_statsClock.restart();
+    emit statsChanged();
+
+    // A single CPU spike must never cause a downgrade. Three consecutive
+    // samples over 80% of one core reduce decoder output by one resolution step.
+    if (m_autoQuality && m_cpuPercent >= 80.0 && m_effectiveResolution > 0) {
+        ++m_hotSamples;
+        if (m_hotSamples >= 3) {
+            --m_effectiveResolution;
+            m_hotSamples = 0;
+            reconfigure();
+        }
+    } else {
+        m_hotSamples = 0;
     }
 }
 
@@ -310,9 +400,13 @@ void RtspStream::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
         m_diagnostics = m_diagnostics.right(8192);
     }
     m_watchdogTimer.stop();
+    m_statsTimer.stop();
     m_buffer.clear();
     m_frame = QImage();
     setPlaying(false);
+    m_actualFps = 0;
+    m_cpuPercent = -1;
+    emit statsChanged();
     update();
     if (m_reconfigurePending) {
         m_reconfigurePending = false;

@@ -107,6 +107,9 @@ class Config : public QObject {
     Q_PROPERTY(bool hideMediaPlayerControls READ getHideMediaPlayerControls WRITE setHideMediaPlayerControls NOTIFY
                    hideMediaPlayerControlsChanged)
     Q_PROPERTY(int rtspFrameRate READ getRtspFrameRate WRITE setRtspFrameRate NOTIFY rtspFrameRateChanged)
+    Q_PROPERTY(int rtspResolution READ getRtspResolution WRITE setRtspResolution NOTIFY rtspResolutionChanged)
+    Q_PROPERTY(bool rtspAutoQuality READ getRtspAutoQuality WRITE setRtspAutoQuality NOTIFY rtspAutoQualityChanged)
+    Q_PROPERTY(bool rtspShowStats READ getRtspShowStats WRITE setRtspShowStats NOTIFY rtspShowStatsChanged)
     Q_PROPERTY(QString keyboardActivityId READ getKeyboardActivityId WRITE setKeyboardActivityId NOTIFY keyboardActivityIdChanged)
     Q_PROPERTY(QString keyboardSensorId READ getKeyboardSensorId WRITE setKeyboardSensorId NOTIFY keyboardSensorIdChanged)
     Q_PROPERTY(QString keyboardMediaPlayerId READ getKeyboardMediaPlayerId WRITE setKeyboardMediaPlayerId NOTIFY keyboardMediaPlayerIdChanged)
@@ -211,6 +214,12 @@ class Config : public QObject {
 
     int  getRtspFrameRate();
     void setRtspFrameRate(int value);
+    int getRtspResolution();
+    void setRtspResolution(int value);
+    bool getRtspAutoQuality();
+    void setRtspAutoQuality(bool value);
+    bool getRtspShowStats();
+    void setRtspShowStats(bool value);
 
     QString getKeyboardActivityId();
     void setKeyboardActivityId(const QString& value);
@@ -394,6 +403,9 @@ class Config : public QObject {
     void mediaCoverflowDefaultChanged();
     void hideMediaPlayerControlsChanged();
     void rtspFrameRateChanged();
+    void rtspResolutionChanged();
+    void rtspAutoQualityChanged();
+    void rtspShowStatsChanged();
     void keyboardActivityIdChanged();
     void keyboardSensorIdChanged();
     void keyboardMediaPlayerIdChanged();

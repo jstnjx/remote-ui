@@ -508,6 +508,37 @@ void Config::setRtspFrameRate(int value) {
     emit rtspFrameRateChanged();
 }
 
+int Config::getRtspResolution() {
+    return qBound(0, m_settings->value("ui/rtspResolution", 0).toInt(), 2);
+}
+
+void Config::setRtspResolution(int value) {
+    const int bounded = qBound(0, value, 2);
+    if (getRtspResolution() == bounded) return;
+    m_settings->setValue("ui/rtspResolution", bounded);
+    emit rtspResolutionChanged();
+}
+
+bool Config::getRtspAutoQuality() {
+    return m_settings->value("ui/rtspAutoQuality", true).toBool();
+}
+
+void Config::setRtspAutoQuality(bool value) {
+    if (getRtspAutoQuality() == value) return;
+    m_settings->setValue("ui/rtspAutoQuality", value);
+    emit rtspAutoQualityChanged();
+}
+
+bool Config::getRtspShowStats() {
+    return m_settings->value("ui/rtspShowStats", false).toBool();
+}
+
+void Config::setRtspShowStats(bool value) {
+    if (getRtspShowStats() == value) return;
+    m_settings->setValue("ui/rtspShowStats", value);
+    emit rtspShowStatsChanged();
+}
+
 QString Config::getKeyboardActivityId() {
     return m_settings->value("ui/keyboardActivityId").toString();
 }

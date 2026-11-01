@@ -200,7 +200,6 @@ Settings.Page {
 
             /** RTSP STREAM FRAME RATE **/
             Components.SettingRow {
-                showDivider: false
                 title: qsTr("RTSP stream frame rate")
                 help: qsTr("Select the frame rate for RTSP video widgets. Higher rates use more CPU and battery.")
                 value: Config.rtspFrameRate + " FPS"
@@ -233,6 +232,57 @@ Settings.Page {
                     /** KEYBOARD NAVIGATION **/
                     highlight: activeFocus && ui.keyNavigationActive
                     KeyNavigation.up: mediaCoverflowSwitch
+                    KeyNavigation.down: rtspResolutionSlider
+                }
+            }
+
+            Components.SettingRow {
+                title: qsTr("RTSP resolution")
+                value: ["320 × 180", "480 × 270", "640 × 360"][Config.rtspResolution]
+                help: qsTr("Higher resolution increases decoder and rendering CPU usage.")
+                controlBelow: true
+                controlBottomSpace: 40
+                Components.Slider {
+                    id: rtspResolutionSlider
+                    height: 60
+                    from: 0
+                    to: 2
+                    stepSize: 1
+                    value: Config.rtspResolution
+                    lowValueText: qsTr("320 × 180")
+                    highValueText: qsTr("640 × 360")
+                    onUserInteractionEnded: Config.rtspResolution = Math.round(value)
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: rtspFrameRateSlider
+                    KeyNavigation.down: rtspAutoQualitySwitch
+                }
+            }
+
+            Components.SettingRow {
+                title: qsTr("Automatically reduce RTSP quality")
+                help: qsTr("Step down the video resolution after sustained FFmpeg CPU load above 80%.")
+                Components.Switch {
+                    id: rtspAutoQualitySwitch
+                    icon: "uc:check"
+                    checked: Config.rtspAutoQuality
+                    trigger: function() { Config.rtspAutoQuality = !Config.rtspAutoQuality; }
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: rtspResolutionSlider
+                    KeyNavigation.down: rtspStatsSwitch
+                }
+            }
+
+            Components.SettingRow {
+                showDivider: false
+                title: qsTr("Show RTSP stream statistics")
+                help: qsTr("Display actual rendered FPS, FFmpeg CPU usage and effective resolution over video.")
+                Components.Switch {
+                    id: rtspStatsSwitch
+                    icon: "uc:check"
+                    checked: Config.rtspShowStats
+                    trigger: function() { Config.rtspShowStats = !Config.rtspShowStats; }
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: rtspAutoQualitySwitch
                 }
             }
         }
