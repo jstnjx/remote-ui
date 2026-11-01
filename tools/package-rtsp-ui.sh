@@ -93,7 +93,7 @@ EOF
 mkdir -p "$(dirname "$ARCHIVE")"
 tar -czf "$ARCHIVE" -C "$TMP_DIR" release.json bin data
 for REQUIRED in release.json bin/remote-ui bin/ffmpeg data/ffmpeg-source.txt; do
-    if ! tar -tzf "$ARCHIVE" | grep -Fxq "$REQUIRED"; then
+    if ! tar -tzf "$ARCHIVE" | grep -Fx "$REQUIRED" >/dev/null; then
         echo "Installation archive is missing $REQUIRED" >&2
         exit 1
     fi
