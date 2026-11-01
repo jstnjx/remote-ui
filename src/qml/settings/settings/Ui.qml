@@ -180,7 +180,6 @@ Settings.Page {
 
             /** MEDIA BROWSER COVERFLOW DEFAULT **/
             Components.SettingRow {
-                showDivider: false
                 title: qsTr("Coverflow in media browser")
                 help: qsTr("Use coverflow as the default view when opening the media browser.")
 
@@ -195,6 +194,45 @@ Settings.Page {
                     /** KEYBOARD NAVIGATION **/
                     highlight: activeFocus && ui.keyNavigationActive
                     KeyNavigation.up: hideMediaControlsSwitch
+                    KeyNavigation.down: rtspFrameRateSlider
+                }
+            }
+
+            /** RTSP STREAM FRAME RATE **/
+            Components.SettingRow {
+                showDivider: false
+                title: qsTr("RTSP stream frame rate")
+                help: qsTr("Select the frame rate for RTSP video widgets. Higher rates use more CPU and battery.")
+                value: Config.rtspFrameRate + " FPS"
+                controlBelow: true
+                controlBottomSpace: 40
+
+                Components.Slider {
+                    id: rtspFrameRateSlider
+                    height: 60
+                    from: 5
+                    to: 30
+                    stepSize: 5
+                    value: Config.rtspFrameRate
+                    live: false
+                    showLiveValue: false
+                    lowValueText: qsTr("5 FPS")
+                    highValueText: qsTr("30 FPS")
+
+                    // Updating the preference notifies active widgets, which
+                    // restart their local FFmpeg process with the new fps.
+                    onMoved: {
+                        if (!pressed) {
+                            Config.rtspFrameRate = Math.round(value);
+                        }
+                    }
+                    onUserInteractionEnded: {
+                        Config.rtspFrameRate = Math.round(value);
+                    }
+
+                    /** KEYBOARD NAVIGATION **/
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: mediaCoverflowSwitch
                 }
             }
         }

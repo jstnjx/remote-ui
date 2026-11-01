@@ -9,6 +9,7 @@
 #include <QStandardPaths>
 #include <QStringList>
 #include <QUrl>
+#include <QtGlobal>
 
 RtspStream::RtspStream(QQuickItem *parent) : QQuickPaintedItem(parent), m_process(this) {
     setFillColor(Qt::black);
@@ -67,6 +68,37 @@ void RtspStream::setSource(const QString &source) {
     }
 }
 
+void RtspStream::setFrameRate(int frameRate) {
+    const int bounded = qBound(5, frameRate, 30);
+    if (m_frameRate == bounded) {
+        return;
+    }
+    m_frameRate = bounded;
+    emit frameRateChanged();
+
+    if (!m_active) {
+        return;
+    }
+
+    // A live FFmpeg process cannot change its fps filter in place. Restart
+    // it immediately, without showing a false "decoder crashed" error.
+    m_retryTimer.stop();
+    m_watchdogTimer.stop();
+    m_buffer.clear();
+    m_diagnostics.clear();
+    m_frame = QImage();
+    setPlaying(false);
+    setError(QString());
+    update();
+
+    if (m_process.state() == QProcess::NotRunning) {
+        startStream();
+    } else {
+        m_reconfigurePending = true;
+        m_process.kill();
+    }
+}
+
 void RtspStream::setActive(bool active) {
     if (m_active == active) {
         return;
@@ -97,6 +129,7 @@ void RtspStream::setError(const QString &error) {
 }
 
 void RtspStream::stopStream() {
+    m_reconfigurePending = false;
     m_retryTimer.stop();
     m_watchdogTimer.stop();
     m_buffer.clear();
@@ -138,7 +171,7 @@ void RtspStream::startStream() {
         return;
     }
 
-    // Decode only 10 fps to a small RGB565 buffer to limit RAM, GPU uploads,
+    // Decode at the configured fps to a small RGB565 buffer to limit RAM, GPU uploads,
     // and software rendering work. The camera's own low-resolution substream
     // is recommended because decoding its source resolution still costs CPU.
     const QStringList arguments = {
@@ -149,8 +182,8 @@ void RtspStream::startStream() {
         QStringLiteral("-map"), QStringLiteral("0:v:0"),
         QStringLiteral("-an"), QStringLiteral("-sn"), QStringLiteral("-dn"),
         QStringLiteral("-vf"),
-        QStringLiteral("fps=10,scale=320:180:force_original_aspect_ratio=decrease:flags=fast_bilinear,"
-                       "pad=320:180:(ow-iw)/2:(oh-ih)/2"),
+        QStringLiteral("fps=%1,scale=320:180:force_original_aspect_ratio=decrease:flags=fast_bilinear,"
+                       "pad=320:180:(ow-iw)/2:(oh-ih)/2").arg(m_frameRate),
         QStringLiteral("-pix_fmt"), QStringLiteral("rgb565le"),
         QStringLiteral("-f"), QStringLiteral("rawvideo"), QStringLiteral("pipe:1")
     };
@@ -256,7 +289,7 @@ QString RtspStream::failureDetail(int exitCode, QProcess::ExitStatus exitStatus)
 }
 
 void RtspStream::onProcessError(QProcess::ProcessError error) {
-    if (!m_active) {
+    if (!m_active || m_reconfigurePending) {
         return;
     }
     if (error == QProcess::FailedToStart) {
@@ -281,6 +314,13 @@ void RtspStream::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
     m_frame = QImage();
     setPlaying(false);
     update();
+    if (m_reconfigurePending) {
+        m_reconfigurePending = false;
+        if (m_active) {
+            startStream();
+        }
+        return;
+    }
     if (m_active) {
         if (m_error.isEmpty()) {
             setError(failureDetail(exitCode, exitStatus));
