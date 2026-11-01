@@ -18,6 +18,7 @@
 #include "logging.h"
 #include "softwareupdate/softwareUpdate.h"
 #include "translation/translation.h"
+#include "ui/rtspStream.h"
 #include "ui/uiController.h"
 #include "voice.h"
 
@@ -107,6 +108,7 @@ int main(int argc, char *argv[]) {
     std::signal(SIGTERM, sigHandler);
 #endif
 
+    qmlRegisterType<RtspStream>("Rtsp", 1, 0, "RtspStream");
     engine->addImportPath("qrc:/keyboard");
 
     QCoreApplication::setOrganizationName("Unfolded Circle");
