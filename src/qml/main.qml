@@ -317,6 +317,58 @@ ApplicationWindow {
             id: containerMain
             anchors.fill: parent
             asynchronous: true
+
+            // Unlike the activity popup loaders, the main loader had no error
+            // handling at all: a QML component load failure looked like a
+            // fully black display. Keep the error visible and allow recovery.
+            onStatusChanged: {
+                if (status === Loader.Error) {
+                    console.warn("Main UI failed to load:", source);
+                    loadingFirst.stop();
+                }
+            }
+        }
+
+        Rectangle {
+            id: mainLoadFailure
+            anchors.fill: parent
+            color: colors.black
+            visible: containerMain.status === Loader.Error
+            z: 100
+
+            Column {
+                width: parent.width - 40
+                spacing: 25
+                anchors.centerIn: parent
+
+                Text {
+                    width: parent.width
+                    text: qsTr("Unable to load Remote UI")
+                    color: colors.offwhite
+                    font: fonts.primaryFont(32)
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                Text {
+                    width: parent.width
+                    text: qsTr("A screen component failed to load. Tap below to retry, or reinstall a known-good UI package.")
+                    color: colors.light
+                    font: fonts.primaryFont(22)
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                Components.Button {
+                    width: parent.width
+                    text: qsTr("Retry interface")
+                    trigger: function() {
+                        const failedSource = containerMain.source;
+                        containerMain.source = "";
+                        containerMain.source = failedSource;
+                    }
+                }
+            }
         }
 
         Connections {

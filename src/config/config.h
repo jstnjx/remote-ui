@@ -53,6 +53,8 @@ class Config : public QObject {
     Q_PROPERTY(bool soundEnabled READ getSoundEnabled WRITE setSoundEnabled NOTIFY soundEnabledChanged)
     Q_PROPERTY(int soundVolume READ getSoundVolume WRITE setSoundVolume NOTIFY soundVolumeChanged)
 
+    Q_PROPERTY(bool digitalScreensaverClock READ getDigitalScreensaverClock WRITE setDigitalScreensaverClock NOTIFY
+                   digitalScreensaverClockChanged)
     Q_PROPERTY(bool displayAutoBrightness READ getDisplayAutoBrightness WRITE setDisplayAutoBrightness NOTIFY
                    displayAutoBrightnessChanged)
     Q_PROPERTY(
@@ -185,6 +187,9 @@ class Config : public QObject {
     void setSoundEnabled(bool enabled);
     int  getSoundVolume() { return m_soundVolume; }
     void setSoundVolume(int volume);
+
+    bool getDigitalScreensaverClock();
+    void setDigitalScreensaverClock(bool enabled);
 
     bool getDisplayAutoBrightness() { return m_displayAutoBrightness; }
     void setDisplayAutoBrightness(bool enabled);
@@ -385,6 +390,7 @@ class Config : public QObject {
     void soundEnabledChanged(bool value);
     void soundVolumeChanged(int volume);
 
+    void digitalScreensaverClockChanged();
     void displayAutoBrightnessChanged(bool value);
     void displayBrightnessChanged(int brightness);
 

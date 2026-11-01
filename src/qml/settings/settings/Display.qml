@@ -131,7 +131,26 @@ Settings.Page {
 
                     /** KEYBOARD NAVIGATION **/
                     KeyNavigation.up: buttonBacklightSwitch
+                    KeyNavigation.down: digitalClockSwitch
                     highlight: activeFocus && ui.keyNavigationActive
+                }
+            }
+
+            Components.SettingRow {
+                showDivider: false
+                title: qsTr("Digital screensaver clock")
+                help: qsTr("Show a digital time and date instead of the analog clock on the charging screen.")
+
+                Components.Switch {
+                    id: digitalClockSwitch
+                    icon: "uc:check"
+                    checked: Config.digitalScreensaverClock
+                    trigger: function() {
+                        Config.digitalScreensaverClock = !Config.digitalScreensaverClock;
+                    }
+
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: buttonBrightnessSlider
                 }
             }
         }
