@@ -22,6 +22,19 @@ automatically with the selected frame rate; no activity or remote restart is
 needed. Higher frame rates consume more CPU and battery, so use a low-resolution
 H.264 camera substream for smoother playback.
 
+## Resolution, fullscreen and diagnostics
+
+The **Settings → User interface** page provides:
+
+- **RTSP resolution:** 320×180 (default), 480×270 or 640×360.
+- **RTSP stream frame rate:** 5–30 FPS in increments of five.
+- **Automatically reduce RTSP quality:** on by default; when the Linux FFmpeg process uses more than 80% of one CPU core for three consecutive one-second samples, the decoder drops one output-resolution level (640×360 → 480×270 → 320×180). It does not automatically raise the resolution again during an uninterrupted session.
+- **Show RTSP stream statistics:** optional overlay showing actual rendered FPS, FFmpeg CPU as a percentage of one core, and effective output dimensions. CPU metrics are available on Linux from `/proc/PID/stat`; other platforms display CPU N/A.
+
+Tap a video tile to open a fullscreen view. The embedded decoder pauses while the fullscreen decoder is active, avoiding two concurrent decoders of the same stream. Closing fullscreen restores the embedded stream. Leaving the activity closes fullscreen and stops playback.
+
+Higher output resolution does **not** change the RTSP camera source resolution: use a low-resolution H.264 substream whenever possible. The auto-quality response is based on FFmpeg CPU time, not the full remote system CPU load, and only reduces output scaling; a camera that sends high-bitrate 4K input will still require decoding of that input.
+
 ## Runtime requirements
 
 - **Install the `UCR2-RTSP-install` archive**, not the basic `UCR2-static` build. It includes a static ARM64 `bin/ffmpeg` executable next to `bin/remote-ui`, with an upstream SHA-256 checksum verified during packaging. No external streaming server, additional firmware service or GStreamer is required. Installing only the UI binary produces the message "FFmpeg is not installed on the remote".
