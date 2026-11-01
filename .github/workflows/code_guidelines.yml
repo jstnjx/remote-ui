@@ -69,6 +69,22 @@ jobs:
           python tools/design-check.py --self-test
           python tools/design-check.py
 
+      # The home page binds MediaComponent.isComponentHorizontal explicitly. Turning
+      # that public QML property readonly prevents MainContainer from loading,
+      # leaving only the charging/power screens visible on the device.
+      - name: Verify home-page media widget property contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          page = Path("src/qml/components/Page.qml").read_text(encoding="utf-8")
+          component = Path("src/qml/components/entities/activity/MediaComponent.qml").read_text(encoding="utf-8")
+          if re.search(r'\\bisComponentHorizontal\\s*:', page):
+              if not re.search(r'(?m)^\\s*property bool isComponentHorizontal\\s*:', component):
+                  raise SystemExit("Page.qml assigns MediaComponent.isComponentHorizontal, which must remain a writable QML property")
+          PY
+
       - name: cpplint
         shell: python
         run: |
