@@ -479,6 +479,19 @@ void Config::setMediaCoverflowDefault(bool value) {
     emit mediaCoverflowDefaultChanged();
 }
 
+bool Config::getHideMediaPlayerControls() {
+    return m_settings->value("ui/hideMediaPlayerControls", false).toBool();
+}
+
+void Config::setHideMediaPlayerControls(bool value) {
+    if (getHideMediaPlayerControls() == value) {
+        return;
+    }
+
+    m_settings->setValue("ui/hideMediaPlayerControls", value);
+    emit hideMediaPlayerControlsChanged();
+}
+
 int Config::getResumeTimeoutWindowSec() {
     return m_settings->value("ui/resumeTimeoutWindow", 2).toInt();
 }
