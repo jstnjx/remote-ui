@@ -23,7 +23,14 @@ All options persist in QSettings, under `ui/redesignedHomeEnabled`, `ui/homeScre
 3. **Living Room Hub**: room-style overview card with actual activity/quick-control counts, activity shortcuts, small media card, quick controls and page dots.
 4. **Minimal**: large clock with generous black space, a compact activity dock, optional media and quick controls, and page dots.
 
-Appearance follows original Remote UI design tokens: `colors.black`, `colors.dark`, `colors.offwhite`, `colors.divider`, `fonts.primaryFont`, native icon font, HapticMouseArea and `ui.cornerRadiusSmall`.
+Appearance uses the **accepted native design system**, not the earlier custom bordered-card style:
+- Black page background via `colors.bg`; flat `colors.surface` tiles without permanent card outlines.
+- Native text roles `fonts.display()`, `fonts.heading()`, `fonts.label()`, `fonts.help()`, `fonts.value()` with `colors.textPrimary` / `colors.textSecondary`.
+- `Components.Selectable { style: "fill" }` for activity/media/quick tiles; selection appears when using D-pad, not as a permanent border. The normal haptic hit targets and `ui.cornerRadiusSmall` remain.
+- The primary redesigned clock is centered in the home content. **The stock StatusBar hides only its time text** while the redesigned home is active. Battery, Wi-Fi, profile and connection indicators stay visible. Turning the redesign off or leaving home restores the stock top-bar clock.
+- Unconfigured/fake room names are not shown; the Living Room Hub uses a neutral `Home` overview with actual entity counts.
+
+This aligns with `docs/design-system.md`, including 20 px content gutters, non-decorative status colors, Poppins for labels and Space Mono for date/time values.
 
 ## Controls and reliability
 

@@ -23,6 +23,10 @@ Item {
     property int pageNameOffset: 100
     property int scrollDiff:0
     property bool movementStarted: false
+    // The optional home draws its own large clock. Keep the stock battery,
+    // profile, Wi-Fi and connection indicators but hide duplicate time.
+    readonly property bool redesignedHomeWithClock: containerMain.item &&
+                                                    containerMain.item.redesignedHomeActive
 
     onAtYBeginningChanged: {
         if (atYBeginning) {
@@ -120,6 +124,7 @@ Item {
     // time
     Text {
         id: timeText
+        visible: !redesignedHomeWithClock
         color: colors.offwhite; opacity: 1
         text: Config.clock24h ? Qt.formatTime(ui.time,"hh:mm") : Qt.formatTime(ui.time,"hh:mm a")
         height: parent.height
