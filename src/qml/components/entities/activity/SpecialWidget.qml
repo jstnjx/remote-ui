@@ -104,7 +104,13 @@ Rectangle {
             if (entity) options.push({name: entity.name, value: entity.id});
         }
         showList(qsTr("App / game source"), options,
-                 function(value) { widget.openAppTarget(value); });
+                 function(value) {
+                     // Close the chooser before opening the second popup. This
+                     // prevents the first popup's exit transition swallowing it.
+                     widget.targetEntityId = value;
+                     deferredAppOpen.entityId = value;
+                     deferredAppOpen.restart();
+                 });
     }
 
     function activate() {
@@ -150,6 +156,14 @@ Rectangle {
     Components.HapticMouseArea {
         anchors.fill: parent
         onClicked: widget.activate()
+    }
+
+    Timer {
+        id: deferredAppOpen
+        interval: 380
+        repeat: false
+        property string entityId: ""
+        onTriggered: widget.openAppTarget(entityId)
     }
 
     ListModel { id: pickerModel }
