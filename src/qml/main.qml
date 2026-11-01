@@ -313,10 +313,30 @@ ApplicationWindow {
         property alias keyboardInputField: keyboardInputField
         property bool isActivityOpen: false
 
+        property bool mainUiStartupTimedOut: false
+
+        Timer {
+            id: mainUiStartupWatchdog
+            interval: 20000
+            repeat: false
+            running: true
+            onTriggered: {
+                // A missing config-loaded event also leaves the main loader
+                // empty, with Loader.Null rather than Loader.Error.
+                if (!ui.isOnboarding && containerMain.source.toString() === "") {
+                    root.mainUiStartupTimedOut = true;
+                    console.warn("Main UI did not receive a screen source after startup");
+                }
+            }
+        }
+
         Loader {
             id: containerMain
             anchors.fill: parent
             asynchronous: true
+            onSourceChanged: {
+                if (source.toString() !== "") root.mainUiStartupTimedOut = false;
+            }
 
             // Unlike the activity popup loaders, the main loader had no error
             // handling at all: a QML component load failure looked like a
@@ -333,7 +353,7 @@ ApplicationWindow {
             id: mainLoadFailure
             anchors.fill: parent
             color: colors.black
-            visible: containerMain.status === Loader.Error
+            visible: containerMain.status === Loader.Error || root.mainUiStartupTimedOut
             z: 100
 
             Column {
@@ -352,7 +372,9 @@ ApplicationWindow {
 
                 Text {
                     width: parent.width
-                    text: qsTr("A screen component failed to load. Tap below to retry, or reinstall a known-good UI package.")
+                    text: containerMain.status === Loader.Error ?
+                              qsTr("A screen component failed to load. Tap below to retry, or reinstall a known-good UI package.") :
+                              qsTr("The main screen did not start. Tap below to reopen it, or reinstall a known-good UI package.")
                     color: colors.light
                     font: fonts.primaryFont(22)
                     wrapMode: Text.WordWrap
@@ -363,9 +385,12 @@ ApplicationWindow {
                     width: parent.width
                     text: qsTr("Retry interface")
                     trigger: function() {
-                        const failedSource = containerMain.source;
+                        const targetSource = containerMain.source.toString() !== "" ?
+                                                 containerMain.source :
+                                                 (ui.pages.count === 0 ? "qrc:/NoPage.qml" : "qrc:/MainContainer.qml");
+                        root.mainUiStartupTimedOut = false;
                         containerMain.source = "";
-                        containerMain.source = failedSource;
+                        containerMain.source = targetSource;
                     }
                 }
             }
