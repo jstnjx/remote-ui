@@ -426,6 +426,17 @@ int EntityController::checkSequenceReadiness(const QString& entityId, const QStr
     return id;
 }
 
+QStringList EntityController::getIdsByType(const QString& type) {
+    QStringList result;
+    for (entity::Base* obj : qAsConst(m_entities)) {
+        if (obj && obj->getTypeAsString().compare(type, Qt::CaseInsensitive) == 0) {
+            result.append(obj->getId());
+        }
+    }
+    result.sort(Qt::CaseInsensitive);
+    return result;
+}
+
 QStringList EntityController::getIdsByIntegration(const QString& integrationId) {
     QStringList list;
 

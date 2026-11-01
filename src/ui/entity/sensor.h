@@ -303,6 +303,8 @@ class Sensor : public Base {
     Q_OBJECT
 
     Q_PROPERTY(QString value READ getValue NOTIFY valueChanged)
+    // Untranslated on/off values for automation triggers; value is localized.
+    Q_PROPERTY(QString rawValue READ getRawValue NOTIFY valueChanged)
     Q_PROPERTY(QString unit READ getUnit NOTIFY unitChanged)
 
     // options
@@ -329,6 +331,7 @@ class Sensor : public Base {
         }
         return value;
     }
+    QString getRawValue() { return m_value.toString(); }
     QString getUnit() { return m_unit; }
 
     // options

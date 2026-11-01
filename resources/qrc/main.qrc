@@ -67,6 +67,7 @@
         <file alias="settings/settings/Color.qml">../../src/qml/settings/settings/Color.qml</file>
         <file alias="settings/settings/Display.qml">../../src/qml/settings/settings/Display.qml</file>
         <file alias="settings/settings/Ui.qml">../../src/qml/settings/settings/Ui.qml</file>
+        <file alias="settings/settings/KeyboardPrompt.qml">../../src/qml/settings/settings/KeyboardPrompt.qml</file>
         <file alias="settings/settings/TouchSlider.qml">../../src/qml/settings/settings/TouchSlider.qml</file>
         <file alias="settings/settings/Sound.qml">../../src/qml/settings/settings/Sound.qml</file>
         <file alias="settings/settings/Voice.qml">../../src/qml/settings/settings/Voice.qml</file>
@@ -104,6 +105,7 @@
         <file alias="components/entities/activity/LoadingScreen.qml">../../src/qml/components/entities/activity/LoadingScreen.qml</file>
         <file alias="components/entities/activity/MediaComponent.qml">../../src/qml/components/entities/activity/MediaComponent.qml</file>
         <file alias="components/entities/activity/VideoStream.qml">../../src/qml/components/entities/activity/VideoStream.qml</file>
+        <file alias="components/entities/activity/KeyboardTextPrompt.qml">../../src/qml/components/entities/activity/KeyboardTextPrompt.qml</file>
         <file alias="components/entities/button/deviceclass/Button.qml">../../src/qml/components/entities/button/deviceclass/Button.qml</file>
         <file alias="components/entities/climate/deviceclass/Climate.qml">../../src/qml/components/entities/climate/deviceclass/Climate.qml</file>
         <file alias="components/entities/light/deviceclass/Light.qml">../../src/qml/components/entities/light/deviceclass/Light.qml</file>

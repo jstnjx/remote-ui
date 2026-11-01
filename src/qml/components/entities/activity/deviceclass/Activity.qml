@@ -14,9 +14,18 @@ import Power.Modes 1.0
 
 import "qrc:/components" as Components
 import "qrc:/components/entities" as EntityComponents
+import "qrc:/components/entities/activity" as ActivityComponents
 
 EntityComponents.BaseDetail {
     id: activityBase
+
+    // Sensor-triggered text entry is scoped to the configured activity only.
+    // This component controls its own prompt and native virtual keyboard.
+    ActivityComponents.KeyboardTextPrompt {
+        activityId: activityBase.entityId
+        activityActive: activityBase.state === "open" && activityBase.visible &&
+                        entityObj.state === ActivityStates.On
+    }
 
     property var pages: entityObj.ui.pages
     property QtObject mediaWidgetEntityObj

@@ -106,6 +106,9 @@ class Config : public QObject {
     Q_PROPERTY(bool hideMediaPlayerControls READ getHideMediaPlayerControls WRITE setHideMediaPlayerControls NOTIFY
                    hideMediaPlayerControlsChanged)
     Q_PROPERTY(int rtspFrameRate READ getRtspFrameRate WRITE setRtspFrameRate NOTIFY rtspFrameRateChanged)
+    Q_PROPERTY(QString keyboardActivityId READ getKeyboardActivityId WRITE setKeyboardActivityId NOTIFY keyboardActivityIdChanged)
+    Q_PROPERTY(QString keyboardSensorId READ getKeyboardSensorId WRITE setKeyboardSensorId NOTIFY keyboardSensorIdChanged)
+    Q_PROPERTY(QString keyboardMediaPlayerId READ getKeyboardMediaPlayerId WRITE setKeyboardMediaPlayerId NOTIFY keyboardMediaPlayerIdChanged)
 
     Q_PROPERTY(int resumeTimeoutWindowSec READ getResumeTimeoutWindowSec WRITE setResumeTimeoutWindowSec NOTIFY
                    resumeTimeoutWindowSecChanged)
@@ -206,6 +209,13 @@ class Config : public QObject {
 
     int  getRtspFrameRate();
     void setRtspFrameRate(int value);
+
+    QString getKeyboardActivityId();
+    void setKeyboardActivityId(const QString& value);
+    QString getKeyboardSensorId();
+    void setKeyboardSensorId(const QString& value);
+    QString getKeyboardMediaPlayerId();
+    void setKeyboardMediaPlayerId(const QString& value);
 
     int  getResumeTimeoutWindowSec();
     void setResumeTimeoutWindowSec(int value);
@@ -380,6 +390,9 @@ class Config : public QObject {
     void mediaCoverflowDefaultChanged();
     void hideMediaPlayerControlsChanged();
     void rtspFrameRateChanged();
+    void keyboardActivityIdChanged();
+    void keyboardSensorIdChanged();
+    void keyboardMediaPlayerIdChanged();
     void resumeTimeoutWindowSecChanged(int value);
     void touchSliderEnabledChanged();
     void touchSliderGainVolumeChanged();
