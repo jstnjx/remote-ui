@@ -32,7 +32,8 @@ RtspStream::RtspStream(QQuickItem *parent) : QQuickPaintedItem(parent), m_proces
         if (!m_active) {
             return;
         }
-        setError(tr("No video received. Reconnecting..."));
+        // Keep the spinner visible while Wi-Fi or the camera recovers.
+        setError(QString());
         if (m_process.state() != QProcess::NotRunning) {
             m_process.kill();
         }
@@ -385,7 +386,8 @@ void RtspStream::onProcessError(QProcess::ProcessError error) {
     if (error == QProcess::FailedToStart) {
         setError(tr("FFmpeg could not start. Check ARM64 compatibility and file permissions."));
     } else if (error == QProcess::Crashed) {
-        setError(tr("FFmpeg crashed or was terminated. Try a low-resolution H.264 stream."));
+        // Wait for finished() to distinguish network disconnects from decoder errors.
+        setError(QString());
     } else {
         setError(tr("FFmpeg process error (%1).").arg(static_cast<int>(error)));
     }
@@ -416,7 +418,24 @@ void RtspStream::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
         return;
     }
     if (m_active) {
-        if (m_error.isEmpty()) {
+        const QString diagnostics = QString::fromUtf8(m_diagnostics).toLower();
+        const bool transientNetworkError =
+            diagnostics.contains(QStringLiteral("connection refused")) ||
+            diagnostics.contains(QStringLiteral("connection timed out")) ||
+            diagnostics.contains(QStringLiteral("timed out")) ||
+            diagnostics.contains(QStringLiteral("network is unreachable")) ||
+            diagnostics.contains(QStringLiteral("no route to host")) ||
+            diagnostics.contains(QStringLiteral("could not resolve")) ||
+            diagnostics.contains(QStringLiteral("name or service not known")) ||
+            diagnostics.contains(QStringLiteral("temporary failure in name resolution")) ||
+            diagnostics.contains(QStringLiteral("input/output error"));
+
+        if (transientNetworkError) {
+            // The device may open an activity before Wi-Fi reconnects.
+            // Suppress transient FFmpeg errors and show the loading circle.
+            setError(QString());
+        } else if (m_error.isEmpty()) {
+            // Preserve actionable errors for bad credentials, paths, codecs, etc.
             setError(failureDetail(exitCode, exitStatus));
         }
         m_retryTimer.start();

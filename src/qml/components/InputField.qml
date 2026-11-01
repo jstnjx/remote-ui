@@ -23,6 +23,7 @@
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.VirtualKeyboard 2.3
 
 import Haptic 1.0
 
@@ -52,6 +53,7 @@ Rectangle {
     // bring the on-screen keyboard up whenever the field gains the focus (a form walked with the
     // d-pad); Button / Switch / Checkbox hide it again when they take the focus
     property bool keyboardFollowsFocus: false
+    property bool sendOnEnter: false
 
     Component.onCompleted: {
         if (inputField.echoMode === TextInput.Password) {
@@ -125,6 +127,8 @@ Rectangle {
         }
 
         passwordCharacter: "•"
+        EnterKeyAction.actionId: inputFieldContainer.sendOnEnter ? EnterKeyAction.Send : EnterKeyAction.None
+        EnterKeyAction.label: inputFieldContainer.sendOnEnter ? qsTr("Send") : ""
 
         KeyNavigation.up: inputFieldContainer.navUp
         KeyNavigation.down: inputFieldContainer.navDown

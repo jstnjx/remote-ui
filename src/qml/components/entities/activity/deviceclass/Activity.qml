@@ -137,38 +137,42 @@ EntityComponents.BaseDetail {
             try {
                 switch (item.type) {
             case "text":
-                // Text Buttons with WIDGET_TYPE;(optional entity_id) become
-                // native, standalone controls without a Core API schema change.
+                // Stock Text widgets limit text length. The marker "KB" is
+                // short enough; target the media player through the optional
+                // command entity or an activity keyboard automation rule.
                 const widgetText = typeof item.text === "string" ? item.text.trim() : "";
-                const widgetBits = widgetText.split(";");
-                const widgetKind = widgetBits[0].trim().toUpperCase();
-                const specialTypes = ["ACTIVITY_LAUNCHER", "ACTIVITY_SWITCHER",
-                                      "KEYBOARD_SHORTCUT", "KEYBOARD",
-                                      "APP_LAUNCHER", "GAME_LAUNCHER"];
-                if (specialTypes.indexOf(widgetKind) >= 0) {
-                    const specialComponent = Qt.createComponent(
-                        "qrc:/components/entities/activity/SpecialWidget.qml");
-                    if (specialComponent.status === Component.Ready) {
-                        specialComponent.createObject(container, {
+                const widgetParts = widgetText.split(";");
+                const widgetKind = widgetParts[0].trim().toUpperCase();
+                if (["KB", "KEYBOARD", "KEYBOARD_SHORTCUT"].indexOf(widgetKind) >= 0) {
+                    const keyboardComponent = Qt.createComponent(
+                        "qrc:/components/entities/activity/KeyboardShortcutWidget.qml");
+                    if (keyboardComponent.status === Component.Ready) {
+                        keyboardComponent.createObject(container, {
                             "x": gridSizeW * item.location.x,
                             "y": gridSizeH * item.location.y,
                             "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
                             "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
-                            "widgetType": widgetKind,
-                            "targetEntityId": widgetBits.length > 1 ? widgetBits.slice(1).join(";").trim() : "",
-                            "fallbackMediaPlayerId": Qt.binding(function() {
-                                return Config.activityArtworkSources[entityObj.id] ||
-                                       (activityBase.mediaWidgetEntityObj ? activityBase.mediaWidgetEntityObj.id : "");
-                            }),
-                            "launchActivity": function(id) {
-                                activityBase.triggerCommand(id, "activity.start", {});
-                            },
-                            "openKeyboard": function(id) {
-                                keyboardTextPrompt.openManual(id);
+                            "openKeyboard": function() {
+                                const rules = Config.keyboardRules;
+                                let ruleTarget = "";
+                                for (let i = 0; i < rules.length; ++i) {
+                                    if (rules[i].activityId === activityBase.entityId &&
+                                            rules[i].mediaPlayerIds && rules[i].mediaPlayerIds.length) {
+                                        ruleTarget = rules[i].mediaPlayerIds[0];
+                                        break;
+                                    }
+                                }
+                                const explicitId = widgetParts.length > 1 ?
+                                                   widgetParts.slice(1).join(";").trim() : "";
+                                const commandId = item.command ? item.command.entity_id || "" : "";
+                                const target = explicitId || commandId || ruleTarget ||
+                                               (activityBase.mediaWidgetEntityObj ?
+                                                activityBase.mediaWidgetEntityObj.id : "");
+                                keyboardTextPrompt.openManual(target);
                             }
                         });
                     } else {
-                        console.warn("Cannot create special text widget:", widgetKind);
+                        console.warn("Keyboard shortcut widget failed:", keyboardComponent.errorString());
                     }
                     break;
                 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.VirtualKeyboard 2.3
 import Config 1.0
 import Entity.Controller 1.0
 import "qrc:/components" as Components
@@ -18,6 +19,8 @@ Item {
     property var prompted: ({})
     property var activeRule: null
     property bool manualMode: false
+    property bool closingKeyboard: false
+    property string pendingManualTarget: ""
     property string currentPrompt: qsTr("Enter text on the media player?")
 
     readonly property var rules: Config.keyboardRules.filter(function(rule) {
@@ -92,9 +95,15 @@ Item {
     // Called by a keyboard shortcut Text Button. The manual invocation shares
     // the same native keyboard as sensor automation, but needs no sensor.
     function openManual(mediaId) {
-        if (!activityActive) return;
+        if (!activityActive || !mediaId) return;
         const media = EntityController.get(mediaId);
-        if (!media || media.getTypeAsString() !== "media_player") return;
+        if (!media) {
+            pendingManualTarget = mediaId;
+            EntityController.load(mediaId);
+            return;
+        }
+        if (media.getTypeAsString() !== "media_player") return;
+        pendingManualTarget = "";
         manualMode = true;
         activeRule = {id: "manual", mediaPlayerIds: [mediaId]};
         textPopup.open();
@@ -136,7 +145,11 @@ Item {
     Connections {
         target: EntityController
         function onEntityLoaded(success, entityId) {
-            if (success && keyboardBridge.watchedSensorIds.indexOf(entityId) >= 0) keyboardBridge.evaluate();
+            if (!success) return;
+            if (entityId === keyboardBridge.pendingManualTarget) {
+                keyboardBridge.openManual(entityId);
+            }
+            if (keyboardBridge.watchedSensorIds.indexOf(entityId) >= 0) keyboardBridge.evaluate();
         }
     }
 
@@ -161,6 +174,16 @@ Item {
                         keyboardBridge.evaluate();
                     }
                 }
+            }
+        }
+    }
+
+    // Closing the native keyboard must also dismiss its entire input overlay.
+    Connections {
+        target: keyboard
+        function onClosed() {
+            if (textPopup.opened && !keyboardBridge.closingKeyboard) {
+                textPopup.close();
             }
         }
     }
@@ -190,6 +213,8 @@ Item {
         }
 
         onOpened: {
+            root.keyboardSendMode = true;
+            closingKeyboard = false;
             textEntry.inputValue = "";
             keyboardNavigation.takeControl();
             Qt.callLater(function() {
@@ -201,6 +226,8 @@ Item {
         }
 
         onClosed: {
+            closingKeyboard = true;
+            root.keyboardSendMode = false;
             manualMode = false;
             keyboard.hide();
             keyboardNavigation.releaseControl();
@@ -227,24 +254,15 @@ Item {
                 goBack: function() { textPopup.close(); }
             }
 
-            Text {
-                id: hint
-                width: parent.width - 40
-                anchors { top: inputTitle.bottom; topMargin: 10; horizontalCenter: parent.horizontalCenter }
-                text: qsTr("Type text to send to the configured media player.")
-                color: colors.textSecondary
-                font: fonts.prose()
-                wrapMode: Text.WordWrap
-            }
-
             Components.InputField {
                 id: textEntry
                 width: parent.width - 40
-                anchors { top: hint.bottom; topMargin: 15; horizontalCenter: parent.horizontalCenter }
+                anchors { top: inputTitle.bottom; topMargin: 25; horizontalCenter: parent.horizontalCenter }
                 moveInput: false
                 keyboardFollowsFocus: true
                 label: qsTr("Text")
                 inputField.placeholderText: qsTr("Enter text")
+                sendOnEnter: true
 
                 Connections {
                     target: textEntry.inputField
@@ -252,26 +270,7 @@ Item {
                 }
             }
 
-            Row {
-                width: parent.width - 40
-                spacing: 12
-                anchors { top: textEntry.bottom; topMargin: 15; horizontalCenter: parent.horizontalCenter }
 
-                Components.Button {
-                    width: (parent.width - parent.spacing) / 2
-                    variant: "secondary"
-                    text: qsTr("Cancel")
-                    trigger: function() { textPopup.close(); }
-                    KeyNavigation.right: sendButton
-                }
-
-                Components.Button {
-                    id: sendButton
-                    width: (parent.width - parent.spacing) / 2
-                    text: qsTr("Send")
-                    trigger: function() { keyboardBridge.submitText(); }
-                }
-            }
         }
     }
 }
