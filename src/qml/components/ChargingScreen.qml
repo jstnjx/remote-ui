@@ -287,7 +287,7 @@ Popup {
                 width: parent.width
                 text: Qt.formatDate(ui.time, "dddd").toLowerCase()
                 color: colors.offwhite
-                font: fonts.primaryFont(19)
+                font: fonts.primaryFont(22)
                 font.weight: Font.Light
             }
 
@@ -295,7 +295,7 @@ Popup {
                 width: parent.width
                 text: Qt.formatDate(ui.time, "d MMMM yyyy").toLowerCase()
                 color: colors.offwhite
-                font: fonts.primaryFont(19)
+                font: fonts.primaryFont(22)
                 font.weight: Font.Light
             }
         }
@@ -334,7 +334,7 @@ Popup {
         Text {
             text: Battery.level + "%"
             color: colors.green
-            font: fonts.primaryFont(18)
+            font: fonts.primaryFont(22)
             font.weight: Font.Light
             anchors { top: chargeRail.top; topMargin: 75; right: chargeRail.left; rightMargin: 6 }
         }
