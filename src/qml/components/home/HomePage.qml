@@ -122,15 +122,15 @@ Item {
         onTriggered: home.refresh()
     }
 
-    Rectangle { anchors.fill: parent; color: colors.black }
+    Rectangle { anchors.fill: parent; color: colors.bg }
     // Absorb taps on unused space; never pass them to the legacy page below.
     MouseArea { anchors.fill: parent }
 
     Flickable {
         id: scroll
         anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom }
-        anchors.topMargin: 52
-        anchors.bottomMargin: 30
+        anchors.topMargin: 48
+        anchors.bottomMargin: 36
         contentWidth: width
         contentHeight: content.implicitHeight + 28
         boundsBehavior: Flickable.StopAtBounds
@@ -140,29 +140,33 @@ Item {
             id: content
             x: 20
             width: parent.width - 40
-            spacing: 18
+            spacing: 20
 
-            // Common header retains stock typography, colors and iconography.
+            // Stock page language: one prominent display treatment, centered
+            // on black. The status bar clock is hidden while this is active.
             Item {
                 width: parent.width
-                height: Config.homeShowClock ? (home.minimal ? 300 : 115) : 14
+                height: home.minimal ? 310 : 150
                 visible: Config.homeShowClock
+
                 Column {
-                    anchors {
-                        top: home.minimal ? undefined : parent.top
-                        verticalCenter: home.minimal ? parent.verticalCenter : undefined
-                        left: parent.left
-                    }
+                    anchors.centerIn: parent
+                    width: parent.width
                     spacing: 4
+
                     Text {
+                        width: parent.width
                         text: Qt.formatTime(ui.time, Config.clock24h ? "HH:mm" : "hh:mm AP")
-                        color: colors.offwhite
-                        font: fonts.primaryFont(home.minimal ? 90 : 67, "Light")
+                        color: colors.textPrimary
+                        font: fonts.display(home.minimal ? 90 : 56)
+                        horizontalAlignment: Text.AlignHCenter
                     }
                     Text {
+                        width: parent.width
                         text: Qt.formatDate(ui.time, "ddd, d MMM")
-                        color: colors.light
-                        font: fonts.secondaryFont(24)
+                        color: colors.textSecondary
+                        font: fonts.value()
+                        horizontalAlignment: Text.AlignHCenter
                     }
                 }
             }
@@ -175,8 +179,8 @@ Item {
                 Text {
                     text: qsTr("Activities")
                     visible: Config.homeShowActivities
-                    color: colors.offwhite
-                    font: fonts.primaryFont(29)
+                    color: colors.textPrimary
+                    font: fonts.heading()
                 }
                 Grid {
                     id: modernGrid
@@ -188,7 +192,7 @@ Item {
                         model: home.activityIds
                         delegate: Home.ActivityTile {
                             width: (modernGrid.width - modernGrid.spacing) / 2
-                            height: 140
+                            height: 178
                             entityId: modelData
                             selected: home.isSelected("activity", modelData)
                             onTriggered: home.openEntity(id)
@@ -198,7 +202,7 @@ Item {
                 Text {
                     visible: Config.homeShowActivities && home.activityIds.length === 0
                     text: qsTr("No configured activities")
-                    color: colors.light
+                    color: colors.textSecondary
                     font: fonts.help()
                 }
             }
@@ -208,7 +212,7 @@ Item {
                 width: parent.width
                 spacing: 12
                 visible: home.mediaFocus && Config.homeShowMedia
-                Text { text: qsTr("Now playing"); color: colors.offwhite; font: fonts.primaryFont(29) }
+                Text { text: qsTr("Now playing"); color: colors.textPrimary; font: fonts.heading() }
                 Home.MediaCard {
                     width: parent.width
                     height: 405
@@ -226,25 +230,25 @@ Item {
                 visible: home.hub
                 Rectangle {
                     width: parent.width
-                    height: 160
+                    height: 150
                     radius: ui.cornerRadiusSmall
-                    color: colors.dark
-                    border { width: 1; color: colors.divider }
+                    color: colors.surface
+
                     Column {
                         anchors { left: parent.left; leftMargin: 20; verticalCenter: parent.verticalCenter }
-                        spacing: 10
-                        Text { text: qsTr("Living Room"); color: colors.offwhite; font: fonts.primaryFont(32) }
+                        spacing: 8
+                        Text { text: qsTr("Home"); color: colors.textPrimary; font: fonts.title() }
                         Text {
-                            text: qsTr("%1 activities · %2 quick controls").arg(home.activityIds.length).arg(home.quickIds.length)
-                            color: colors.light
+                            text: qsTr("%1 activities · %2 controls").arg(home.activityIds.length).arg(home.quickIds.length)
+                            color: colors.textSecondary
                             font: fonts.help()
                         }
                     }
                     Components.Icon {
                         anchors { right: parent.right; rightMargin: 20; verticalCenter: parent.verticalCenter }
                         icon: "uc:house"
-                        color: colors.offwhite
-                        size: 70
+                        color: colors.textPrimary
+                        size: 80
                     }
                 }
             }
@@ -254,7 +258,7 @@ Item {
                 width: parent.width
                 spacing: 12
                 visible: (home.mediaFocus || home.hub) && Config.homeShowActivities
-                Text { text: qsTr("Activities"); color: colors.offwhite; font: fonts.primaryFont(29) }
+                Text { text: qsTr("Activities"); color: colors.textPrimary; font: fonts.heading() }
                 Grid {
                     id: compactGrid
                     width: parent.width
@@ -264,7 +268,7 @@ Item {
                         model: home.activityIds
                         delegate: Home.ActivityTile {
                             width: (compactGrid.width - compactGrid.spacing) / 2
-                            height: 98
+                            height: 130
                             compact: true
                             entityId: modelData
                             selected: home.isSelected("activity", modelData)
@@ -279,10 +283,10 @@ Item {
                 width: parent.width
                 spacing: 12
                 visible: !home.mediaFocus && !home.minimal && Config.homeShowMedia
-                Text { text: qsTr("Now playing"); color: colors.offwhite; font: fonts.primaryFont(29) }
+                Text { text: qsTr("Now playing"); color: colors.textPrimary; font: fonts.heading() }
                 Home.MediaCard {
                     width: parent.width
-                    height: 160
+                    height: 180
                     selected: home.isSelected("media", home.mediaPlayer ? home.mediaPlayer.id : "")
                     player: home.mediaPlayer
                     openPlayer: function() { home.openMedia(); }
@@ -305,7 +309,7 @@ Item {
                         model: home.activityIds.slice(0, 4)
                         delegate: Home.ActivityTile {
                             width: (minimalDock.width - 3 * minimalDock.spacing) / 4
-                            height: 97
+                            height: 130
                             compact: true
                             entityId: modelData
                             selected: home.isSelected("activity", modelData)
@@ -318,7 +322,7 @@ Item {
             // Optional media on the otherwise minimal home layout.
             Home.MediaCard {
                 width: parent.width
-                height: 160
+                height: 180
                 visible: home.minimal && Config.homeShowMedia
                 player: home.mediaPlayer
                 openPlayer: function() { home.openMedia(); }
@@ -329,7 +333,7 @@ Item {
                 width: parent.width
                 spacing: 12
                 visible: Config.homeShowQuickControls
-                Text { text: qsTr("Quick controls"); color: colors.offwhite; font: fonts.primaryFont(29); visible: !home.minimal }
+                Text { text: qsTr("Quick controls"); color: colors.textPrimary; font: fonts.heading(); visible: !home.minimal }
                 Row {
                     id: quickRow
                     width: parent.width
@@ -338,7 +342,7 @@ Item {
                         model: home.quickIds.slice(0, 4)
                         delegate: Home.ActivityTile {
                             width: (quickRow.width - 3 * quickRow.spacing) / 4
-                            height: 95
+                            height: 130
                             compact: true
                             entityId: modelData
                             selected: home.isSelected("quick", modelData)
@@ -349,15 +353,19 @@ Item {
                         visible: home.quickIds.length === 0 && !ui.profile.restricted
                         width: 190; height: 80
                         radius: ui.cornerRadiusSmall
-                        color: colors.dark
+                        color: colors.surface
+                        Components.Selectable {
+                            selected: home.isSelected("settings", "")
+                            style: "fill"
+                        }
                         Components.Icon {
-                            icon: "uc:gear"; size: 45; color: colors.offwhite
+                            icon: "uc:gear"; size: 45; color: colors.textPrimary
                             anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                         }
                         Text {
                             text: qsTr("Settings")
-                            color: colors.offwhite
-                            font: fonts.primaryFont(23)
+                            color: colors.textPrimary
+                            font: fonts.label()
                             anchors { left: parent.left; leftMargin: 65; verticalCenter: parent.verticalCenter }
                         }
                         Components.HapticMouseArea { anchors.fill: parent; onClicked: home.openSettings() }
@@ -375,9 +383,8 @@ Item {
                 Repeater {
                     model: Math.min(home.pageCount, 8)
                     delegate: Rectangle {
-                        width: 12; height: 12; radius: 6
-                        color: colors.offwhite
-                        opacity: index === 0 ? 1 : 0.35
+                        width: 10; height: 10; radius: 5
+                        color: index === 0 ? colors.textPrimary : colors.textSecondary
                         Components.HapticMouseArea {
                             anchors.fill: parent
                             onClicked: home.pageChange(index)
