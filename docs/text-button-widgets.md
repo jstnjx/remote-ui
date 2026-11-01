@@ -1,34 +1,28 @@
-# Custom Text Button widgets
+# Keyboard shortcut Text widget
 
-The custom Remote UI recognizes special Text Buttons on an activity UI page, with the **Text** content in this format:
+The custom Remote UI supports one simple Text widget shortcut. The activity/game/app launchers have been removed.
 
-```text
-WIDGET_TYPE;OPTIONAL_ENTITY_ID
-```
+## Set up
 
-Entity IDs are optional. Configure a regular **Text** widget in the Core Web Configurator; no firmware or Core API schema modification is needed.
+1. In the Web Configurator, open an activity's UI page.
+2. Add an ordinary **Text** widget.
+3. Set its text to `KB` (only two characters, so it fits the stock text limit).
+4. Position and size it, then save.
 
-| Text Button content | Result |
-|---|---|
-| `ACTIVITY_LAUNCHER` | Open a popup list of available activities; select an activity to start it |
-| `ACTIVITY_LAUNCHER;uc.main.example-activity-id` | Start a specific activity immediately |
-| `ACTIVITY_SWITCHER` | Open the activity switcher popup, even when an ID is provided |
-| `KEYBOARD_SHORTCUT` | Open the native keyboard for the activity's primary media player, or choose one |
-| `KEYBOARD_SHORTCUT;uc.integration.example-player` | Open the native on-screen keyboard for that media player |
-| `APP_LAUNCHER` | Choose a configured Select or Media Player entity to open apps/games |
-| `APP_LAUNCHER;uc.integration.example-select` | Show a Select entity's options as launchable apps/games |
-| `APP_LAUNCHER;uc.integration.example-player` | Open the target Media Player's existing media browser if supported |
+The widget renders only a **keyboard icon on plain black**, with no title, label or additional popup layers.
 
-Aliases: `KEYBOARD` = `KEYBOARD_SHORTCUT`, `GAME_LAUNCHER` = `APP_LAUNCHER`.
+## Target media player
 
-Text after the first semicolon is treated as the optional entity ID; leading/trailing spaces are trimmed. The widget uses the Text Button's grid position and size.
+The keyboard target is resolved in the following order:
+1. An optional explicit ID in `KEYBOARD;media_player_id` (legacy syntax; may exceed the Text widget limit).
+2. The Text widget's normal command `entity_id`, if configured.
+3. The first media-player target in a keyboard automation rule for the same activity.
+4. The activity's configured media-player widget entity.
 
-## Commands and compatibility
+For the easiest setup, configure a rule in **Settings → Keyboard input automation** for the activity, with at least one media player target. That rule's sensor does **not** need to turn On when using the manual keyboard icon.
 
-**Activity Launcher** uses the existing `activity.start` command and the activity screen's normal navigation path.
+Clicking the icon opens the native keyboard overlay. A **Send** key appears inside the keyboard directly to the right of Backspace. Pressing Send submits `keyboard.text_set` with the text. Closing/hiding the keyboard closes the entire overlay. There are no separate Cancel or Send buttons and no explanatory text above the field.
 
-**Keyboard Shortcut** reuses the native Qt Virtual Keyboard and the same input/send dialog as the sensor-triggered keyboard, but without requiring a sensor to turn On. It sends `keyboard.text_set` with `{text: ...}` only after explicit Send/Enter. The target media-player integration must support that command.
+The selected integration must support `keyboard.text_set` on its media-player entity.
 
-**Application / Game Launcher** uses existing integration capabilities: if the target is a **Select** entity, it displays its `options` and calls `selectOption`. If the target is a **Media Player** that supports media browsing/search, it reuses the existing media browser and its `play_media` command flow. It cannot invent a list of applications for integrations that expose neither feature.
-
-The widgets are native QML components registered as qrc resources and remain available without a network-side widget server.
+For backward compatibility `KEYBOARD` and `KEYBOARD_SHORTCUT` are recognized in addition to `KB`. Existing `ACTIVITY_LAUNCHER`, `ACTIVITY_SWITCHER`, `APP_LAUNCHER`, and `GAME_LAUNCHER` widget interpretations have been removed; their text is treated as ordinary text.

@@ -73,6 +73,16 @@ The packaging script downloads [Shaka's pinned static ARM64 FFmpeg](https://gith
 
 FFmpeg does not need to be downloaded by the Remote at runtime. The decoder and UI run entirely on the device.
 
+## Wi-Fi reconnect behavior
+
+If an activity is opened before the remote has reconnected to Wi-Fi, FFmpeg
+may fail with a transient connection refused, timeout, unreachable host, DNS
+or I/O error. These errors are suppressed while the stream retries, so the
+tile continues showing the native loading circle. Once Wi-Fi and the camera
+are available the stream resumes automatically. Fatal errors such as invalid
+RTSP addresses, authentication failures and missing FFmpeg remain actionable
+on-screen messages.
+
 ## Connection troubleshooting
 
 The player uses RTSP-over-TCP and FFmpeg's RTSP-specific `-timeout 5000000` (5 seconds). The earlier `-rw_timeout` option is not reliably supported with RTSP. If the stream still stops, the tile now reports a more specific reason (authentication, bad path, network, unsupported codec, or sanitized FFmpeg stderr).

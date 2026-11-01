@@ -258,54 +258,91 @@ Popup {
 
     }
 
-    // Use the same screensaver surface, dismiss gestures and charging
-    // indicator as the analog clock. Match the configured 12/24-hour format.
+    // Minimal charging clock, styled after the Remote 3 reference: ample
+    // black space, lightweight time at lower left and a fine battery rail.
     Item {
         id: digitalClock
-        width: parent.width - 40
-        height: 240
-        anchors.centerIn: parent
+        anchors.fill: parent
         visible: Config.digitalScreensaverClock
 
         Column {
-            anchors.centerIn: parent
-            width: parent.width
-            spacing: 12
+            id: digitalTimeGroup
+            x: 20
+            y: parent.height * 0.62
+            width: parent.width - 92
+            spacing: 3
 
             Text {
                 width: parent.width
                 text: Qt.formatTime(ui.time, Config.clock24h ? "HH:mm" : "hh:mm AP")
                 color: colors.offwhite
-                font: fonts.primaryFont(84)
-                horizontalAlignment: Text.AlignHCenter
+                font: fonts.primaryFont(77)
+                font.weight: Font.Light
                 fontSizeMode: Text.Fit
-                minimumPixelSize: 50
-                elide: Text.ElideRight
+                minimumPixelSize: 38
+                horizontalAlignment: Text.AlignLeft
             }
 
             Text {
                 width: parent.width
-                text: Qt.formatDate(ui.time, "dddd, d MMMM")
-                color: colors.light
-                font: fonts.primaryFont(25)
-                horizontalAlignment: Text.AlignHCenter
-                fontSizeMode: Text.Fit
-                minimumPixelSize: 16
-                elide: Text.ElideRight
+                text: Qt.formatDate(ui.time, "dddd").toLowerCase()
+                color: colors.offwhite
+                font: fonts.primaryFont(19)
+                font.weight: Font.Light
             }
 
             Text {
                 width: parent.width
-                text: Qt.formatTime(ui.time, "ss")
-                color: colors.red
-                font: fonts.primaryFont(28)
-                horizontalAlignment: Text.AlignHCenter
+                text: Qt.formatDate(ui.time, "d MMMM yyyy").toLowerCase()
+                color: colors.offwhite
+                font: fonts.primaryFont(19)
+                font.weight: Font.Light
             }
+        }
+
+        // Narrow right-hand charge indicator. The bottom-anchored fill tracks
+        // the actual battery level; status stays visible even at 0%.
+        Item {
+            id: chargeRail
+            x: parent.width - 25
+            y: 45
+            width: 3
+            height: parent.height * 0.79
+
+            Rectangle {
+                anchors.fill: parent
+                color: colors.dark
+                radius: 2
+            }
+
+            Rectangle {
+                anchors.bottom: parent.bottom
+                width: parent.width
+                height: parent.height * Math.max(0, Math.min(100, Battery.level)) / 100
+                radius: 2
+                color: colors.green
+            }
+        }
+
+        Components.Icon {
+            icon: Battery.isCharging ? "uc:bolt" : "uc:battery-full"
+            color: colors.green
+            size: 22
+            anchors { top: parent.top; topMargin: 14; right: chargeRail.right }
+        }
+
+        Text {
+            text: Battery.level + "%"
+            color: colors.green
+            font: fonts.primaryFont(18)
+            font.weight: Font.Light
+            anchors { top: chargeRail.top; topMargin: 75; right: chargeRail.left; rightMargin: 6 }
         }
     }
 
     Item {
         id: chargeIndicator
+        visible: !Config.digitalScreensaverClock
         width: childrenRect.width
         height: 70
         anchors { bottom: parent.bottom; bottomMargin: -100; horizontalCenter: parent.horizontalCenter }

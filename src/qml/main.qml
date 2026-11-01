@@ -310,6 +310,7 @@ ApplicationWindow {
         property alias loading: loading
         property alias volume: volume
         property alias keyboard: keyboard
+        property bool keyboardSendMode: false
         property alias keyboardInputField: keyboardInputField
         property bool isActivityOpen: false
 
