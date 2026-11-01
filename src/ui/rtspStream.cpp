@@ -7,6 +7,7 @@
 #include <QPainter>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QStringList>
 #include <QUrl>
 
 RtspStream::RtspStream(QQuickItem *parent) : QQuickPaintedItem(parent), m_process(this) {
