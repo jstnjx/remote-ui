@@ -154,7 +154,7 @@ Settings.Page {
                     /** KEYBOARD NAVIGATION **/
                     highlight: activeFocus && ui.keyNavigationActive
                     KeyNavigation.up: apiActivitySwitch
-                    KeyNavigation.down: mediaCoverflowSwitch
+                    KeyNavigation.down: hideMediaControlsSwitch
                 }
             }
 
@@ -173,7 +173,7 @@ Settings.Page {
 
                     /** KEYBOARD NAVIGATION **/
                     highlight: activeFocus && ui.keyNavigationActive
-                    KeyNavigation.up: hideMediaControlsSwitch
+                    KeyNavigation.up: mediaComponentSwitch
                     KeyNavigation.down: mediaCoverflowSwitch
                 }
             }
@@ -194,7 +194,7 @@ Settings.Page {
 
                     /** KEYBOARD NAVIGATION **/
                     highlight: activeFocus && ui.keyNavigationActive
-                    KeyNavigation.up: mediaComponentSwitch
+                    KeyNavigation.up: hideMediaControlsSwitch
                 }
             }
         }
