@@ -68,6 +68,8 @@ class EntityController : public QObject {
     Q_INVOKABLE void    loadConfiguredEntities(const QString& integrationId);
     int                 getConfiguredEntitiesCount() { return m_configuredEntitiesCount; }
     QStringList         getActivities() { return m_activities; }
+    // Read-only list of currently loaded, configured entities for settings pickers.
+    Q_INVOKABLE QStringList getIdsByType(const QString& type);
     bool                getResumeWindow() { return m_resumeWindow; }
     // true from the moment the remote goes to sleep until the resume window has closed again. The core
     // reports a wakeup only once it is through, so the resume window alone leaves the span in which the

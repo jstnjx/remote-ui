@@ -508,6 +508,44 @@ void Config::setRtspFrameRate(int value) {
     emit rtspFrameRateChanged();
 }
 
+QString Config::getKeyboardActivityId() {
+    return m_settings->value("ui/keyboardActivityId").toString();
+}
+
+void Config::setKeyboardActivityId(const QString& value) {
+    if (getKeyboardActivityId() == value) {
+        return;
+    }
+    m_settings->setValue("ui/keyboardActivityId", value);
+    emit keyboardActivityIdChanged();
+    // A selected sensor must belong to the selected activity.
+    setKeyboardSensorId(QString());
+}
+
+QString Config::getKeyboardSensorId() {
+    return m_settings->value("ui/keyboardSensorId").toString();
+}
+
+void Config::setKeyboardSensorId(const QString& value) {
+    if (getKeyboardSensorId() == value) {
+        return;
+    }
+    m_settings->setValue("ui/keyboardSensorId", value);
+    emit keyboardSensorIdChanged();
+}
+
+QString Config::getKeyboardMediaPlayerId() {
+    return m_settings->value("ui/keyboardMediaPlayerId").toString();
+}
+
+void Config::setKeyboardMediaPlayerId(const QString& value) {
+    if (getKeyboardMediaPlayerId() == value) {
+        return;
+    }
+    m_settings->setValue("ui/keyboardMediaPlayerId", value);
+    emit keyboardMediaPlayerIdChanged();
+}
+
 int Config::getResumeTimeoutWindowSec() {
     return m_settings->value("ui/resumeTimeoutWindow", 2).toInt();
 }
