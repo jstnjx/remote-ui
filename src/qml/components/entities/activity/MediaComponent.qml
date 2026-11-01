@@ -42,7 +42,7 @@ Rectangle {
     readonly property int requiredTextArea: 120
     property int gridWidth: 4
     property int gridHeight: 6
-    readonly property int baseFontSize: Config.mediaWidgetLayout === 3 ? 30 : 24
+    property int baseFontSize: Config.mediaWidgetLayout === 3 ? 30 : 24
 
     property string entityId
     property string artworkEntityId: ""
@@ -58,7 +58,7 @@ Rectangle {
                                                   mediaComponent.height >= (expanded ? 240 : 320) ? 80 : 0
     property double mediaInfoHeight: mediaTitle.implicitHeight + mediaArtist.implicitHeight + progressContainer.implicitHeight + controlsContainerHeight + 60
 
-    readonly property bool isComponentHorizontal: compact || (!artworkOnly && mediaComponent.height < 260)
+    property bool isComponentHorizontal: compact || (!artworkOnly && mediaComponent.height < 260)
     property bool isSpaceForMediaInfo: {
         return !artworkOnly && (compact ? mediaComponent.height >= 100 : mediaComponent.height >= 240);
     }
