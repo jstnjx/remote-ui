@@ -4,21 +4,24 @@ import QtQuick 2.15
 import Entity.Controller 1.0
 import "qrc:/components" as Components
 
-// Uses the same tokens, menu-tile fill selection and typography as stock Page.
+// Native tile with two bounded layouts. Narrow dock/quick-control tiles
+// intentionally show only the icon: a 30px label cannot fit in 100px width.
 Rectangle {
     id: tile
     radius: ui.cornerRadiusSmall
     color: colors.surface
+    clip: true
+
     property string entityId: ""
     property bool selected: false
     property bool compact: false
+    readonly property bool iconOnly: compact && width < 170
     property var entityObj: EntityController.get(entityId)
     signal triggered(string id)
 
     onEntityIdChanged: entityObj = EntityController.get(entityId)
 
     Components.Selectable {
-        // Must be under the tile's content, not a permanent white outline.
         selected: tile.selected
         style: "fill"
     }
@@ -26,23 +29,21 @@ Rectangle {
     Connections {
         target: EntityController
         function onEntityLoaded(success, id) {
-            if (success && id === tile.entityId) {
+            if (success && id === tile.entityId)
                 tile.entityObj = EntityController.get(id);
-            }
         }
     }
 
-    // Standard native tile: 100px icon box, 30px label, 26px state.
     Column {
         visible: !tile.compact
         anchors.centerIn: parent
-        width: parent.width - 20
-        spacing: 2
+        width: Math.max(0, parent.width - 20)
+        spacing: 3
 
         Components.Icon {
             anchors.horizontalCenter: parent.horizontalCenter
             icon: tile.entityObj && tile.entityObj.icon ? tile.entityObj.icon : "uc:tv"
-            size: 100
+            size: 68
             color: colors.textPrimary
         }
         Text {
@@ -66,13 +67,13 @@ Rectangle {
         }
     }
 
-    // Compact native row, falling back to an icon-only dock for narrow tiles.
     Row {
         visible: tile.compact
         anchors.centerIn: parent
-        width: parent.width - 12
-        height: 80
-        spacing: 4
+        height: 64
+        width: tile.iconOnly ? 64 : Math.max(0, tile.width - 20)
+        spacing: 8
+
         Components.Icon {
             id: compactIcon
             icon: tile.entityObj && tile.entityObj.icon ? tile.entityObj.icon : "uc:tv"
@@ -81,14 +82,13 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
         }
         Text {
-            visible: tile.width >= 160
-            width: Math.max(0, tile.width - compactIcon.width - 26)
+            visible: !tile.iconOnly
+            width: Math.max(0, parent.width - compactIcon.width - parent.spacing)
             anchors.verticalCenter: parent.verticalCenter
             text: tile.entityObj ? tile.entityObj.name : qsTr("Activity")
             font: fonts.label()
             color: colors.textPrimary
-            wrapMode: Text.WordWrap
-            maximumLineCount: 2
+            maximumLineCount: 1
             elide: Text.ElideRight
         }
     }

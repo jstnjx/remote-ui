@@ -128,7 +128,7 @@ Rectangle {
 
         passwordCharacter: "•"
         EnterKeyAction.actionId: inputFieldContainer.sendOnEnter ? EnterKeyAction.Send : EnterKeyAction.None
-        EnterKeyAction.label: inputFieldContainer.sendOnEnter ? qsTr("Send") : ""
+        EnterKeyAction.label: ""  // Let the native style display its return/send arrow.
 
         KeyNavigation.up: inputFieldContainer.navUp
         KeyNavigation.down: inputFieldContainer.navDown

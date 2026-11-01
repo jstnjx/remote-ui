@@ -21,7 +21,7 @@ The keyboard target is resolved in the following order:
 
 For the easiest setup, configure a rule in **Settings → Keyboard input automation** for the activity, with at least one media player target. That rule's sensor does **not** need to turn On when using the manual keyboard icon.
 
-Clicking the icon opens the native keyboard overlay. A **Send** key appears inside the keyboard directly to the right of Backspace. Pressing Send submits `keyboard.text_set` with the text. Closing/hiding the keyboard closes the entire overlay. There are no separate Cancel or Send buttons and no explanatory text above the field.
+Clicking the icon opens the native keyboard overlay. A native **return/send arrow icon** appears inside the keyboard directly to the right of Backspace (no uppercase SEND label). Pressing Send submits `keyboard.text_set` with the text. Closing/hiding the keyboard closes the entire overlay. There are no separate Cancel or Send buttons and no explanatory text above the field.
 
 The selected integration must support `keyboard.text_set` on its media-player entity.
 
