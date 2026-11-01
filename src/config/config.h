@@ -109,6 +109,13 @@ class Config : public QObject {
                    mediaCoverflowDefaultChanged)
     Q_PROPERTY(bool hideMediaPlayerControls READ getHideMediaPlayerControls WRITE setHideMediaPlayerControls NOTIFY
                    hideMediaPlayerControlsChanged)
+    Q_PROPERTY(bool redesignedHomeEnabled READ getRedesignedHomeEnabled WRITE setRedesignedHomeEnabled NOTIFY homeSettingsChanged)
+    Q_PROPERTY(int homeScreenLayout READ getHomeScreenLayout WRITE setHomeScreenLayout NOTIFY homeSettingsChanged)
+    Q_PROPERTY(bool homeShowClock READ getHomeShowClock WRITE setHomeShowClock NOTIFY homeSettingsChanged)
+    Q_PROPERTY(bool homeShowMedia READ getHomeShowMedia WRITE setHomeShowMedia NOTIFY homeSettingsChanged)
+    Q_PROPERTY(bool homeShowActivities READ getHomeShowActivities WRITE setHomeShowActivities NOTIFY homeSettingsChanged)
+    Q_PROPERTY(bool homeShowQuickControls READ getHomeShowQuickControls WRITE setHomeShowQuickControls NOTIFY homeSettingsChanged)
+    Q_PROPERTY(bool homeShowPageIndicators READ getHomeShowPageIndicators WRITE setHomeShowPageIndicators NOTIFY homeSettingsChanged)
     Q_PROPERTY(bool showMediaShuffle READ getShowMediaShuffle WRITE setShowMediaShuffle NOTIFY mediaControlsChanged)
     Q_PROPERTY(bool showMediaRepeat READ getShowMediaRepeat WRITE setShowMediaRepeat NOTIFY mediaControlsChanged)
     Q_PROPERTY(bool showMediaBrowser READ getShowMediaBrowser WRITE setShowMediaBrowser NOTIFY mediaControlsChanged)
@@ -224,6 +231,21 @@ class Config : public QObject {
 
     bool getHideMediaPlayerControls();
     void setHideMediaPlayerControls(bool value);
+    bool getRedesignedHomeEnabled();
+    void setRedesignedHomeEnabled(bool enabled);
+    int getHomeScreenLayout();
+    void setHomeScreenLayout(int layout);
+    bool getHomeShowClock();
+    void setHomeShowClock(bool show);
+    bool getHomeShowMedia();
+    void setHomeShowMedia(bool show);
+    bool getHomeShowActivities();
+    void setHomeShowActivities(bool show);
+    bool getHomeShowQuickControls();
+    void setHomeShowQuickControls(bool show);
+    bool getHomeShowPageIndicators();
+    void setHomeShowPageIndicators(bool show);
+
     bool getShowMediaShuffle();
     void setShowMediaShuffle(bool value);
     bool getShowMediaRepeat();
@@ -429,6 +451,7 @@ class Config : public QObject {
     void mediaCoverflowDefaultChanged();
     void hideMediaPlayerControlsChanged();
     void mediaControlsChanged();
+    void homeSettingsChanged();
     void mediaWidgetLayoutChanged();
     void activityArtworkSourcesChanged();
     void rtspFrameRateChanged();

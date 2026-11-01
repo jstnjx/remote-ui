@@ -67,6 +67,10 @@
         <file alias="settings/settings/Color.qml">../../src/qml/settings/settings/Color.qml</file>
         <file alias="settings/settings/Display.qml">../../src/qml/settings/settings/Display.qml</file>
         <file alias="settings/settings/Ui.qml">../../src/qml/settings/settings/Ui.qml</file>
+        <file alias="settings/settings/HomeScreen.qml">../../src/qml/settings/settings/HomeScreen.qml</file>
+        <file alias="components/home/HomePage.qml">../../src/qml/components/home/HomePage.qml</file>
+        <file alias="components/home/ActivityTile.qml">../../src/qml/components/home/ActivityTile.qml</file>
+        <file alias="components/home/MediaCard.qml">../../src/qml/components/home/MediaCard.qml</file>
         <file alias="settings/settings/MediaWidgets.qml">../../src/qml/settings/settings/MediaWidgets.qml</file>
         <file alias="settings/settings/KeyboardPrompt.qml">../../src/qml/settings/settings/KeyboardPrompt.qml</file>
         <file alias="settings/settings/TouchSlider.qml">../../src/qml/settings/settings/TouchSlider.qml</file>
