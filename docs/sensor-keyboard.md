@@ -1,33 +1,27 @@
-# Sensor-triggered keyboard input
+# Context-aware keyboard automation
 
-The custom remote UI can offer its **native on-screen keyboard** while an activity is open, based on a configured On/Off sensor. This behavior lives entirely inside the remote UI.
+Navigate to **Settings → Keyboard input automation** to create multiple independently configured rules.
 
-## Configure
+Each rule supports:
+- **Activity**: only active while that activity is open and On
+- **On/Off sensors**: select one or more configured binary On/Off sensors, or sensors placed on an activity UI page
+- **Media-player targets**: select one or more configured media players
+- **Prompt text**: edit the prompt shown on the activity UI before opening the native keyboard
 
-1. On the remote, open **Settings → Keyboard input automation**.
-2. Select an **Activity**.
-3. Select an **On/Off sensor** belonging to that activity. The picker offers binary sensors and sensors currently reporting a raw `on` or `off` value.
-4. Choose a **Target media player** from configured, loaded media-player entities (it may be outside the activity).
-5. Return to the selected activity. When the sensor reports `on`, a prompt offers **Open keyboard**. Dismissing it does not reopen the prompt until a new Off-to-On cycle.
+The sensor picker no longer depends on `activity.includedEntities`; sensor widgets remain selectable even when the Core API omits sensors from included entities. Any selected sensor reporting raw `on` fires a rule; the rule rearms only after **all** its sensors report `off`. Dismissing the prompt leaves it suppressed for that On cycle. Each rule has its own rearm state.
 
-The popup uses the stock Remote UI's input field and Qt Virtual Keyboard. Press **Send** (or accept on the keyboard) to send:
+After choosing **Open keyboard**, the remote uses its native Qt Virtual Keyboard and sends the entered text to **each available selected media player**:
 
 ```json
-{
-  "entity_id": "selected-media-player-id",
-  "cmd_id": "keyboard.text_set",
-  "params": {"text": "text typed on the remote"}
-}
+{"cmd_id":"keyboard.text_set","params":{"text":"Your text"}}
 ```
 
-The target integration must support the `keyboard.text_set` command on its media-player entity; the standard media-player entity does not automatically guarantee support for every custom command.
+Each command uses the selected target's media-player entity ID. The media-player integration must implement `keyboard.text_set`; an ordinary media-player entity does not guarantee support. Text is sent only on an explicit Send/Enter, never on every keypress.
 
-## Behavior and safety
+## Compatibility and limits
 
-- No command is sent merely because the sensor turns On. The user must open the keyboard and submit nonempty text.
-- The sensor's **raw** value is read instead of its translated presentation text, making it independent of the Remote UI language.
-- Off dismisses the popup and allows the next On transition to prompt again.
-- Prompts only appear when the configured activity is open and On.
-- Sensor and media-player selections are stored in the remote UI's existing persistent QSettings file, not in the Core API.
-- Changing the activity clears the old sensor selection; choosing **None** disables the corresponding selector.
-- The popup checks that the configured media player is available before sending the command.
+The original single-activity, single-sensor, single-player preference is automatically migrated into the first rule when `ui/keyboardRules` is missing. New rules are saved in `ui/keyboardRules` using QSettings; removing a rule does not alter activities or entities on the Core API.
+
+Selectors list entities loaded by the UI; activity-page sensor widget IDs are also discovered and loaded. A sensor not yet configured or loaded may initially display its ID rather than its friendly name.
+
+The remote must have the selected activity open and its state On. The UI evaluates raw sensor values `on` and `off` rather than translated labels. The popup is dismissed if the activity closes or sensor returns to Off. Multiple simultaneous rules are offered sequentially rather than opening multiple overlapping dialogs.

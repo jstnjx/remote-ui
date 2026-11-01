@@ -11,6 +11,7 @@
 #include <QRandomGenerator>
 #include <QSettings>
 #include <QTimeZone>
+#include <QVariantList>
 
 #include "../core/core.h"
 #include "../translation/translation.h"
@@ -109,6 +110,7 @@ class Config : public QObject {
     Q_PROPERTY(QString keyboardActivityId READ getKeyboardActivityId WRITE setKeyboardActivityId NOTIFY keyboardActivityIdChanged)
     Q_PROPERTY(QString keyboardSensorId READ getKeyboardSensorId WRITE setKeyboardSensorId NOTIFY keyboardSensorIdChanged)
     Q_PROPERTY(QString keyboardMediaPlayerId READ getKeyboardMediaPlayerId WRITE setKeyboardMediaPlayerId NOTIFY keyboardMediaPlayerIdChanged)
+    Q_PROPERTY(QVariantList keyboardRules READ getKeyboardRules WRITE setKeyboardRules NOTIFY keyboardRulesChanged)
 
     Q_PROPERTY(int resumeTimeoutWindowSec READ getResumeTimeoutWindowSec WRITE setResumeTimeoutWindowSec NOTIFY
                    resumeTimeoutWindowSecChanged)
@@ -216,6 +218,8 @@ class Config : public QObject {
     void setKeyboardSensorId(const QString& value);
     QString getKeyboardMediaPlayerId();
     void setKeyboardMediaPlayerId(const QString& value);
+    QVariantList getKeyboardRules();
+    void setKeyboardRules(const QVariantList& rules);
 
     int  getResumeTimeoutWindowSec();
     void setResumeTimeoutWindowSec(int value);
@@ -393,6 +397,7 @@ class Config : public QObject {
     void keyboardActivityIdChanged();
     void keyboardSensorIdChanged();
     void keyboardMediaPlayerIdChanged();
+    void keyboardRulesChanged();
     void resumeTimeoutWindowSecChanged(int value);
     void touchSliderEnabledChanged();
     void touchSliderGainVolumeChanged();
