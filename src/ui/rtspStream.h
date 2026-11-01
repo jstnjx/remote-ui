@@ -41,7 +41,8 @@ class RtspStream : public QQuickPaintedItem {
     void stopStream();
     void readFrames();
     void onProcessError(QProcess::ProcessError error);
-    void onProcessFinished();
+    void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    QString failureDetail(int exitCode, QProcess::ExitStatus exitStatus) const;
     void setPlaying(bool playing);
     void setError(const QString &error);
 
@@ -57,5 +58,6 @@ class RtspStream : public QQuickPaintedItem {
     QTimer m_retryTimer;
     QTimer m_watchdogTimer;
     QByteArray m_buffer;
+    QByteArray m_diagnostics;
     QImage m_frame;
 };
