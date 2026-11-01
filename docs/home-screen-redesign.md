@@ -1,6 +1,6 @@
 # Optional Home Screen Redesign
 
-This redesign is **disabled by default**. It is a visual overlay **only on the first page** of the original home screen, not a replacement for the original `Page.qml` component or the underlying page data. All existing pages, editing, D-pad navigation, activities, integrations, profile/settings menu and activity screens remain intact. If the optional home QML fails to load, its Loader reports the error and exposes the original first page.
+This redesign is **disabled by default**. It is a visual overlay **only on the first page** of the original home screen, not a replacement for the original `Page.qml` component or the underlying page data. All existing pages, editing, D-pad navigation, activities, integrations, profile/settings menu and activity screens remain intact. Restricted profiles always use the original home screen so the new launcher cannot expose entities not assigned to their profile. If the optional home QML fails to load, its Loader reports the error and exposes the original first page.
 
 ## Enable
 
