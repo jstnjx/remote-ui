@@ -283,7 +283,7 @@ void RtspStream::updateStats() {
                 const QList<QByteArray> fields = raw.mid(end + 2).split(' ');
                 if (fields.size() > 12) {
                     const qint64 ticks = fields[11].toLongLong() + fields[12].toLongLong();
-                    const long ticksPerSecond = sysconf(_SC_CLK_TCK);
+                    const qint64 ticksPerSecond = static_cast<qint64>(sysconf(_SC_CLK_TCK));
                     if (m_lastCpuTicks >= 0 && ticksPerSecond > 0 && ticks >= m_lastCpuTicks) {
                         m_cpuPercent = 100000.0 * (ticks - m_lastCpuTicks) / (ticksPerSecond * ms);
                     }
