@@ -728,7 +728,8 @@ Item {
     Loader {
         id: redesignedHome
         anchors.fill: pages
-        z: 1
+        // Keep the stock status bar, battery and global overlays above this.
+        z: 0
         asynchronous: true
         active: Config.redesignedHomeEnabled && pages.count > 0 &&
                 pages.currentIndex === 0 && !ui.editMode &&
