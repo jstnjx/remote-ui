@@ -45,8 +45,11 @@ for content in (cards, touchpad):
     assert "selectionError" in content
     assert "matches.length > 1" in content
     assert "known.length === 1" in content
-    assert "ui.cornerRadiusSmall" in content
-    assert "colors.dark" in content
+    # The surrounding Activity page must show through the whole widget.
+    # Only the interactive native buttons/sliders may retain a fill.
+    assert "color: colors.transparent" in content
+    assert "radius: 0" in content
+    assert "color: colors.dark" not in content.split("property string entitySelector:", 1)[0]
     assert "colors.offwhite" in content
 
 assert 'LightStates.Unavailable' in cards
@@ -144,6 +147,7 @@ for marker in ("LIGHT;living", "CLIMATE;living", "COVER;shade", "TP;apple_tv"):
     assert marker in docs
 assert "inline" in docs.lower()
 assert "OpenClose.qml" in docs
+assert "transparent" in docs.lower()
 assert "loadThirdContainer" not in docs
 assert "page swiping" in docs or "page swipe" in docs
 
