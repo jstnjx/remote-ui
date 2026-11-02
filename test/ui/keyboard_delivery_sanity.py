@@ -27,7 +27,8 @@ assert 'root.keyboardSendMode ? ""' in style
 assert 'Styles/remotestyle/style.qml' in qrc
 
 # All native media-player keyboard rules and manual shortcuts remain supported.
-assert '"keyboard.text_set", {text: value}' in bridge
+assert 'cmd = "keyboard.text_set";' in bridge
+assert 'params = {text: value};' in bridge
 assert 'function openManual(entityId)' in bridge
 assert '["KB", "KEYBOARD", "KEYBOARD_SHORTCUT"]' in activity
 assert 'keyboardTextPrompt.openManual(target)' in activity
@@ -70,8 +71,9 @@ assert 'mediaPlayerIds' in bridge and 'mediaPlayerIds' in settings
 assert 'import Entity.Remote 1.0' in bridge
 assert 'type !== "media_player" && type !== "remote"' in bridge
 assert 'if (type === "remote")' in bridge
-assert 'EntityController.onEntityCommand(target.id, "remote.send_cmd",' in bridge
-assert '{command: "keyboard.text_set " + value}' in bridge
+assert 'cmd = "remote.send_cmd";' in bridge
+assert 'EntityController.onEntityCommand(request.entityId, request.command, request.params);' in bridge
+assert 'params = {command: "keyboard.text_set " + value};' in bridge
 assert 'EntityController.mayCommandEntity(target.enabled)' in bridge
 assert 'EntityController.getIdsByType("remote")' in settings
 assert 'EntityController.getIdsByType("media_player")' in settings
