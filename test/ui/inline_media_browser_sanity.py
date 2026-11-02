@@ -36,6 +36,18 @@ assert "requestId !== pendingRequestId" in browser
 assert "pendingRequestId = -1;" in browser
 assert "browserActive" in browser
 assert "function goBack()" in browser and "function enterFolder(item)" in browser
+# A PathView model swap emits currentIndexChanged. Disable parent pagination
+# before entering the next folder or we can wrongly send page N+1 of the
+# previous directory to the new folder and then block its first-page request.
+enter_folder = browser.split("    function enterFolder(item) {", 1)[1].split("    function goBack()", 1)[0]
+assert enter_folder.index("hasMore = false;") < enter_folder.index("browseItems = nestedItems.slice();")
+assert enter_folder.index("restoringModel = true;") < enter_folder.index("browseItems = nestedItems.slice();")
+assert "browser.pendingRequestId < 0" in enter_folder
+go_back = browser.split("    function goBack() {", 1)[1].split("    function loadMore()", 1)[0]
+assert go_back.index("restoringModel = true;") < go_back.index("browseItems = previous.items.slice();")
+assert "browser.restoringModel = false;" in go_back
+assert "restoringModel = false;" in browser.split("    function reset() {", 1)[1].split("    function requestPage(", 1)[0]
+
 assert "browseItems = previous.items.slice();" in browser
 assert "previous.container" in browser
 
