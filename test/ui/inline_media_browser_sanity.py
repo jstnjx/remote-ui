@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static checks for the inline activity Media Browser (MB;<entity_id>).
+"""Static checks for the inline activity Media Browser (MB or MB;<alias>).
 
 The Remote hardware still needs visual testing. These checks catch missing QRC
 registration, accidental popup usage and invalid carousel geometry at grid sizes.
@@ -15,7 +15,9 @@ player = (ROOT / "src/ui/entity/mediaPlayer.h").read_text()
 for expected in (
     'if (widgetKind === "MB")',
     '"qrc:/components/entities/activity/InlineMediaBrowser.qml"',
-    '"entityId": browserId',
+    '"entitySelector": browserSelector',
+    '"commandEntityId": item.command',
+    '"activityEntity": entityObj',
     '"browserActive": Qt.binding(function()',
 ):
     assert expected in activity, f"Activity marker contract missing: {expected}"
@@ -38,6 +40,30 @@ assert "function loadMore()" in browser and "pageSize: 20" in browser
 assert "pagination.count" in browser
 assert "browseMedia(folderId, folderType, pageSize, page)" in browser
 assert "player.playMedia(item.media_id, item.media_type" in browser
+# Short selectors must not require renaming the real entity or exceeding the
+# text button length limit. The long original marker remains backward compatible.
+for required in (
+    'property string entitySelector: ""',
+    'property string commandEntityId: ""',
+    'function activityPlayerIds()',
+    'function resolveTarget()',
+    'getIdsByType("media_player")',
+    'last.indexOf(needle) === 0',
+    'matches.length === 1',
+    'matches.length > 1',
+    'configured.indexOf(preferred[i]) >= 0',
+    'configured.length === 1',
+    'selectionMessage',
+):
+    assert required in browser, f"Missing MB shortcut resolution contract: {required}"
+
+# Representative regression: "MB;ps5" identifies the full PS5 Connect ID,
+# while ambiguous names explicitly require a longer suffix.
+ps5_id = "ps5_connect_driver.main.media_player.ps5_10_1_1_30"
+assert ps5_id.split(".")[-1].lower().startswith("ps5")
+assert len("MB;ps5") < len("MB;" + ps5_id)
+assert "MB;ps5" in (ROOT / "docs/inline-media-browser.md").read_text()
+
 assert "Q_INVOKABLE int  browseMedia(" in player
 assert "void browseMediaResult(int requestId" in player
 
