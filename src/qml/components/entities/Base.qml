@@ -25,7 +25,7 @@ import "qrc:/components/entities/media_player" as MediaPlayerComponents
 
 Rectangle {
     id: entityBaseContainer
-    width: redesignedHomeStyle && parent ? parent.width : (isInGroup ? ui.width - 40 : ui.width - 20)
+    width: isInGroup ? ui.width - 40 : ui.width - 20
     height: redesignedHomeStyle ? 94 : 130
     color: redesignedHomeStyle ? colors.surface : colors.black
     opacity: currentEntityObj.enabled ? 1 : 0.5
