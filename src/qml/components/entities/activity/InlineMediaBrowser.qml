@@ -260,14 +260,19 @@ Rectangle {
 
     function activateItem(item, index) {
         if (!item || !player || !browserActive) return;
+        // Native MediaBrowser enters a browseable item with a single tap.
+        // The inline PathView formerly required a second tap if it wasn't
+        // already centered, making deep browsing appear unresponsive.
+        if ((item.can_browse || (item.items && item.items.length)) &&
+                !item.__containerPlay && (item.media_id || (item.items && item.items.length))) {
+            enterFolder(item);
+            return;
+        }
         if (index !== carousel.currentIndex) {
             carousel.currentIndex = index;
             return;
         }
-        if ((item.can_browse || (item.items && item.items.length)) &&
-                !item.__containerPlay) {
-            enterFolder(item);
-        } else if (item.can_play) {
+        if (item.can_play) {
             // PLAY_NOW is optional; normal play_media works on older integrations.
             if (player.hasFeature(MediaPlayerFeatures.Play_media_action) &&
                     item.play_media_action && item.play_media_action.indexOf("PLAY_NOW") >= 0)
@@ -290,10 +295,25 @@ Rectangle {
         const revision = navigationRevision;
         // The root response is the root browse container, not an item to
         // display. Inside folders retain the returned album/playlist metadata.
-        if (history.length)
-            currentContainer = media || currentContainer;
-        else
+        if (history.length) {
+            // Browse responses may omit fields already provided by the
+            // selected folder: retain media_id, media_type, playability and
+            // artwork for the playlist/album header.
+            const previousContainer = currentContainer || {};
+            currentContainer = Object.assign({}, previousContainer, media || {});
+            if (!currentContainer.media_id) currentContainer.media_id = folderId;
+            if (!currentContainer.media_type) currentContainer.media_type = folderType;
+            if (!currentContainer.thumbnail)
+                currentContainer.thumbnail = previousContainer.thumbnail || "";
+            if (!currentContainer.title)
+                currentContainer.title = previousContainer.title || "";
+            if (previousContainer.can_play)
+                currentContainer.can_play = true;
+            if (!currentContainer.media_class)
+                currentContainer.media_class = previousContainer.media_class || "";
+        } else {
             currentContainer = null;
+        }
         restoringModel = true;
         // Preserve embedded children if the server reports an empty page.
         browseItems = append ? browseItems.concat(incoming)
@@ -405,11 +425,11 @@ Rectangle {
         PathView {
             id: carousel
             anchors.fill: parent
-            visible: browser.hasArtworkRoom && browser.browseItems.length > 0
+            visible: browser.hasArtworkRoom && browser.displayItems.length > 0
             clip: true
-            model: browser.browseItems
-            interactive: browser.browserActive && browser.browseItems.length > 1
-            pathItemCount: Math.min(5, browser.browseItems.length)
+            model: browser.displayItems
+            interactive: browser.browserActive && browser.displayItems.length > 1
+            pathItemCount: Math.min(5, browser.displayItems.length)
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
             highlightRangeMode: PathView.StrictlyEnforceRange
@@ -505,7 +525,9 @@ Rectangle {
                   : !browser.player ? qsTr("Media player unavailable")
                   : !browser.canBrowse ? qsTr("Media browsing unsupported")
                   : browser.errorMessage ? browser.errorMessage
-                  : browser.loading ? qsTr("Loading media…") : qsTr("No media found")
+                  : browser.loading ? qsTr("Loading media…")
+                   : browser.history.length && browser.currentContainer
+                     ? qsTr("This folder has no media") : qsTr("No media found")
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             wrapMode: Text.WordWrap
@@ -569,8 +591,10 @@ Rectangle {
         Text {
             width: parent.width
             text: browser.currentItem
-                  ? browser.currentItem.subtitle || browser.currentItem.artist ||
-                    browser.currentItem.album || "" : ""
+                  ? (browser.currentItem.__containerPlay
+                     ? qsTr("Tap cover to play") :
+                     browser.currentItem.subtitle || browser.currentItem.artist ||
+                     browser.currentItem.album || "") : ""
             font: fonts.help()
             color: colors.light
             horizontalAlignment: Text.AlignHCenter
