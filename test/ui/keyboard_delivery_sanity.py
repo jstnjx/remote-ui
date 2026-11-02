@@ -41,7 +41,7 @@ assert 'function isHomeAssistantMediaPlayer(target)' in bridge
 assert 'const companion = matchingCompanionRemote(target)' in bridge
 assert 'Wrong target: %1 is a Media player. Select its Remote entity.' in bridge
 assert 'id: explicitSendButton' not in bridge
-assert 'text: qsTr("Send text")' not in bridge
+assert 'id: inputTitle' in bridge  # heading remains; only extra action button is removed
 assert 'id: deliveryStatus' in bridge
 assert 'top: textEntry.bottom' in bridge
 assert 'function onClosed()' in bridge
