@@ -585,6 +585,9 @@ Item {
                 label: qsTr("Text")
                 inputField.placeholderText: qsTr("Enter text")
                 enterKeyAction: EnterKeyAction.Search
+                // Same metadata as MediaBrowser's working Search key; the KB
+                // keyboard style still hides this label and draws its Send arrow.
+                enterKeyLabel: qsTr("Search")
                 inputField.inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
 
                 // Match the working MediaBrowser's SearchField: bind the
