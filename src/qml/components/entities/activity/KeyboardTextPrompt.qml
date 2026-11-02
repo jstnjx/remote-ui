@@ -20,6 +20,8 @@ Item {
     property var activeRule: null
     property bool manualMode: false
     property bool closingKeyboard: false
+    property bool submitting: false
+    property int submitSerial: 0
     property string pendingManualTarget: ""
     property string currentPrompt: qsTr("Enter text on the media player?")
 
@@ -105,11 +107,76 @@ Item {
         if (media.getTypeAsString() !== "media_player") return;
         pendingManualTarget = "";
         manualMode = true;
-        activeRule = {id: "manual", mediaPlayerIds: [mediaId]};
+        // The optional HA bridge belongs to the current activity and its
+        // selected player. Reuse it for manual KB widgets as well as sensor
+        // prompts; never send an Apple TV webhook to an unrelated player.
+        let webhook = "";
+        for (let i = 0; i < rules.length; ++i) {
+            const selected = rules[i].mediaPlayerIds || [];
+            if (selected.indexOf(mediaId) >= 0 && rules[i].homeAssistantWebhookUrl) {
+                webhook = rules[i].homeAssistantWebhookUrl;
+                break;
+            }
+        }
+        activeRule = {id: "manual", mediaPlayerIds: [mediaId],
+                      homeAssistantWebhookUrl: webhook};
         textPopup.open();
     }
 
+    function finishSubmission() {
+        submitting = false;
+        keyboard.hide();
+        textPopup.close();
+    }
+
+    function submitViaHomeAssistant(url, value) {
+        // A local HA webhook automation calls apple_tv.set_keyboard_text.
+        // UC's HA media_player entity does not implement keyboard.text_set
+        // and cannot call arbitrary HA actions through entity commands.
+        const endpoint = String(url || "").trim();
+        if (!/^https?:\\/\\/[^\\s]+\\/api\\/webhook\\/[^\\s/?#]+$/.test(endpoint)) {
+            textEntry.showError(qsTr("Enter a valid Home Assistant webhook URL in keyboard settings."));
+            return;
+        }
+        submitting = true;
+        const serial = ++submitSerial;
+        const request = new XMLHttpRequest();
+        request.onreadystatechange = function() {
+            if (request.readyState !== XMLHttpRequest.DONE || serial !== submitSerial)
+                return;
+            if (!textPopup.opened) return;
+            if (request.status >= 200 && request.status < 300) {
+                keyboardBridge.finishSubmission();
+            } else {
+                keyboardBridge.submitting = false;
+                textEntry.showError(qsTr("Home Assistant rejected the text (HTTP %1).").arg(request.status));
+            }
+        };
+        try {
+            request.open("POST", endpoint);
+            request.setRequestHeader("Content-Type", "application/json");
+            request.timeout = 12000;
+            request.ontimeout = function() {
+                if (serial === submitSerial && textPopup.opened) {
+                    keyboardBridge.submitting = false;
+                    textEntry.showError(qsTr("Home Assistant did not respond."));
+                }
+            };
+            request.onerror = function() {
+                if (serial === submitSerial && textPopup.opened) {
+                    keyboardBridge.submitting = false;
+                    textEntry.showError(qsTr("Could not reach the Home Assistant webhook."));
+                }
+            };
+            request.send(JSON.stringify({text: value}));
+        } catch (e) {
+            submitting = false;
+            textEntry.showError(qsTr("Could not send text to Home Assistant."));
+        }
+    }
+
     function submitText() {
+        if (submitting) return;
         if (!activityActive || !activeRule || (!manualMode && !ruleOn(activeRule))) {
             textEntry.showError(qsTr("The activity or sensor is no longer active."));
             return;
@@ -120,21 +187,45 @@ Item {
             return;
         }
         const players = activeRule.mediaPlayerIds || [];
+        if (activeRule.homeAssistantWebhookUrl) {
+            if (players.length === 0) {
+                textEntry.showError(qsTr("Select an Apple TV media player for this rule."));
+                return;
+            }
+            submitViaHomeAssistant(activeRule.homeAssistantWebhookUrl, value);
+            return;
+        }
         let sent = 0;
+        let homeAssistantTarget = false;
         for (let i = 0; i < players.length; ++i) {
             const target = EntityController.get(players[i]);
             if (target && target.getTypeAsString() === "media_player" &&
                     EntityController.mayCommandEntity(target.enabled)) {
+                // The bundled HA integration only implements regular media
+                // player services. It cannot dispatch apple_tv keyboard actions.
+                const integration = String(target.integrationId || "").toLowerCase();
+                const id = String(target.id || "").toLowerCase();
+                if (integration.indexOf("home-assistant") >= 0 ||
+                        integration.indexOf("home_assistant") >= 0 ||
+                        integration.indexOf("homeassistant") >= 0 ||
+                        integration.indexOf("hass") >= 0 ||
+                        id.indexOf("home_assistant") >= 0) {
+                    homeAssistantTarget = true;
+                    continue;
+                }
                 EntityController.onEntityCommand(target.id, "keyboard.text_set", {text: value});
                 sent++;
             }
+        }
+        if (homeAssistantTarget) {
+            textEntry.showError(qsTr("Home Assistant Apple TV needs a webhook. Configure it in Keyboard input automation."));
+            return;
         }
         if (!sent) {
             textEntry.showError(qsTr("No selected media player is available."));
             return;
         }
-        keyboard.hide();
-        textPopup.close();
+        finishSubmission();
     }
 
     onActivityActiveChanged: evaluate()
@@ -213,6 +304,8 @@ Item {
         }
 
         onOpened: {
+            submitSerial++;
+            submitting = false;
             root.keyboardSendMode = true;
             closingKeyboard = false;
             textEntry.inputValue = "";
@@ -226,6 +319,8 @@ Item {
         }
 
         onClosed: {
+            submitSerial++;
+            submitting = false;
             closingKeyboard = true;
             root.keyboardSendMode = false;
             manualMode = false;
