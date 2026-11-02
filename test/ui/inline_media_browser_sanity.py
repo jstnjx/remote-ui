@@ -53,7 +53,7 @@ assert "previous.container" in browser
 
 assert "function loadMore()" in browser and "pageSize: 20" in browser
 assert "pagination.count" in browser
-assert "browseMedia(folderId, folderType, pageSize, page)" in browser
+assert "browseMedia(requestedId, requestedType, pageSize, page)" in browser
 assert "player.playMedia(item.media_id, item.media_type" in browser
 
 # Deep folder/playlist regression: preserve the complete per-level container
