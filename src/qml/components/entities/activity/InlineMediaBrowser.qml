@@ -4,6 +4,7 @@
 import QtQuick 2.15
 import Entity.Controller 1.0
 import Entity.MediaPlayer 1.0
+import Config 1.0
 import "qrc:/components" as Components
 import "qrc:/components/entities/media_player" as MediaPlayerComponents
 
@@ -16,7 +17,13 @@ Rectangle {
     color: colors.surface
     radius: ui.cornerRadiusSmall
 
+    // The visible Text widget only needs "MB" or a short selector such as
+    // "MB;ps5". Keep the resolved full ID separate from the authored text.
+    property string entitySelector: ""
+    property string commandEntityId: ""
+    property var activityEntity: null
     property string entityId: ""
+    property string selectionMessage: ""
     property bool browserActive: false
     property var player: null
 
@@ -42,6 +49,83 @@ Rectangle {
                                        ? browseItems[carousel.currentIndex] : null
     readonly property real artSize: Math.max(0, Math.min(width * 0.42, height - 108, 212))
     readonly property bool hasArtworkRoom: width >= 160 && height >= 158 && artSize >= 46
+
+    function activityPlayerIds() {
+        const ids = [];
+        if (commandEntityId) ids.push(commandEntityId);
+        if (!activityEntity) return ids;
+
+        // Explicit activity artwork/media source has the highest priority.
+        const configured = Config.activityArtworkSources;
+        if (configured && configured[activityEntity.id])
+            ids.push(configured[activityEntity.id]);
+
+        const slider = activityEntity.sliderConfig;
+        if (slider && slider.entityId && slider.entityId !== "default")
+            ids.push(slider.entityId);
+
+        // Native activity media-player widgets already reference the right ID,
+        // even if a media entity has not finished loading yet.
+        const pages = activityEntity.ui && activityEntity.ui.pages ? activityEntity.ui.pages : [];
+        for (let i = 0; i < pages.length; ++i) {
+            const items = pages[i].items || [];
+            for (let j = 0; j < items.length; ++j) {
+                if (items[j].type === "media_player" && items[j].media_player_id)
+                    ids.push(items[j].media_player_id);
+            }
+        }
+
+        const included = activityEntity.includedEntities || [];
+        for (let k = 0; k < included.length; ++k) ids.push(included[k]);
+        return ids;
+    }
+
+    function resolveTarget() {
+        const configured = EntityController.getIdsByType("media_player") || [];
+        const selector = entitySelector.trim();
+        let resolved = "";
+        let message = "";
+
+        if (selector) {
+            // An exact ID still works for API-created widgets with longer text.
+            if (configured.indexOf(selector) >= 0) {
+                resolved = selector;
+            } else {
+                const needle = selector.toLowerCase();
+                const matches = configured.filter(function(id) {
+                    const full = id.toLowerCase();
+                    const last = full.substring(full.lastIndexOf(".") + 1);
+                    return last === needle ||
+                           last.indexOf(needle) === 0 ||
+                           full.substring(full.length - needle.length) === needle;
+                });
+                if (matches.length === 1)
+                    resolved = matches[0];
+                else if (matches.length > 1)
+                    message = qsTr("Several media players match. Use a longer MB suffix.");
+                else if (selector.indexOf(".") >= 0)
+                    resolved = selector; // Backward compatibility for full IDs.
+                else
+                    message = qsTr("No media player matches MB;%1").arg(selector);
+            }
+        } else {
+            const preferred = activityPlayerIds();
+            for (let i = 0; i < preferred.length; ++i) {
+                if (configured.indexOf(preferred[i]) >= 0) {
+                    resolved = preferred[i];
+                    break;
+                }
+            }
+            if (!resolved && configured.length === 1)
+                resolved = configured[0];
+            if (!resolved)
+                message = qsTr("Use MB;short_id or link a media player to this activity");
+        }
+
+        selectionMessage = message;
+        if (entityId !== resolved) entityId = resolved;
+        else if (resolved && !player) bindPlayer();
+    }
 
     function bindPlayer() {
         if (!entityId) {
@@ -193,7 +277,10 @@ Rectangle {
         catch (e) { return url; }
     }
 
-    Component.onCompleted: bindPlayer()
+    Component.onCompleted: resolveTarget()
+    onEntitySelectorChanged: resolveTarget()
+    onCommandEntityIdChanged: if (!entitySelector) resolveTarget()
+    onActivityEntityChanged: if (!entitySelector) resolveTarget()
     onEntityIdChanged: bindPlayer()
     onPlayerChanged: if (browserActive) reload()
     onCanBrowseChanged: {
@@ -202,13 +289,32 @@ Rectangle {
             requestPage(1);
     }
     onBrowserActiveChanged: {
-        if (browserActive) reload();
-        else pendingRequestId = -1;
+        if (browserActive) {
+            resolveTarget();
+            if (player && pendingRequestId < 0) reload();
+        } else {
+            pendingRequestId = -1;
+        }
+    }
+    Connections {
+        target: activityEntity
+        ignoreUnknownSignals: true
+        function onUiConfigChanged() { if (!browser.entitySelector) browser.resolveTarget(); }
+        function onSliderConfigChanged() { if (!browser.entitySelector) browser.resolveTarget(); }
+    }
+    Connections {
+        target: Config
+        ignoreUnknownSignals: true
+        function onActivityArtworkSourcesChanged() {
+            if (!browser.entitySelector) browser.resolveTarget();
+        }
     }
     Connections {
         target: EntityController
         function onEntityLoaded(success, id) {
-            if (success && id === browser.entityId) browser.bindPlayer();
+            if (!success) return;
+            if (id === browser.entityId) browser.bindPlayer();
+            else if (!browser.entityId) browser.resolveTarget();
         }
     }
     Connections {
@@ -388,7 +494,8 @@ Rectangle {
             width: Math.max(0, parent.width - 24)
             visible: !carousel.visible
             text: !browser.hasArtworkRoom ? qsTr("Enlarge media browser widget")
-                  : !browser.entityId ? qsTr("Set MB;media_player_entity_id")
+                  : browser.selectionMessage ? browser.selectionMessage
+                  : !browser.entityId ? qsTr("Use MB or MB;short_id")
                   : !browser.player ? qsTr("Media player unavailable")
                   : !browser.canBrowse ? qsTr("Media browsing unsupported")
                   : browser.errorMessage ? browser.errorMessage
