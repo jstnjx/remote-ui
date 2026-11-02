@@ -30,7 +30,12 @@ Rectangle {
 
     readonly property int pageSize: 20
     property var browseItems: []
+    // The Core browse response is a container with child items. Retain it
+    // just like the full MediaBrowser: playlists/albums can be playable even
+    // when their server returns no child tracks.
+    property var currentContainer: null
     property var history: []
+    property int navigationRevision: 0
     property string folderId: ""
     property string folderType: ""
     property int pageNumber: 1
@@ -44,9 +49,19 @@ Rectangle {
 
     readonly property bool canBrowse: player && player.type === EntityTypes.Media_player &&
                                        player.enabled && player.hasFeature(MediaPlayerFeatures.Browse_media)
-    readonly property var currentItem: browseItems.length > 0 && carousel.currentIndex >= 0 &&
-                                       carousel.currentIndex < browseItems.length
-                                       ? browseItems[carousel.currentIndex] : null
+    // If a playable album/playlist has no browseable children, expose its
+    // container as a playable cover rather than incorrectly saying "No media
+    // found". The synthetic flag prevents browsing recursively into itself.
+    readonly property var displayItems: browseItems.length > 0 ? browseItems :
+        (currentContainer && currentContainer.can_play &&
+         (currentContainer.media_class === "playlist" ||
+          currentContainer.media_class === "album") ?
+         [Object.assign({}, currentContainer, {
+             __containerPlay: true, can_browse: false
+         })] : [])
+    readonly property var currentItem: displayItems.length > 0 && carousel.currentIndex >= 0 &&
+                                       carousel.currentIndex < displayItems.length
+                                       ? displayItems[carousel.currentIndex] : null
     // Enlarge the center cover, while reserving the small bottom metadata strip.
     // The view clips at its widget bounds even on narrow activity grid layouts.
     readonly property real artSize: Math.max(0, Math.min(width * 0.68, height - 86, 340))
@@ -140,8 +155,10 @@ Rectangle {
     }
 
     function reset() {
+        navigationRevision++;
         pendingRequestId = -1;
         history = [];
+        currentContainer = null;
         folderId = "";
         folderType = "";
         browseItems = [];
@@ -159,7 +176,14 @@ Rectangle {
         loadingMore = page > 1;
         loading = true;
         errorMessage = "";
-        pendingRequestId = player.browseMedia(folderId, folderType, pageSize, page);
+        // Match the full MediaBrowser's exact browseMedia request contract.
+        // No flattened or reconstructed paths: the integration owns media_id.
+        const requestedId = folderId;
+        const requestedType = folderType;
+        pendingRequestId = player.browseMedia(requestedId, requestedType, pageSize, page);
+        console.log("Inline MB browse request:", pendingRequestId,
+                    "depth:", history.length, "media_id:", requestedId,
+                    "media_type:", requestedType, "page:", page);
         if (pendingRequestId < 0) {
             loading = false;
             loadingMore = false;
@@ -173,42 +197,60 @@ Rectangle {
     }
 
     function enterFolder(item) {
-        if (!item || !item.can_browse || !item.media_id) return;
+        if (!item || item.__containerPlay) return;
+        const nestedItems = item.items && item.items.length ? item.items : [];
+        if (!item.can_browse && !nestedItems.length) return;
+        if (!item.media_id && !nestedItems.length) return;
+        const savedIndex = carousel.currentIndex;
+        navigationRevision++;
         history = history.concat([{
-            id: folderId, type: folderType,
+            id: folderId, type: folderType, container: currentContainer,
             items: browseItems.slice(), page: pageNumber,
-            more: hasMore, index: carousel.currentIndex
+            more: hasMore, index: savedIndex
         }]);
         pendingRequestId = -1;
-        folderId = item.media_id;
+        folderId = item.media_id || "";
         folderType = item.media_type || "";
-        browseItems = [];
+        currentContainer = item;
+        // Some integrations embed children rather than expose a browseable
+        // media_id. Use those children directly instead of showing emptiness.
+        browseItems = nestedItems.slice();
         pageNumber = 1;
+        requestedPage = 1;
         loading = false;
         loadingMore = false;
         hasMore = false;
         errorMessage = "";
-        requestPage(1);
+        if (item.media_id && item.can_browse)
+            requestPage(1);
     }
 
     function goBack() {
         if (!history.length) return;
+        navigationRevision++;
         pendingRequestId = -1; // ignore replies for a folder we already left
         const previous = history[history.length - 1];
         history = history.slice(0, history.length - 1);
         folderId = previous.id;
         folderType = previous.type;
-        browseItems = previous.items;
+        currentContainer = previous.container;
+        browseItems = previous.items.slice();
         pageNumber = previous.page;
+        requestedPage = previous.page;
         hasMore = previous.more;
         loading = false;
         loadingMore = false;
         errorMessage = "";
+        const revision = navigationRevision;
         const indexToRestore = previous.index;
         Qt.callLater(function() {
-            if (browser.browseItems === previous.items && carousel.count)
+            if (browser.browserActive && revision === browser.navigationRevision &&
+                    carousel.count)
                 carousel.currentIndex = Math.max(0, Math.min(indexToRestore, carousel.count - 1));
         });
+        // If we left a level before its first response, load it afresh.
+        if (!browseItems.length && !currentContainer && canBrowse)
+            requestPage(1);
     }
 
     function loadMore() {
@@ -222,7 +264,8 @@ Rectangle {
             carousel.currentIndex = index;
             return;
         }
-        if (item.can_browse) {
+        if ((item.can_browse || (item.items && item.items.length)) &&
+                !item.__containerPlay) {
             enterFolder(item);
         } else if (item.can_play) {
             // PLAY_NOW is optional; normal play_media works on older integrations.
@@ -235,38 +278,60 @@ Rectangle {
     }
 
     function acceptResult(requestId, media, pagination) {
-        if (!browserActive || requestId < 0 || requestId !== pendingRequestId) return;
+        if (!browserActive || requestId < 0 || requestId !== pendingRequestId) {
+            console.log("Inline MB ignored old browse reply:", requestId,
+                        "pending:", pendingRequestId);
+            return;
+        }
         pendingRequestId = -1;
         const incoming = media && media.items ? media.items : [];
         const append = loadingMore && requestedPage > 1;
         const selected = append ? carousel.currentIndex : 0;
+        const revision = navigationRevision;
+        // The root response is the root browse container, not an item to
+        // display. Inside folders retain the returned album/playlist metadata.
+        if (history.length)
+            currentContainer = media || currentContainer;
+        else
+            currentContainer = null;
         restoringModel = true;
-        browseItems = append ? browseItems.concat(incoming) : incoming.slice();
+        // Preserve embedded children if the server reports an empty page.
+        browseItems = append ? browseItems.concat(incoming)
+                    : (incoming.length ? incoming.slice() : browseItems);
         pageNumber = requestedPage;
         hasMore = incoming.length > 0 && (pagination && pagination.count > 0
                   ? browseItems.length < pagination.count : incoming.length >= pageSize);
         loading = false;
         loadingMore = false;
         errorMessage = "";
-        // Replacing the QML array may reset PathView.currentIndex.
+        console.log("Inline MB accepted browse reply:", requestId,
+                    "depth:", history.length, "children:", incoming.length,
+                    "container:", media ? media.media_class : "");
         Qt.callLater(function() {
-            if (browser.browserActive && carousel.count)
+            if (browser.browserActive && revision === browser.navigationRevision && carousel.count)
                 carousel.currentIndex = Math.max(0, Math.min(selected, carousel.count - 1));
-            browser.restoringModel = false;
+            if (revision === browser.navigationRevision)
+                browser.restoringModel = false;
         });
     }
 
     function acceptError(requestId, code, message) {
-        if (!browserActive || requestId !== pendingRequestId) return;
+        if (!browserActive ||
+                (requestId !== pendingRequestId && !(requestId < 0 && loading)))
+            return;
         pendingRequestId = -1;
         loading = false;
         loadingMore = false;
+        hasMore = false;
+        // The server may legitimately have no children for a playable
+        // playlist. Preserve its metadata, and show the playable cover.
         if (code === 404) {
-            if (!loadingMore) browseItems = [];
-            hasMore = false;
+            if (!browseItems.length && (!currentContainer || !currentContainer.can_play))
+                errorMessage = qsTr("This folder has no media");
         } else {
             errorMessage = message || qsTr("Unable to browse media");
         }
+        console.warn("Inline MB browse failed:", requestId, code, errorMessage);
     }
 
     function imageUrl(item) {
