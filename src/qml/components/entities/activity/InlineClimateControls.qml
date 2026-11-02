@@ -119,6 +119,17 @@ Item {
         }
     }
 
+    Text {
+        anchors { top: parent.top; left: parent.left; leftMargin: 3; topMargin: 4 }
+        z: 2
+        visible: controls.entityObj && controls.entityObj.hasFeature(ClimateFeatures.Current_temperature)
+        text: controls.entityObj && controls.entityObj.currentTemperatureAvailable ?
+            qsTr("Current %1%2").arg(controls.entityObj.currentTemperature.toLocaleString(
+                Qt.locale(), 'f', controls.entityObj.targetTemperatureStep === 1 ? 0 : 1))
+                .arg(controls.entityObj.temperatureLabel) : qsTr("Current --")
+        font: fonts.help()
+        color: colors.light
+    }
     Row {
         anchors { top: parent.top; right: parent.right; rightMargin: 4 }
         spacing: 6
