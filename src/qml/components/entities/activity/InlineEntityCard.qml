@@ -191,11 +191,20 @@ Rectangle {
             active: card.ready && card.entityKind === "LIGHT"
             asynchronous: false
             source: card.lightSource
-            width: 460
-            height: 650
+            // Native on/off and brightness components accept a compact
+            // viewport. The unchanged Color wheel uses its native 440px
+            // geometry, scaled as a whole to keep drag coordinates correct.
+            readonly property bool colorPage: card.lightPage === 1 && card.hasColor
+            width: colorPage ? 460 : content.width
+            height: colorPage ? 650 : content.height
             transformOrigin: Item.TopLeft
-            scale: Math.max(.1, Math.min(content.width / width, content.height / height))
-            onLoaded: if (item) item.entityObj = card.entityObj
+            scale: colorPage ? Math.max(.1, Math.min(content.width / width,
+                                                       content.height / height)) : 1
+            onLoaded: {
+                if (!item) return;
+                item.entityObj = card.entityObj;
+                if (item.compact !== undefined) item.compact = true;
+            }
         }
         Binding {
             target: nativeLightPage.item
