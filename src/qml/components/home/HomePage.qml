@@ -105,18 +105,34 @@ Item {
         Qt.callLater(ensureSelectedVisible);
     }
 
-    function activateSelected() {
+    function activateSelected(longPress) {
         if (rowCount === 0) return;
         const row = entityList.itemAtIndex(selectedIndex);
         if (!row || !row.item) return;
         if (row.isGroup) {
-            if (row.item.state === "open") row.item.close();
-            else row.item.open();
-        } else if (Config.entityButtonFuncInverted) {
-            row.item.control();
-        } else {
+            if (row.item.state === "closed") {
+                if (Config.entityButtonFuncInverted === !!longPress) row.item.toggle();
+                else row.item.open();
+            } else {
+                const currentChild = row.item.groups ? row.item.groups.currentItem : null;
+                if (currentChild && currentChild.item) {
+                    if (Config.entityButtonFuncInverted === !!longPress)
+                        currentChild.item.control();
+                    else
+                        currentChild.item.open();
+                } else if (longPress) {
+                    row.item.close();
+                }
+            }
+        } else if (Config.entityButtonFuncInverted === !!longPress) {
             row.item.open();
+        } else {
+            row.item.control();
         }
+    }
+
+    function scrollToBeginning() {
+        if (entityList.count > 0) entityList.positionViewAtBeginning();
     }
 
     onSelectedIndexChanged: Qt.callLater(ensureSelectedVisible)
