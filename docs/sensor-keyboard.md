@@ -11,7 +11,7 @@ Use the existing [Apple TV Keyboard integration](https://github.com/jstnjx/uc-in
 3. Under **Settings → Keyboard input automation**, choose your activity and select the **Apple TV Keyboard:** target in **Text input targets**. Deselect the ordinary Home Assistant Apple TV **Remote:** target if you no longer need it. A selected native Apple TV Keyboard target takes precedence over an older Remote target automatically.
 4. Place a regular **Text** widget containing `KB` on the activity UI page. Focus an editable/search field on the Apple TV, open the shortcut, enter text and press the keyboard's native **Send** arrow.
 
-The keyboard invokes `mediaPlayer.searchMedia(text, "", "", [], 10, 1)`. The existing integration handles search through Companion and reports either `Sent: ...` or `Text not sent` with the reason. Because dismissal of the keyboard closes its overlay, any asynchronous failure is also shown as a Remote notification.
+**This is the same Core API search request that Browse → Search uses**, not a separate keyboard command. The keyboard invokes `mediaPlayer.searchMedia(text, "", "", [], 10, 1)`. The existing integration handles search through Companion and reports either `Sent: ...` or `Text not sent` with the reason. Because dismissal of the keyboard closes its overlay, any asynchronous failure is also shown as a Remote notification.
 
 The UI can automatically match a Home Assistant Remote/media-player to an Apple TV Keyboard entity **only when their normalized device names match uniquely**. Otherwise explicitly choose the `Apple TV Keyboard:` entry. This avoids accidentally sending text to the wrong Apple TV when more than one is configured.
 
@@ -21,7 +21,7 @@ The November 2 integration log shows a **removed Apple TV Keyboard entity** repe
 
 For a durable configuration, remove the obsolete media-player entry from the Remote's entity list, add the current **Apple TV Keyboard - <device>** entity again, and reselect it in **Settings → Keyboard input automation → Text input targets**. The removed and active IDs are shown in the integration logs.
 
-The Return/Send key now dispatches the callback on touch press rather than depending exclusively on `TextField.accepted`. IME composition is committed before reading the text. This prevents the virtual keyboard from clearing focus and closing its overlay before the text has been sent.
+The `KB` shortcut now uses **the same `EnterKeyAction.Search` and direct `TextField.onAccepted` binding as the working Media Browser Search field**. Its native keyboard key still displays the return-arrow Send icon, but Qt handles the key event normally without the earlier custom MouseArea intercepting it. The code reads the underlying TextField text and invokes the same media-player `searchMedia()` method as Browse → Search. Dismissing the keyboard still closes the overlay.
 
 
 ## Why Home Assistant's Remote entity cannot perform this

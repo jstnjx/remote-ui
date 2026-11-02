@@ -27,20 +27,22 @@ assert 'images/enter-868482.svg' not in style
 assert 'root.keyboardSendMode ? ""' in style
 assert 'Styles/remotestyle/style.qml' in qrc
 assert 'id: explicitSendButton' not in bridge
-assert 'sendOnEnter: true' in bridge
-assert 'function onAccepted() { keyboardBridge.submitText(); }' in bridge
+assert 'enterKeyAction: EnterKeyAction.Search' in bridge
+assert 'property int enterKeyAction: EnterKeyAction.None' in (ROOT / "src/qml/components/InputField.qml").read_text()
+assert 'inputField.onAccepted: keyboardBridge.submitText()' in bridge
+assert 'inputField.inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase' in bridge
 assert 'if (textPopup.opened && !keyboardBridge.closingKeyboard)' in bridge
-assert 'property var keyboardSendCallback: null' in (ROOT / "src/qml/main.qml").read_text()
-assert 'onPressed: root.keyboardSendCallback()' in style
-assert 'root.keyboardSendCallback = function() { keyboardBridge.submitText(); };' in bridge
-assert 'root.keyboardSendCallback = null;' in bridge
+assert 'keyboardSendCallback' not in (ROOT / "src/qml/main.qml").read_text()
+assert 'keyboardSendCallback' not in style
+assert 'MouseArea {' not in style[style.index("enterKeyPanel:"):style.index("onStateChanged:", style.index("enterKeyPanel:"))]
+assert 'keyboardSendCallback' not in bridge
 assert 'Qt.inputMethod.commit();' in bridge
 assert 'function resolveStaleKeyboardId(entityId)' in bridge
 assert 'function configuredNativeKeyboards()' in bridge
 assert 'entity.state === MediaPlayerStates.On' in bridge
 assert 'entity.state !== MediaPlayerStates.Unavailable' in bridge
 assert 'resolveStaleKeyboardId(targets[i])' in bridge
-assert 'const resolvedId = resolveStaleKeyboardId(entityId);' in bridge
+assert 'let resolvedId = resolveStaleKeyboardId(entityId);' in bridge
 assert 'Keyboard target no longer exists.' in bridge
 
 assert 'onClosed:' in bridge
@@ -61,10 +63,15 @@ assert 'const targets = keyboardTargets.length ? keyboardTargets : configuredTar
 # feedback and is connected to a native Apple TV Keyboard integration.
 assert 'function isNativeAppleTVKeyboard(target)' in bridge
 assert 'function matchingNativeKeyboard(target)' in bridge
-assert 'candidateName !== wanted' in bridge
-assert 'return result;' in bridge
+assert 'normalizeAppleTVName(candidate.name) !== wanted' in bridge
+assert 'return result || (candidates.length === 1 ? candidates[0] : null);' in bridge
 assert 'cmd = "native.search";' in bridge
 assert 'nativePlayer.searchMedia(value, "", "", [], 10, 1);' in bridge
+assert 'const value = textEntry.inputField.text;' in bridge
+browser = (ROOT / "src/qml/components/entities/media_player/MediaBrowser.qml").read_text()
+assert 'enterKeyAction: EnterKeyAction.Search' in browser
+assert 'inputField.onAccepted: mediaBrowser.submitSearch()' in browser
+assert 'entityObj.searchMedia(lastSearchQuery' in browser
 assert 'target: keyboardBridge.pendingSearchTarget' in bridge
 assert 'function onSearchMediaResult(items, pagination)' in bridge
 assert 'function onSearchMediaError(code, message)' in bridge

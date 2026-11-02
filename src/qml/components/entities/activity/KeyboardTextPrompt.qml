@@ -112,7 +112,17 @@ Item {
             ui.createNotification(qsTr("Select an Apple TV Keyboard target in keyboard settings"), true);
             return;
         }
-        const resolvedId = resolveStaleKeyboardId(entityId);
+        let resolvedId = resolveStaleKeyboardId(entityId);
+        const configured = EntityController.get(resolvedId);
+        // If a legacy KB widget points to the HA Apple TV Remote, select
+        // the actual Apple TV Keyboard media player whenever unambiguous.
+        // Search in this player's existing Media Browser is known to work.
+        if (configured && !isNativeAppleTVKeyboard(configured) &&
+                isHomeAssistantEntity(configured) &&
+                /apple.?tv/i.test(String(configured.name || "") + " " + configured.id)) {
+            const native = matchingNativeKeyboard(configured);
+            if (native) resolvedId = native.id;
+        }
         const target = EntityController.get(resolvedId);
         if (!target) {
             pendingManualTarget = resolvedId;
@@ -193,17 +203,17 @@ Item {
         if (!target) return null;
         const wanted = normalizeAppleTVName(target.name);
         if (!wanted) return null;
-        const ids = EntityController.getIdsByType("media_player") || [];
+        const candidates = configuredNativeKeyboards();
         let result = null;
-        for (let i = 0; i < ids.length; ++i) {
-            const candidate = EntityController.get(ids[i]);
-            if (!isNativeAppleTVKeyboard(candidate)) continue;
-            const candidateName = normalizeAppleTVName(candidate.name);
-            if (!candidateName || candidateName !== wanted) continue;
+        for (let i = 0; i < candidates.length; ++i) {
+            const candidate = candidates[i];
+            if (normalizeAppleTVName(candidate.name) !== wanted) continue;
             if (result && result.id !== candidate.id) return null;
             result = candidate;
         }
-        return result;
+        // Only fall back if the user has exactly one Apple TV Keyboard on
+        // this Remote. Never silently choose between multiple Apple TVs.
+        return result || (candidates.length === 1 ? candidates[0] : null);
     }
 
     function showKeyboardDeliveryError(message) {
@@ -249,19 +259,26 @@ Item {
         // Flush any in-progress IME composition before the virtual keyboard
         // changes focus; otherwise Qt can expose an empty/partial field.
         Qt.inputMethod.commit();
-        const value = textEntry.inputValue;
+        const value = textEntry.inputField.text;
+        // Never log the entered text; only the event and byte-independent
+        // character count are needed to diagnose missing Search requests.
+        console.log("KB accepted native Search key; text length:", value.length,
+                    "manual:", manualMode);
         if (value.length === 0) {
             textEntry.showError(qsTr("Enter some text first."));
             return;
         }
 
         const configuredTargets = activeRule.mediaPlayerIds || [];
+        console.log("KB selected targets:", configuredTargets.join(", "));
         // A newly configured Apple TV Keyboard target supersedes any saved
         // Home Assistant Remote target from older keyboard rules. Do not
         // dispatch both destinations for the same input.
         const keyboardTargets = configuredTargets.filter(function(id) {
-            return isNativeAppleTVKeyboard(EntityController.get(id));
+            return isNativeAppleTVKeyboard(EntityController.get(resolveStaleKeyboardId(id)));
         });
+        // Resolve obsolete saved target IDs before dispatching; do not
+        // blindly send to a retired HA or keyboard entity.
         const targets = keyboardTargets.length ? keyboardTargets : configuredTargets;
         const requests = [];
         const seen = {};
@@ -506,10 +523,8 @@ Item {
         }
 
         onOpened: {
-            // VirtualKeyboard may hide on EnterKeyAction.Send without emitting
-            // TextField.accepted. The native arrow's MouseArea calls this
-            // handler while the text field still has its focus and contents.
-            root.keyboardSendCallback = function() { keyboardBridge.submitText(); };
+            // Use the same EnterKeyAction.Search / TextField.accepted path
+            // as MediaBrowser. The keyboard style still displays the Send arrow.
             if (!pendingSearchTarget) commandTimeout.stop();
             sending = false;
             pendingTargetIds = [];
@@ -535,7 +550,6 @@ Item {
             statusMessage = "";
             closingKeyboard = true;
             root.keyboardSendMode = false;
-            root.keyboardSendCallback = null;
             manualMode = false;
             keyboard.hide();
             keyboardNavigation.releaseControl();
@@ -570,12 +584,16 @@ Item {
                 keyboardFollowsFocus: true
                 label: qsTr("Text")
                 inputField.placeholderText: qsTr("Enter text")
-                sendOnEnter: true
+                enterKeyAction: EnterKeyAction.Search
+                // Same metadata as MediaBrowser's working Search key; the KB
+                // keyboard style still hides this label and draws its Send arrow.
+                enterKeyLabel: qsTr("Search")
+                inputField.inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
 
-                Connections {
-                    target: textEntry.inputField
-                    function onAccepted() { keyboardBridge.submitText(); }
-                }
+                // Match the working MediaBrowser's SearchField: bind the
+                // TextField.accepted handler directly and let Qt VirtualKeyboard
+                // deliver its Search action without a MouseArea override.
+                inputField.onAccepted: keyboardBridge.submitText()
             }
 
             Text {

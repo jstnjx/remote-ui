@@ -54,6 +54,10 @@ Rectangle {
     // d-pad); Button / Switch / Checkbox hide it again when they take the focus
     property bool keyboardFollowsFocus: false
     property bool sendOnEnter: false
+    // Allows activity KB to use the same EnterKeyAction.Search behavior
+    // as the working Media Browser Search field, without changing other inputs.
+    property int enterKeyAction: EnterKeyAction.None
+    property string enterKeyLabel: ""
 
     Component.onCompleted: {
         if (inputField.echoMode === TextInput.Password) {
@@ -127,8 +131,11 @@ Rectangle {
         }
 
         passwordCharacter: "•"
-        EnterKeyAction.actionId: inputFieldContainer.sendOnEnter ? EnterKeyAction.Send : EnterKeyAction.None
-        EnterKeyAction.label: ""  // Let the native style display its return/send arrow.
+        EnterKeyAction.actionId: inputFieldContainer.enterKeyAction !== EnterKeyAction.None
+                                 ? inputFieldContainer.enterKeyAction
+                                 : (inputFieldContainer.sendOnEnter
+                                    ? EnterKeyAction.Send : EnterKeyAction.None)
+        EnterKeyAction.label: inputFieldContainer.enterKeyLabel
 
         KeyNavigation.up: inputFieldContainer.navUp
         KeyNavigation.down: inputFieldContainer.navDown

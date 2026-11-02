@@ -266,19 +266,6 @@ KeyboardStyle {
                 anchors.fill: parent
                 anchors.margins: Math.round(42 * scaleHint)
             }
-            // In the activity KB popup Qt VirtualKeyboard's EnterKeyAction.Send
-            // may dismiss the input panel without emitting TextField.accepted.
-            // Dispatch on the actual Send key click before focus is cleared.
-            // Other keyboard contexts retain the default Qt key handling.
-            MouseArea {
-                anchors.fill: parent
-                visible: root.keyboardSendMode &&
-                         typeof root.keyboardSendCallback === "function"
-                preventStealing: true
-                // Run on press, before the virtual keyboard can hide and
-                // destroy the focused field on the subsequent release.
-                onPressed: root.keyboardSendCallback()
-            }
         }
 
         onStateChanged: {
