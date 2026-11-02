@@ -67,15 +67,42 @@ assert "MB;ps5" in (ROOT / "docs/inline-media-browser.md").read_text()
 assert "Q_INVOKABLE int  browseMedia(" in player
 assert "void browseMediaResult(int requestId" in player
 
-# Browser remains a bounded widget even when the user configures a tiny Text
-# button. For a practical 2x2+ grid cell there is room for header, art, labels.
-for width, height in ((480, 800), (480, 425), (240, 280), (190, 200), (120, 135)):
-    art_size = max(0, min(width * .42, height - 108, 212))
-    usable = width >= 160 and height >= 158 and art_size >= 46
-    header_height = min(46, height * .27)
-    assert art_size <= width * .42
-    assert header_height + art_size + 54 <= height or not usable
-    if width == 120:
-        assert not usable, "Tiny cells must fall back to an inline size message"
+# The immersive layout gives artwork most of the available grid space,
+# removes the top toolbar, and keeps only the back arrow inside folders.
+assert "color: colors.black" in browser
+assert "    radius: 0" in browser
+assert 'id: header' not in browser
+assert 'id: refreshButton' not in browser
+assert 'uc:rotate' not in browser
+assert 'folderTitle' not in browser
+assert 'qsTr("Browse media")' not in browser
+assert "id: backButton" in browser
+assert "visible: browser.history.length > 0" in browser
+assert "onClicked: browser.goBack()" in browser
+assert "top: parent.top" in browser
+assert "bottom: metadata.top" in browser
 
-print("Inline media browser wiring, pagination and coverflow geometry checks passed.")
+# A larger center cover must remain inside the available region even at the
+# smallest supported widget. The metadata strip and edge padding are reserved.
+for width, height in (
+    (480, 800), (480, 425), (320, 400), (240, 280),
+    (190, 200), (160, 158), (120, 135),
+):
+    art_size = max(0, min(width * .68, height - 86, 340))
+    usable = width >= 160 and height >= 158 and art_size >= 64
+    assert art_size <= width * .68
+    if usable:
+        assert art_size + 86 <= height
+        assert art_size > 0
+    else:
+        assert width < 160 or height < 158 or art_size < 64
+    if width == 120:
+        assert not usable
+
+assert "width * 0.68, height - 86, 340" in browser
+assert "width >= 160 && height >= 158 && artSize >= 64" in browser
+assert 'PathAttribute { name: "coverScale"; value: 1.0 }' in browser
+assert 'PathAttribute { name: "coverScale"; value: 0.72 }' in browser
+assert 'PathAttribute { name: "coverOpacity"; value: 0.78 }' in browser
+
+print("Inline media browser wiring, pagination and prominent coverflow geometry checks passed.")

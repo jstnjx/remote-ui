@@ -14,8 +14,9 @@ import "qrc:/components/entities/media_player" as MediaPlayerComponents
 Rectangle {
     id: browser
     clip: true
-    color: colors.surface
-    radius: ui.cornerRadiusSmall
+    // Let the covers lead visually: one uninterrupted black canvas.
+    color: colors.black
+    radius: 0
 
     // The visible Text widget only needs "MB" or a short selector such as
     // "MB;ps5". Keep the resolved full ID separate from the authored text.
@@ -32,7 +33,6 @@ Rectangle {
     property var history: []
     property string folderId: ""
     property string folderType: ""
-    property string folderTitle: qsTr("Browse media")
     property int pageNumber: 1
     property int requestedPage: 1
     property int pendingRequestId: -1
@@ -47,8 +47,10 @@ Rectangle {
     readonly property var currentItem: browseItems.length > 0 && carousel.currentIndex >= 0 &&
                                        carousel.currentIndex < browseItems.length
                                        ? browseItems[carousel.currentIndex] : null
-    readonly property real artSize: Math.max(0, Math.min(width * 0.42, height - 108, 212))
-    readonly property bool hasArtworkRoom: width >= 160 && height >= 158 && artSize >= 46
+    // Enlarge the center cover, while reserving the small bottom metadata strip.
+    // The view clips at its widget bounds even on narrow activity grid layouts.
+    readonly property real artSize: Math.max(0, Math.min(width * 0.68, height - 86, 340))
+    readonly property bool hasArtworkRoom: width >= 160 && height >= 158 && artSize >= 64
 
     function activityPlayerIds() {
         const ids = [];
@@ -142,7 +144,6 @@ Rectangle {
         history = [];
         folderId = "";
         folderType = "";
-        folderTitle = qsTr("Browse media");
         browseItems = [];
         pageNumber = 1;
         requestedPage = 1;
@@ -174,14 +175,13 @@ Rectangle {
     function enterFolder(item) {
         if (!item || !item.can_browse || !item.media_id) return;
         history = history.concat([{
-            id: folderId, type: folderType, title: folderTitle,
+            id: folderId, type: folderType,
             items: browseItems.slice(), page: pageNumber,
             more: hasMore, index: carousel.currentIndex
         }]);
         pendingRequestId = -1;
         folderId = item.media_id;
         folderType = item.media_type || "";
-        folderTitle = item.title || qsTr("Browse media");
         browseItems = [];
         pageNumber = 1;
         loading = false;
@@ -198,7 +198,6 @@ Rectangle {
         history = history.slice(0, history.length - 1);
         folderId = previous.id;
         folderType = previous.type;
-        folderTitle = previous.title;
         browseItems = previous.items;
         pageNumber = previous.page;
         hasMore = previous.more;
@@ -329,67 +328,9 @@ Rectangle {
     }
 
     Item {
-        id: header
-        anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: Math.min(46, browser.height * 0.27)
-
-        Item {
-            id: backButton
-            anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 4 }
-            width: 42
-            height: parent.height
-            visible: browser.history.length > 0
-
-            Components.Icon {
-                anchors.centerIn: parent
-                icon: "uc:chevron-left"
-                size: 30
-                color: colors.offwhite
-            }
-            Components.HapticMouseArea {
-                anchors.fill: parent
-                onClicked: browser.goBack()
-            }
-        }
-
-        Text {
-            anchors {
-                left: parent.left
-                right: refreshButton.left
-                verticalCenter: parent.verticalCenter
-                leftMargin: backButton.visible ? 48 : 12
-                rightMargin: 2
-            }
-            color: colors.offwhite
-            font: fonts.help()
-            text: browser.folderTitle
-            maximumLineCount: 1
-            elide: Text.ElideRight
-        }
-
-        Item {
-            id: refreshButton
-            width: 42
-            height: parent.height
-            anchors { right: parent.right; verticalCenter: parent.verticalCenter; rightMargin: 4 }
-            Components.Icon {
-                anchors.centerIn: parent
-                icon: "uc:rotate"
-                size: 25
-                color: colors.offwhite
-            }
-            Components.HapticMouseArea {
-                anchors.fill: parent
-                enabled: browser.browserActive && browser.canBrowse
-                onClicked: browser.requestPage(1)
-            }
-        }
-    }
-
-    Item {
         id: coverflowRegion
         anchors {
-            top: header.bottom
+            top: parent.top
             bottom: metadata.top
             left: parent.left
             right: parent.right
@@ -416,18 +357,18 @@ Rectangle {
             }
 
             path: Path {
-                startX: -browser.artSize * 0.18
+                startX: -browser.artSize * 0.12
                 startY: coverflowRegion.height / 2
                 PathAttribute { name: "coverScale"; value: 0.56 }
                 PathAttribute { name: "coverAngle"; value: 42 }
                 PathAttribute { name: "coverDepth"; value: 1 }
                 PathAttribute { name: "coverOpacity"; value: 0.60 }
 
-                PathLine { x: coverflowRegion.width * 0.25; y: coverflowRegion.height / 2 }
-                PathAttribute { name: "coverScale"; value: 0.78 }
-                PathAttribute { name: "coverAngle"; value: 24 }
+                PathLine { x: coverflowRegion.width * 0.22; y: coverflowRegion.height / 2 }
+                PathAttribute { name: "coverScale"; value: 0.72 }
+                PathAttribute { name: "coverAngle"; value: 28 }
                 PathAttribute { name: "coverDepth"; value: 10 }
-                PathAttribute { name: "coverOpacity"; value: 0.88 }
+                PathAttribute { name: "coverOpacity"; value: 0.78 }
 
                 PathLine { x: coverflowRegion.width / 2; y: coverflowRegion.height / 2 }
                 PathAttribute { name: "coverScale"; value: 1.0 }
@@ -435,13 +376,13 @@ Rectangle {
                 PathAttribute { name: "coverDepth"; value: 30 }
                 PathAttribute { name: "coverOpacity"; value: 1.0 }
 
-                PathLine { x: coverflowRegion.width * 0.75; y: coverflowRegion.height / 2 }
-                PathAttribute { name: "coverScale"; value: 0.78 }
-                PathAttribute { name: "coverAngle"; value: -24 }
+                PathLine { x: coverflowRegion.width * 0.78; y: coverflowRegion.height / 2 }
+                PathAttribute { name: "coverScale"; value: 0.72 }
+                PathAttribute { name: "coverAngle"; value: -28 }
                 PathAttribute { name: "coverDepth"; value: 10 }
-                PathAttribute { name: "coverOpacity"; value: 0.88 }
+                PathAttribute { name: "coverOpacity"; value: 0.78 }
 
-                PathLine { x: coverflowRegion.width + browser.artSize * 0.18; y: coverflowRegion.height / 2 }
+                PathLine { x: coverflowRegion.width + browser.artSize * 0.12; y: coverflowRegion.height / 2 }
                 PathAttribute { name: "coverScale"; value: 0.56 }
                 PathAttribute { name: "coverAngle"; value: -42 }
                 PathAttribute { name: "coverDepth"; value: 1 }
@@ -513,6 +454,28 @@ Rectangle {
             text: qsTr("Loading…")
             font: fonts.help()
             color: colors.light
+        }
+    }
+
+    // Navigation is only shown inside a folder. At the root there is no
+    // toolbar, title, refresh action, or reserved vertical header space.
+    Item {
+        id: backButton
+        z: 2
+        anchors { top: parent.top; left: parent.left; topMargin: 4; leftMargin: 4 }
+        width: 44
+        height: 44
+        visible: browser.history.length > 0
+
+        Components.Icon {
+            anchors.centerIn: parent
+            icon: "uc:chevron-left"
+            size: 30
+            color: colors.offwhite
+        }
+        Components.HapticMouseArea {
+            anchors.fill: parent
+            onClicked: browser.goBack()
         }
     }
 
