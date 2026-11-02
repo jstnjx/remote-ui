@@ -53,6 +53,10 @@ for content in (cards, touchpad):
 # drive whether controls are displayed/enabled.
 for method in ("toggle(", "setBrightness(", "setColorTemperature("):
     assert method in cards and method in light_api
+assert "LightStates.Unavailable" in cards
+assert "ClimateStates.Unavailable" in cards
+assert "CoverStates.Unavailable" in cards
+assert "entityObj.maxTemperature <= entityObj.minTemperature" in cards
 assert "LightFeatures.Dim" in cards
 assert "LightFeatures.Color_temperature" in cards
 for method in ("setTargetTemperature(", "setHvacMode("):
@@ -85,6 +89,7 @@ assert 'pad.dispatch(dy > 0 ? "down" : "up", false)' in touchpad
 assert "remoteObj.buttonMapping" in touchpad
 assert "row.short_press" in touchpad and "row.long_press" in touchpad
 assert '"remote.send_cmd"' in touchpad and '"remote.send"' in touchpad
+assert "RemoteStates.Unavailable" in touchpad
 assert 'RemoteFeatures.Send_cmd' in touchpad
 assert 'RemoteFeatures.Send' in touchpad
 assert "sendCommand" not in touchpad
