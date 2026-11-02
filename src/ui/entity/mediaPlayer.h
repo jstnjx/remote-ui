@@ -481,6 +481,8 @@ class MediaPlayer : public Base {
 
  private:
     QTimer m_positionTimer;
+    // Coalesce rapidly changing artwork URLs before starting network fetches.
+    QTimer m_mediaImageDebounceTimer;
 
     QNetworkAccessManager m_nam;
     void                  getMediaImageColor(QString imageUrl, quint64 requestId);
