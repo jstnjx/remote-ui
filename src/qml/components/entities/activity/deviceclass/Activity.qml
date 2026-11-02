@@ -211,6 +211,68 @@ EntityComponents.BaseDetail {
                 const widgetText = typeof item.text === "string" ? item.text.trim() : "";
                 const widgetParts = widgetText.split(";");
                 const widgetKind = widgetParts[0].trim().toUpperCase();
+                // Compact native Light / Climate / Cover cards. Mark a
+                // normal Text widget LIGHT[;id], CLIMATE[;id] or COVER[;id].
+                // Reuse the entity's native features, states and commands.
+                if (["LIGHT", "CLIMATE", "COVER"].indexOf(widgetKind) >= 0) {
+                    const cardComponent = Qt.createComponent(
+                        "qrc:/components/entities/activity/InlineEntityCard.qml");
+                    if (cardComponent.status === Component.Ready) {
+                        const card = cardComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "entityKind": widgetKind,
+                            "entitySelector": widgetParts.slice(1).join(";").trim(),
+                            "commandEntityId": item.command ? (item.command.entity_id || "") : "",
+                            "activityEntity": entityObj,
+                            "widgetActive": Qt.binding(function() {
+                                return activityBase.state === "open"
+                                    && activityBase.visible
+                                    && uiPages.currentIndex === index
+                                    && entityObj.state === ActivityStates.On
+                                    && Power.powerMode === PowerModes.Normal;
+                            })
+                        });
+                        if (!card)
+                            console.warn("Activity entity card creation failed:", cardComponent.errorString());
+                    } else {
+                        console.warn("Activity entity card failed:", cardComponent.errorString());
+                    }
+                    break;
+                }
+
+                // TP[;remote_id] is a gesture surface using the existing
+                // Remote button mapping or the integration's remote.send_cmd.
+                if (widgetKind === "TP" || widgetKind === "TOUCHPAD") {
+                    const touchpadComponent = Qt.createComponent(
+                        "qrc:/components/entities/activity/InlineTouchpad.qml");
+                    if (touchpadComponent.status === Component.Ready) {
+                        const touchpad = touchpadComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "entitySelector": widgetParts.slice(1).join(";").trim(),
+                            "commandEntityId": item.command ? (item.command.entity_id || "") : "",
+                            "activityEntity": entityObj,
+                            "widgetActive": Qt.binding(function() {
+                                return activityBase.state === "open"
+                                    && activityBase.visible
+                                    && uiPages.currentIndex === index
+                                    && entityObj.state === ActivityStates.On
+                                    && Power.powerMode === PowerModes.Normal;
+                            })
+                        });
+                        if (!touchpad)
+                            console.warn("Touchpad widget creation failed:", touchpadComponent.errorString());
+                    } else {
+                        console.warn("Touchpad widget failed:", touchpadComponent.errorString());
+                    }
+                    break;
+                }
+
                 // Inline media browser: create a real grid widget from the
                 // stock Text button marker MB;<media_player_entity_id>.
                 // No popup, overlay or Core-API schema changes.
