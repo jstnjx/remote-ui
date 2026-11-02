@@ -1068,7 +1068,10 @@ void EntityController::retrySendAttempt(const QString& commandId) {
             }
 
             qCDebug(lcEntityController()) << "Command executed successfully" << commandId << "attempt" << attemptCount;
+            const QString entityId = current.value().entityId;
+            const QString command = current.value().command;
             removePendingCommand(commandId);
+            emit entityCommandResult(entityId, command, true, 0, QString());
         },
         // failure
         [this, commandId, id](int code, QString message) { handleCommandFailure(commandId, id, code, message); });
@@ -1126,6 +1129,11 @@ void EntityController::handleCommandFailure(const QString& commandId, int reques
         removePendingCommand(commandId);
         return;
     }
+
+    // This request is now definitively failed (retries and repeating
+    // commands are handled above). Notify interested QML editors before the
+    // generic notification removes the pending command.
+    emit entityCommandResult(live.entityId, live.command, false, code, message);
 
     // get entity name
     QString       entityName = tr("The device");
