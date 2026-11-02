@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Regression checks for native Send icon and Apple TV text delivery.
+"""Static contracts for native Send glyph and direct Apple TV remote text.
 
-Static source-contract checks only. An actual HA Apple TV must still be
-tested with a focused text field on its screen.
+A device-and-Home-Assistant integration test is still needed to confirm actual
+text entry on a focused Apple TV text field.
 """
 from pathlib import Path
 
@@ -10,13 +10,12 @@ ROOT = Path(__file__).resolve().parents[2]
 style = (ROOT / "src/qml/keyboard/QtQuick/VirtualKeyboard/Styles/remotestyle/style.qml").read_text()
 bridge = (ROOT / "src/qml/components/entities/activity/KeyboardTextPrompt.qml").read_text()
 settings = (ROOT / "src/qml/settings/settings/KeyboardPrompt.qml").read_text()
+activity = (ROOT / "src/qml/components/entities/activity/deviceclass/Activity.qml").read_text()
 docs = (ROOT / "docs/sensor-keyboard.md").read_text()
 mapping = (ROOT / "resources/icons/icon-mapping.json").read_text()
-fallback = (ROOT / "resources/icons/icon-fallback.json").read_text()
 qrc = (ROOT / "resources/qrc/keyboard.qrc").read_text()
 
-# Missing relative keyboard SVGs must never be used for Send. The icon is
-# bundled in the same font as every other native Remote icon.
+# The bundled native icon font replaces missing keyboard SVG artwork.
 assert "Components.Icon {" in style
 assert 'return "uc:arrow-turn-down"' in style
 assert '"arrow-turn-down"' in mapping
@@ -27,52 +26,35 @@ assert 'enterKeyText.text.length === 0' in style
 assert 'root.keyboardSendMode ? ""' in style
 assert 'Styles/remotestyle/style.qml' in qrc
 
-# The native command remains for integrations that implement it.
-assert 'EntityController.onEntityCommand(target.id, "keyboard.text_set", {text: value})' in bridge
-assert 'keyboard.text_set' in docs
+# All native media-player keyboard rules and manual shortcuts remain supported.
+assert '"keyboard.text_set", {text: value}' in bridge
+assert 'function openManual(mediaId)' in bridge
+assert '["KB", "KEYBOARD", "KEYBOARD_SHORTCUT"]' in activity
+assert 'keyboardTextPrompt.openManual(target)' in activity
+assert 'mediaPlayerIds' in bridge and 'mediaPlayerIds' in settings
 
-# HA's Apple TV action is not a UC media-player entity command. A selected
-# rule provides a local bridge; manual KB widgets inherit the same rule.
-for required in (
-    'homeAssistantWebhookUrl',
-    'selected.indexOf(mediaId) >= 0',
-    'function submitViaHomeAssistant(url, value)',
-    'request.open("POST", endpoint)',
-    'request.setRequestHeader("Content-Type", "application/json")',
-    'request.send(JSON.stringify({text: value}))',
-    'request.status >= 200 && request.status < 300',
-    'request.readyState !== 4',
-    'if (submitting) return',
-    'submitSerial++',
-    'submitTimeout.stop()',
-    'submitTimeout.restart()',
-    'textEntry.showError',
-    'homeAssistantTarget',
-    '!keyboardBridge.submitting',
-):
-    assert required in bridge, f"Keyboard bridge missing: {required}"
+# The remote-entity route mirrors the already-working Home Assistant action:
+# remote.send_command -> command list containing keyboard.text_set <text>.
+assert 'import Entity.Remote 1.0' in bridge
+assert 'type !== "media_player" && type !== "remote"' in bridge
+assert 'if (type === "remote")' in bridge
+assert 'EntityController.onEntityCommand(target.id, "remote.send_cmd",' in bridge
+assert '{command: "keyboard.text_set " + value}' in bridge
+assert 'EntityController.mayCommandEntity(target.enabled)' in bridge
+assert 'EntityController.getIdsByType("remote")' in settings
+assert 'EntityController.getIdsByType("media_player")' in settings
+assert 'qsTr("Remote: ")' in settings
+assert 'qsTr("Text input targets")' in settings
+assert 'remote.send_cmd' in docs
+assert 'remote.send_command' in docs
+assert 'remote.apple_tv_4k_wohnzimmer_gen_2' in docs
+assert '"keyboard.text_set Hello from UC Remote"' in docs
 
-for required in (
-    'editRule("homeAssistantWebhookUrl", webhookInput.inputValue.trim())',
-    'property',  # page still uses ordinary setting and navigational props
-    'id: webhookInput',
-    'id: saveWebhookButton',
-    'navDown: saveWebhookButton',
-):
-    assert required in settings, f"Keyboard settings missing: {required}"
+# There is no webhook or token dependency for this already supported route.
+assert 'homeAssistantWebhookUrl' not in bridge
+assert 'homeAssistantWebhookUrl' not in settings
+assert 'XMLHttpRequest' not in bridge
+assert 'webhook' not in bridge.lower()
+assert 'api/webhook' not in docs
 
-assert "apple_tv.set_keyboard_text" in docs
-assert "trigger: webhook" in docs
-assert "local_only: true" in docs
-assert "config_entry_id:" in docs
-assert '{{ trigger.json.text }}' in docs
-assert "random" in docs.lower()
-assert "No selected media player" in bridge
-
-# The HA service is bound to one configured Apple TV entry rather than
-# accepting device IDs or service names from an untrusted POST body.
-assert 'JSON.stringify({text: value})' in bridge
-assert "config_entry_id: YOUR_APPLE_TV_CONFIG_ENTRY_ID" in docs
-assert '"service":' not in bridge
-
-print("Keyboard Send icon, HA text bridge and error-state contracts passed.")
+print("Native Send icon and direct Apple TV remote text contracts passed.")
