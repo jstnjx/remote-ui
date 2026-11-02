@@ -147,7 +147,10 @@ EntityComponents.BaseDetail {
                 // stock Text button marker MB;<media_player_entity_id>.
                 // No popup, overlay or Core-API schema changes.
                 if (widgetKind === "MB") {
-                    const browserId = widgetParts.slice(1).join(";").trim();
+                    // The stock Text widget has a short character limit. MB alone
+                    // uses the activity's configured media player; MB;ps5 is a
+                    // short, uniquely matched suffix of a configured player ID.
+                    const browserSelector = widgetParts.slice(1).join(";").trim();
                     const browserComponent = Qt.createComponent(
                         "qrc:/components/entities/activity/InlineMediaBrowser.qml");
                     if (browserComponent.status === Component.Ready) {
@@ -156,7 +159,9 @@ EntityComponents.BaseDetail {
                             "y": gridSizeH * item.location.y,
                             "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
                             "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
-                            "entityId": browserId,
+                            "entitySelector": browserSelector,
+                            "commandEntityId": item.command ? (item.command.entity_id || "") : "",
+                            "activityEntity": entityObj,
                             "browserActive": Qt.binding(function() {
                                 return activityBase.state === "open"
                                     && activityBase.visible
