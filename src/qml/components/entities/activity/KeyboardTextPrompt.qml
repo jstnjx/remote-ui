@@ -128,15 +128,6 @@ Item {
         textPopup.open();
     }
 
-    function matchingCompanionRemote(mediaPlayer) {
-        if (!mediaPlayer || !mediaPlayer.id) return null;
-        // Both entities from the same HA integration use the same suffix:
-        // integration.main.media_player.apple_tv -> integration.main.remote.apple_tv
-        const remoteId = String(mediaPlayer.id).replace(".media_player.", ".remote.");
-        if (remoteId === mediaPlayer.id) return null;
-        const remote = EntityController.get(remoteId);
-        return remote && remote.getTypeAsString() === "remote" ? remote : null;
-    }
 
     function isNativeAppleTVKeyboard(target) {
         if (!target || target.getTypeAsString() !== "media_player") return false;
@@ -188,12 +179,6 @@ Item {
             ui.createNotification(message, true);
     }
 
-    function isHomeAssistantMediaPlayer(target) {
-        const id = String(target.id || "").toLowerCase();
-        const integration = String(target.integrationId || "").toLowerCase();
-        return /home[_-]?assistant|homeassistant/.test(id) ||
-               /home[_-]?assistant|homeassistant/.test(integration);
-    }
 
     Timer {
         id: commandTimeout
