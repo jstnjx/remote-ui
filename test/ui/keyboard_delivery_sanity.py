@@ -40,10 +40,17 @@ assert 'String(mediaPlayer.id).replace(".media_player.", ".remote.")' in bridge
 assert 'function isHomeAssistantMediaPlayer(target)' in bridge
 assert 'const companion = matchingCompanionRemote(target)' in bridge
 assert 'Wrong target: %1 is a Media player. Select its Remote entity.' in bridge
-assert 'id: explicitSendButton' in bridge
-assert 'trigger: function() { keyboardBridge.submitText(); }' in bridge
+assert 'id: explicitSendButton' not in bridge
+assert 'id: inputTitle' in bridge  # heading remains; only extra action button is removed
+assert 'id: deliveryStatus' in bridge
+assert 'top: textEntry.bottom' in bridge
+assert 'function onClosed()' in bridge
+assert 'if (textPopup.opened && !keyboardBridge.closingKeyboard)' in bridge
+assert 'textPopup.close();' in bridge
 assert 'function onAccepted() { keyboardBridge.submitText(); }' in bridge
-assert 'onClosed()' not in bridge  # virtual keyboard hides without dismissing text popup
+assert 'target: keyboard' in bridge
+assert 'closingKeyboard = true;' in bridge
+assert 'keyboard.hide();' in bridge
 assert 'size: 60' in style
 assert 'Math.round(112 * scaleHint)' not in style
 assert 'property bool sending: false' in bridge
@@ -54,7 +61,7 @@ assert 'keyboardBridge.statusMessage = qsTr("Core rejected %1 (%2): %3")' in bri
 assert 'Core accepted command for %1' in bridge
 assert 'request.entityId, request.command, request.params' in bridge
 assert 'if (sending) return;' in bridge
-assert 'enabled: !keyboardBridge.sending' in bridge
+assert 'enabled: !keyboardBridge.sending' not in bridge
 assert 'id: deliveryStatus' in bridge
 assert 'keyboardBridge.statusMessage' in bridge
 controller_h = (ROOT / "src/ui/entity/entityController.h").read_text()
@@ -91,4 +98,4 @@ assert 'XMLHttpRequest' not in bridge
 assert 'webhook' not in bridge.lower()
 assert 'api/webhook' not in docs
 
-print("Native Send icon and direct Apple TV remote text contracts passed.")
+print("Native Send-only keyboard overlay closure and command diagnostics contracts passed.")

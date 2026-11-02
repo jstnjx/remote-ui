@@ -310,10 +310,17 @@ Item {
         }
     }
 
-    // Hiding the virtual keyboard must not silently discard text. Qt can
-    // close the keyboard before delivering its Enter/Send action; the editor
-    // remains open with an explicit Send button until submitted or dismissed.
-
+    // The popup belongs to the virtual keyboard. When the keyboard is
+    // dismissed via its native Close action, Back or another UI action,
+    // remove the full-screen overlay as well. The guard prevents the popup's
+    // own onClosed -> keyboard.hide() cleanup from re-entering this handler.
+    Connections {
+        target: keyboard
+        function onClosed() {
+            if (textPopup.opened && !keyboardBridge.closingKeyboard)
+                textPopup.close();
+        }
+    }
 
     // Reuse the remote's existing menu popup for the one-time question.
     Components.PopupMenu {
@@ -405,27 +412,11 @@ Item {
                 }
             }
 
-            // Also submit by touch. This is independent of whether the
-            // platform's virtual keyboard emits TextField.accepted().
-            Components.Button {
-                id: explicitSendButton
-                width: parent.width - 40
-                height: 64
-                anchors {
-                    top: textEntry.bottom
-                    topMargin: 20
-                    horizontalCenter: parent.horizontalCenter
-                }
-                text: qsTr("Send text")
-                enabled: !keyboardBridge.sending
-                trigger: function() { keyboardBridge.submitText(); }
-            }
-
             Text {
                 id: deliveryStatus
                 anchors {
-                    top: explicitSendButton.bottom
-                    topMargin: 12
+                    top: textEntry.bottom
+                    topMargin: 14
                     left: parent.left
                     right: parent.right
                     leftMargin: 20

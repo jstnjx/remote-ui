@@ -4,7 +4,7 @@ Go to **Settings → Keyboard input automation** to configure a rule for an acti
 
 ## Apple TV: choose the Remote entity, not the Media Player
 
-The **Home Assistant Apple TV Remote** entity supports `remote.send_command`. For Apple TV text entry, send the exact command that works in Home Assistant:
+**Known text delivery limitation:** The Home Assistant Apple TV Remote entity supports `remote.send_command`, but only for recognized remote-control method names. The following text command is dispatched by the current keyboard implementation but is **rejected by Apple TV**:
 
 ```yaml
 action: remote.send_command
@@ -21,7 +21,7 @@ This is handled **directly through the existing Unfolded Circle Home Assistant i
 2. Select the activity where you placed your keyboard button.
 3. Under **Text input targets**, choose the entry labeled **Remote:** for the Apple TV's Home Assistant remote entity (`remote.apple_tv_4k_wohnzimmer_gen_2` in Home Assistant). **Do not choose its Media player:** entry.
 4. On that activity's UI page, add a **Text widget** containing `KB`. The widget turns into a keyboard icon.
-5. Focus the editable field on the Apple TV, tap the `KB` widget, type text, then tap **Send text** above the keyboard or use the native return-arrow **Send** key. Both invoke the same handler.
+5. Focus the editable field on the Apple TV, tap the `KB` widget and enter text. Use the **native return-arrow Send key**. There is no separate Send text button below the input field. Closing the keyboard also closes its full-screen overlay.
 
 The Remote UI builds the UC Core entity command:
 
@@ -29,15 +29,15 @@ The Remote UI builds the UC Core entity command:
 {"cmd_id":"remote.send_cmd","params":{"command":"keyboard.text_set Hello from UC Remote"}}
 ```
 
-The Home Assistant integration translates `remote.send_cmd` to `remote.send_command` for the selected remote entity. Text, including spaces and punctuation, remains a **single command string**, just as in your working Home Assistant automation.
+The UC Home Assistant integration translates `remote.send_cmd` into `remote.send_command`. However, Home Assistant's Apple TV remote implementation does **not** parse `keyboard.text_set <text>` as an action and rejects it with `ValueError: Command not found. Exiting sequence` (as confirmed by the attached logs). The supported text-entry action is `apple_tv.set_keyboard_text`, requiring the Apple TV's `config_entry_id` and `text`; the current built-in UC Remote command mapping cannot call it directly. A suitable text-capable integration or adapter is needed for Apple TV input.
 
 The entity ID shown by the UC integration may have a prefix different from the Home Assistant ID. Select the correct remote **by name** in the target picker; you do not need to rename the entity or fit its full ID into the activity Text widget.
 
 If your `KB` Text widget still has an old command target attached, the keyboard rule's selected **Remote** takes precedence. When a Home Assistant media-player entity has a companion Remote entity with the same integration and device suffix, the keyboard can also redirect to that Remote. Otherwise, it displays a message asking you to select the Remote instead of attempting an unsupported media-player command.
 
-The keyboard editor **does not close when the virtual keyboard hides**; the text remains available for the explicit Send button. The Send arrow is now the same size as the other special-key symbols.
+The keyboard editor closes when the native virtual keyboard closes, including via its own dismiss control or Back. The redundant **Send text** button has been removed.
 
-After pressing Send, the text remains in the field while the UI waits for the Core API's command result. A status message shows the **exact entity ID and command** used, followed by **Core accepted** or a failure code/error. The Send button is temporarily disabled while a request is outstanding, and a timeout allows retrying. These messages distinguish wrong routing, an unavailable entity or a rejected Core API command from a downstream Apple TV issue. **Core accepted means the Core API acknowledged the command; it does not prove the Home Assistant action succeeded or text appeared on tvOS.** If Core accepted but no text appears, inspect the Home Assistant Apple TV integration and ensure a text field is focused on the TV.
+After pressing the native Send key, the UI dispatches the command. It can display the Core API result while open, but closing the virtual keyboard closes the whole overlay. A status message shows the **exact entity ID and command** used, followed by **Core accepted** or a failure code/error. The Send button is temporarily disabled while a request is outstanding, and a timeout allows retrying. These messages distinguish wrong routing, an unavailable entity or a rejected Core API command from a downstream Apple TV issue. **Core accepted means the Core API acknowledged the command; it does not prove the Home Assistant action succeeded or text appeared on tvOS.** If Core accepted but no text appears, inspect the Home Assistant Apple TV integration and ensure a text field is focused on the TV.
 
 ## Other integrations and existing rules
 
