@@ -420,6 +420,7 @@ Rectangle {
     Components.Selectable {
         id: selection
         style: "fill"
+        radius: redesignedHomeStyle ? 0 : ui.cornerRadiusSmall
         // in the edit mode too: the fill marks the selection, the page adds the ring while a tile is held (Q-5)
         selected: entityBaseContainer.isSelected
     }
