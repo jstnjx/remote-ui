@@ -399,7 +399,8 @@ Item {
 
         delegate: Loader {
             id: rowLoader
-            width: entityList.width
+            // Leave Loader geometry implicit, as on the stock Page delegate.
+            // Native entity/group items determine their own width and height.
             // Let Loader follow the native entity/group item's own height.
             // An explicit reciprocal height binding would prevent group expansion.
             asynchronous: true
