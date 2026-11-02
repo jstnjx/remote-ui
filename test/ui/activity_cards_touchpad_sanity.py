@@ -10,11 +10,18 @@ root = Path(__file__).resolve().parents[2]
 activity = (root / "src/qml/components/entities/activity/deviceclass/Activity.qml").read_text()
 cards = (root / "src/qml/components/entities/activity/InlineEntityCard.qml").read_text()
 touchpad = (root / "src/qml/components/entities/activity/InlineTouchpad.qml").read_text()
+climate_controls = (root / "src/qml/components/entities/activity/InlineClimateControls.qml").read_text()
+cover_controls = (root / "src/qml/components/entities/activity/InlineCoverControls.qml").read_text()
+native_brightness = (root / "src/qml/components/entities/light/Brightness.qml").read_text()
+native_onoff = (root / "src/qml/components/entities/light/OnOff.qml").read_text()
+native_openclose = (root / "src/qml/components/entities/cover/OpenClose.qml").read_text()
+
 qrc = (root / "resources/qrc/main.qrc").read_text()
 docs = (root / "docs/activity-purpose-widgets.md").read_text()
 remote_api = (root / "src/ui/entity/remote.h").read_text()
 
-for name in ("InlineEntityCard.qml", "InlineTouchpad.qml"):
+for name in ("InlineEntityCard.qml", "InlineTouchpad.qml",
+             "InlineClimateControls.qml", "InlineCoverControls.qml"):
     assert f'alias="components/entities/activity/{name}"' in qrc
 
 for kind in ("LIGHT", "CLIMATE", "COVER", "TP", "TOUCHPAD"):
@@ -28,47 +35,56 @@ assert 'Power.powerMode === PowerModes.Normal' in activity
 assert '"width": gridSizeW * (item.size' in activity
 assert '"height": gridSizeH * (item.size' in activity
 
-# Each card uses the existing entity type, safe selector logic and native
-# state readout, without attempting to reimplement its full-screen controls.
+# Cards render controls INLINE instead of opening native entity overlays.
 for content in (cards, touchpad):
-    assert 'getIdsByType(' in content
-    assert 'EntityController.get(' in content
-    assert 'EntityController.load(' in content
-    assert 'mayCommandEntity(' in content
-    assert 'property bool widgetActive: false' in content
-    assert 'selectionError' in content
-    assert 'matches.length > 1' in content
-    assert 'known.length === 1' in content
-    assert 'enabled: ' in content
-    assert 'ui.cornerRadiusSmall' in content
-    assert 'colors.dark' in content
-    assert 'colors.offwhite' in content
+    assert "getIdsByType(" in content
+    assert "EntityController.get(" in content
+    assert "EntityController.load(" in content
+    assert "mayCommandEntity(" in content
+    assert "property bool widgetActive: false" in content
+    assert "selectionError" in content
+    assert "matches.length > 1" in content
+    assert "known.length === 1" in content
+    assert "ui.cornerRadiusSmall" in content
+    assert "colors.dark" in content
+    assert "colors.offwhite" in content
 
 assert 'LightStates.Unavailable' in cards
 assert 'ClimateStates.Unavailable' in cards
 assert 'CoverStates.Unavailable' in cards
 assert 'LightFeatures.Dim' in cards
-assert 'ClimateFeatures.Target_temperature' in cards
-assert 'positionAvailable' in cards
-assert 'card.mainValue()' in cards
-assert 'card.secondaryValue()' in cards
-assert 'openEntityDetail(entityObj);' in cards
-assert 'function openNativeWidgetDetail(target)' in activity
-assert 'loadThirdContainer(EntityController.screenUrl(target)' in activity
-assert '"openEntityDetail": function(target)' in activity
-assert '"entityObj": target' in activity
-for component_path in (
-    'src/qml/components/entities/light/deviceclass/Light.qml',
-    'src/qml/components/entities/climate/deviceclass/Climate.qml',
-    'src/qml/components/entities/cover/deviceclass/Blind.qml',
-):
-    original = (root / component_path).read_text()
-    assert 'EntityComponents.BaseDetail {' in original
-assert 'Slider {' not in cards
-assert 'PopupMenu {' not in cards
-assert 'setBrightness(' not in cards
-assert 'setTargetTemperature(' not in cards
-assert 'setPosition(' not in cards
+assert 'LightFeatures.Color' in cards
+assert 'ClimateFeatures.Target_temperature' in climate_controls
+assert 'entityObj.positionAvailable' in cover_controls
+assert 'card.entityKind === "LIGHT"' in cards
+assert 'card.entityKind === "CLIMATE"' in cards
+assert 'card.entityKind === "COVER"' in cards
+
+# Direct native reuse, not screenshots or a modal overlay.
+assert 'qrc:/components/entities/light/OnOff.qml' in cards
+assert 'qrc:/components/entities/light/Brightness.qml' in cards
+assert 'qrc:/components/entities/light/Color.qml' in cards
+assert 'ActivityComponents.InlineClimateControls {' in cards
+assert 'ActivityComponents.InlineCoverControls {' in cards
+assert 'item.compact = true;' in cards
+assert 'property bool compact: false' in native_brightness
+assert 'property bool compact: false' in native_onoff
+assert 'property bool compact: false' in native_openclose
+assert 'CoverComponents.OpenClose {' in cover_controls
+assert 'compact: true' in cover_controls
+assert 'Tumbler {' in climate_controls
+assert 'temperatureTumbler.positionViewAtIndex' in climate_controls
+assert 'setTargetTemperature(' in climate_controls
+assert 'setHvacMode(' in climate_controls
+assert 'setPosition(' in cover_controls
+assert 'entityObj.open();' in cover_controls
+assert 'entityObj.stop();' in cover_controls
+assert 'entityObj.close();' in cover_controls
+assert 'openEntityDetail' not in cards
+assert 'loadThirdContainer' not in cards
+assert 'openNativeWidgetDetail' not in activity
+assert '"openEntityDetail"' not in activity
+assert 'Open controls' not in cards
 
 # Every touch is captured from press to release/cancel. Activity PathView
 # cannot steal an in-progress widget gesture, including touchpad swipes.
@@ -85,7 +101,15 @@ for widget in (cards, touchpad):
     assert 'function endGesture()' in widget
     assert 'Component.onDestruction: endGesture()' in widget
     assert 'onWidgetActiveChanged: if (!widgetActive) endGesture()' in widget
-    assert 'preventStealing: true' in widget
+    if widget == touchpad:
+        assert 'preventStealing: true' in widget
+    else:
+        # PointHandler holds a passive grab and doesn't hide a slider under
+        # a full-card MouseArea; child controls retain their drag gestures.
+        assert 'PointHandler {' in widget
+        assert 'target: null' in widget
+        assert 'onActiveChanged:' in widget
+        assert 'onClicked: card.openNativeDetail()' not in widget
     assert 'onReleased:' in widget
     assert 'onCanceled:' in widget
     assert widget.index('beginPageGesture();') < widget.index('endPageGesture();')
@@ -114,7 +138,9 @@ for width, height in ((480, 800), (480, 850), (320, 640)):
 
 for marker in ("LIGHT;living", "CLIMATE;living", "COVER;shade", "TP;apple_tv"):
     assert marker in docs
-assert "loadThirdContainer" in docs
+assert "inline" in docs.lower()
+assert "OpenClose.qml" in docs
+assert "loadThirdContainer" not in docs
 assert "page swipe" in docs
 
 print("Native entity detail overlays and widget gesture capture contracts passed.")
