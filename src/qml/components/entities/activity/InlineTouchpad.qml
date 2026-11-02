@@ -24,6 +24,24 @@ Rectangle {
     property var remoteObj: null
     property string selectionError: ""
     property string feedback: ""
+
+    // The Activity PathView must not take a swipe that began on this pad.
+    // Release on every termination path so normal page navigation resumes.
+    property var beginPageGesture: function() {}
+    property var endPageGesture: function() {}
+    property bool gestureHeld: false
+
+    function beginGesture() {
+        if (gestureHeld) return;
+        gestureHeld = true;
+        beginPageGesture();
+    }
+
+    function endGesture() {
+        if (!gestureHeld) return;
+        gestureHeld = false;
+        endPageGesture();
+    }
     readonly property bool ready: widgetActive && remoteObj &&
                                   remoteObj.enabled && remoteObj.state !== RemoteStates.Unavailable &&
                                   EntityController.mayCommandEntity(remoteObj.enabled)
@@ -111,6 +129,8 @@ Rectangle {
     }
 
     Component.onCompleted: resolveTarget()
+    Component.onDestruction: endGesture()
+    onWidgetActiveChanged: if (!widgetActive) endGesture()
     onEntitySelectorChanged: resolveTarget()
     onCommandEntityIdChanged: if (!entitySelector) resolveTarget()
     onActivityEntityChanged: if (!entitySelector) resolveTarget()
@@ -143,6 +163,7 @@ Rectangle {
         property real startY: 0
         property bool longPressed: false
         onPressed: {
+            pad.beginGesture();
             startX = mouse.x;
             startY = mouse.y;
             longPressed = false;
@@ -155,6 +176,7 @@ Rectangle {
             pad.dispatch("select", true);
         }
         onReleased: {
+            pad.endGesture();
             if (longPressed) return;
             const dx = mouse.x - startX;
             const dy = mouse.y - startY;
@@ -164,6 +186,10 @@ Rectangle {
                 pad.dispatch(dx > 0 ? "right" : "left", false);
             else
                 pad.dispatch(dy > 0 ? "down" : "up", false);
+        }
+        onCanceled: {
+            pad.endGesture();
+            longPressed = false;
         }
     }
 
