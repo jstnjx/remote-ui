@@ -259,38 +259,6 @@ EntityComponents.BaseDetail {
                     break;
                 }
 
-                // TP[;remote_id] is a gesture surface using the existing
-                // Remote button mapping or the integration's remote.send_cmd.
-                if (widgetKind === "TP" || widgetKind === "TOUCHPAD") {
-                    const touchpadComponent = Qt.createComponent(
-                        "qrc:/components/entities/activity/InlineTouchpad.qml");
-                    if (touchpadComponent.status === Component.Ready) {
-                        const touchpad = touchpadComponent.createObject(container, {
-                            "x": gridSizeW * item.location.x,
-                            "y": gridSizeH * item.location.y,
-                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
-                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
-                            "entitySelector": widgetParts.slice(1).join(";").trim(),
-                            "commandEntityId": item.command ? (item.command.entity_id || "") : "",
-                            "activityEntity": entityObj,
-                            "beginPageGesture": function() { activityBase.beginWidgetGesture(); },
-                            "endPageGesture": function() { activityBase.endWidgetGesture(); },
-                            "widgetActive": Qt.binding(function() {
-                                return activityBase.state === "open"
-                                    && activityBase.visible
-                                    && uiPages.currentIndex === index
-                                    && entityObj.state === ActivityStates.On
-                                    && Power.powerMode === PowerModes.Normal;
-                            })
-                        });
-                        if (!touchpad)
-                            console.warn("Touchpad widget creation failed:", touchpadComponent.errorString());
-                    } else {
-                        console.warn("Touchpad widget failed:", touchpadComponent.errorString());
-                    }
-                    break;
-                }
-
                 // Inline media browser: create a real grid widget from the
                 // stock Text button marker MB;<media_player_entity_id>.
                 // No popup, overlay or Core-API schema changes.
@@ -825,9 +793,9 @@ EntityComponents.BaseDetail {
         width: parent.width
         height: parent.height - title.height
         anchors { horizontalCenter: parent.horizontalCenter; top: title.bottom }
-        // PathView's swipe recognizer must never steal a card tap or
-        // touchpad swipe. Widgets hold and release this lock for the pointer
-        // sequence, even on cancellation.
+        // PathView must never steal a native Light/Climate/Cover control
+        // gesture. Interactive cards own their touches until release or
+        // cancellation; normal page swiping remains available elsewhere.
         interactive: uiPages.count > 1 && activityBase.activeWidgetGestures === 0
 
         snapMode: PathView.SnapToItem

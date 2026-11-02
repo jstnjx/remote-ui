@@ -4,11 +4,9 @@ The following widgets reuse the Remote UI's native palette, icon font, tactile c
 
 | Text value | Widget | Recommended grid size |
 | --- | --- | --- |
-| `LIGHT` or `LIGHT;living` | Live light status; tap for the **native Light detail overlay** | 2×2 |
-| `CLIMATE` or `CLIMATE;living` | Live current/target temperatures; tap for the **native Climate overlay** | 2×2 |
-| `COVER` or `COVER;shade` | Current cover state/position; tap for the **native Cover overlay** | 2×2 |
-| `TP` or `TP;apple_tv` | Swipe touchpad with tap-to-select | 2×2 |
-| `TOUCHPAD;apple_tv` | Long-form touchpad marker | 2×2 |
+| `LIGHT` or `LIGHT;living` | Native light controls directly within the Activity widget | 2×2 or larger |
+| `CLIMATE` or `CLIMATE;living` | Inline temperature tumbler, target and HVAC mode | 2×2 or larger |
+| `COVER` or `COVER;shade` | Inline cover position and native open/stop/close controls | 2×2 or larger |
 
 Selectors match a full entity ID, the final entity ID segment or a unique prefix of its final segment, case-insensitively. The Text widget's existing command entity can also provide the target; without one, the widget tries the activity's included entities, then an automatically selected target **only if exactly one** entity of the expected type is configured. Ambiguous selectors display an error rather than controlling the wrong device. Use a full ID (for example from a UI page API PATCH) if shorter suffixes conflict.
 
@@ -22,27 +20,15 @@ The **LIGHT**, **CLIMATE** and **COVER** widgets now contain working controls **
 
 Native Light, Climate and Cover entity detail screens still work independently and retain their original full-screen dimensions and appearance. The inline surfaces share their entity state and command APIs; no new integration commands are introduced.
 
-## Touchpad
-
-A gesture surface rather than a directional-button grid:
-
-- Swipe up/down/left/right → one directional command on release, after a 26px movement threshold.
-- Tap anywhere → select/OK.
-- Press and hold without moving → use the selected Remote's mapped `DPAD_MIDDLE` long-press action, if configured.
-
-The touchpad first looks up the existing Remote entity `buttonMapping` entry for `DPAD_UP`, `DPAD_DOWN`, `DPAD_LEFT`, `DPAD_RIGHT` or `DPAD_MIDDLE`, and dispatches that mapping's `short_press` or `long_press` command/parameters exactly. This means the touchpad can reuse native integration-defined buttons, including device-specific mappings.
-
-For Remote entities with no matching mapping, the widget falls back to `remote.send_cmd` (or `remote.send` if supported). For Home Assistant Remote entities it uses lowercase `up`, `down`, `left`, `right`, `select`; other integrations receive uppercase directions and `OK`. **Fallback command vocabularies are integration-specific**, so confirm they are supported or supply a native button mapping. It does not guess at long-press commands. Gesture commands are disabled when the activity is inactive or the entity unavailable.
-
 ## Swipe ownership and Activity page navigation
 
-The Activity page uses a horizontal `PathView` for page swiping. A Light/Climate/Cover card now uses a **passive Qt `PointHandler`** to observe a touch anywhere on the widget without intercepting gestures on the native sliders, color picker or temperature Tumbler. The Touchpad continues to use a full-surface `MouseArea` with `preventStealing`. **While a widget touch is active, Activity page swiping is disabled** using the same shared gesture count; it is restored on release, cancellation, widget destruction or activity closure. This prevents a horizontal slider or touchpad gesture from accidentally flipping to the next page.
+The Activity page uses a horizontal `PathView` for page swiping. Light/Climate/Cover cards use a **passive Qt `PointHandler`** to observe touches without intercepting the native sliders, color picker or temperature Tumbler. **While a card touch is active, Activity page swiping is disabled**; it resumes on release, cancellation, widget destruction or activity closure. This prevents horizontal control gestures from accidentally switching Activity pages.
 
 Only gestures beginning **outside** an interactive widget navigate between Activity pages. The Media Browser retains its existing internal `PathView` behavior and is not changed.
 
 ## Background styling
 
-The Light, Climate, Cover and Touchpad widgets use a **transparent outer surface** with no gray rounded card background. The Activity page's background remains visible behind each widget. Native controls such as Light sliders, mode buttons, Cover actions, and the Touchpad's central select affordance retain their own contrast and active-state fills so they remain identifiable and usable.
+Light, Climate and Cover cards use a **transparent outer surface** with no gray rounded card background. The Activity page background remains visible behind each widget. Interactive native controls retain their individual contrast and active-state fills.
 
 ## Layout and performance
 
@@ -52,4 +38,4 @@ No arbitrary Home Assistant service calls, webhooks, credentials or external pro
 
 ## Testing
 
-Run `python test/ui/activity_cards_touchpad_sanity.py` and the repository's Code Guidelines CI. Test on the Remote or simulator at 480×800 / 480×850 with 2×2 and larger widget sizes, and with entities both available and unavailable. Verify that brightness, color, target temperature, HVAC mode, cover position and Open/Close/Stop respond **directly inside each card**, and that swiping on a widget does not switch Activity pages. Verify that swipes **outside** widgets still navigate normally. Real touchpad command vocabulary, thermostat mode support and cover position semantics are integration-dependent and require testing against the target device.
+Run `python test/ui/activity_entity_cards_sanity.py` and the repository's Code Guidelines CI. Test on the Remote or simulator at 480×800 / 480×850 with 2×2 and larger widget sizes, and with entities both available and unavailable. Verify that brightness, color, target temperature, HVAC mode, cover position and Open/Close/Stop respond **directly inside each card**, and that swiping on a widget does not switch Activity pages. Verify that swipes **outside** widgets still navigate normally. Thermostat mode support and cover position semantics are integration-dependent and require testing against the target device.
