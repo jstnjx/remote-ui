@@ -110,12 +110,7 @@ class Config : public QObject {
     Q_PROPERTY(bool hideMediaPlayerControls READ getHideMediaPlayerControls WRITE setHideMediaPlayerControls NOTIFY
                    hideMediaPlayerControlsChanged)
     Q_PROPERTY(bool redesignedHomeEnabled READ getRedesignedHomeEnabled WRITE setRedesignedHomeEnabled NOTIFY homeSettingsChanged)
-    Q_PROPERTY(int homeScreenLayout READ getHomeScreenLayout WRITE setHomeScreenLayout NOTIFY homeSettingsChanged)
-    Q_PROPERTY(bool homeShowClock READ getHomeShowClock WRITE setHomeShowClock NOTIFY homeSettingsChanged)
-    Q_PROPERTY(bool homeShowMedia READ getHomeShowMedia WRITE setHomeShowMedia NOTIFY homeSettingsChanged)
-    Q_PROPERTY(bool homeShowActivities READ getHomeShowActivities WRITE setHomeShowActivities NOTIFY homeSettingsChanged)
-    Q_PROPERTY(bool homeShowQuickControls READ getHomeShowQuickControls WRITE setHomeShowQuickControls NOTIFY homeSettingsChanged)
-    Q_PROPERTY(bool homeShowPageIndicators READ getHomeShowPageIndicators WRITE setHomeShowPageIndicators NOTIFY homeSettingsChanged)
+    Q_PROPERTY(bool homeShowActivityLabels READ getHomeShowActivityLabels WRITE setHomeShowActivityLabels NOTIFY homeSettingsChanged)
     Q_PROPERTY(bool showMediaShuffle READ getShowMediaShuffle WRITE setShowMediaShuffle NOTIFY mediaControlsChanged)
     Q_PROPERTY(bool showMediaRepeat READ getShowMediaRepeat WRITE setShowMediaRepeat NOTIFY mediaControlsChanged)
     Q_PROPERTY(bool showMediaBrowser READ getShowMediaBrowser WRITE setShowMediaBrowser NOTIFY mediaControlsChanged)
@@ -233,18 +228,8 @@ class Config : public QObject {
     void setHideMediaPlayerControls(bool value);
     bool getRedesignedHomeEnabled();
     void setRedesignedHomeEnabled(bool enabled);
-    int getHomeScreenLayout();
-    void setHomeScreenLayout(int layout);
-    bool getHomeShowClock();
-    void setHomeShowClock(bool show);
-    bool getHomeShowMedia();
-    void setHomeShowMedia(bool show);
-    bool getHomeShowActivities();
-    void setHomeShowActivities(bool show);
-    bool getHomeShowQuickControls();
-    void setHomeShowQuickControls(bool show);
-    bool getHomeShowPageIndicators();
-    void setHomeShowPageIndicators(bool show);
+    bool getHomeShowActivityLabels();
+    void setHomeShowActivityLabels(bool show);
 
     bool getShowMediaShuffle();
     void setShowMediaShuffle(bool value);

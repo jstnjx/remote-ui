@@ -292,7 +292,8 @@ Item {
                     }
 
                     if (mainContainerRoot.redesignedHomeActive) {
-                        if (redesignedHome.item.selectedIndex >= redesignedHome.item.selectedActions.length - 1)
+                        if (!redesignedHome.item.selectedActions.length ||
+                            redesignedHome.item.selectedIndex >= redesignedHome.item.selectedActions.length - 1)
                             pages.incrementCurrentIndex();
                         else
                             redesignedHome.item.moveSelection(1);
@@ -728,7 +729,7 @@ Item {
     Loader {
         id: redesignedHome
         anchors.fill: pages
-        // Keep the stock status bar, battery and global overlays above this.
+        // Keep the global overlays; the redesigned header replaces the stock status bar.
         z: 0
         asynchronous: true
         active: Config.redesignedHomeEnabled && !ui.profile.restricted &&
@@ -743,8 +744,9 @@ Item {
         }
     }
 
-    // bottom gradient
+    // Native bottom gradient is unnecessary on the redesigned home.
     Item {
+        visible: !mainContainerRoot.redesignedHomeActive
         width: parent.width; height: 60
         anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
         opacity: pages.currentItem && pages.currentItem.atYEnd ? 0 : 1
@@ -764,6 +766,8 @@ Item {
 
     Components.StatusBar {
         id: statusBar
+        // The redesigned home renders the clock, battery and settings itself.
+        visible: !mainContainerRoot.redesignedHomeActive
         anchors { top: parent.top; horizontalCenter: parent.horizontalCenter }
     }
 

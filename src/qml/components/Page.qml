@@ -53,6 +53,8 @@ ListView {
 
     property string title: pageName
     property string _id: pageId
+    // Expose the first page's configured background to the optional home.
+    readonly property string homeBackgroundImage: pageImage
     property QtObject items: pageItems
     property bool _isCurrentItem: pages.currentItem._id === page._id
 
