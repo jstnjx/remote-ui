@@ -158,7 +158,7 @@ Item {
 
     function normalizeAppleTVName(name) {
         return String(name || "").toLowerCase()
-            .replace(/^apple\\s*tv\\s*keyboard\\s*[-:–]\\s*/, "")
+            .replace(/^apple\s*tv\s*keyboard\s*[-:–]\s*/, "")
             .replace(/[^a-z0-9]+/g, "");
     }
 
@@ -225,7 +225,14 @@ Item {
             return;
         }
 
-        const targets = activeRule.mediaPlayerIds || [];
+        const configuredTargets = activeRule.mediaPlayerIds || [];
+        // A newly configured Apple TV Keyboard target supersedes any saved
+        // Home Assistant Remote target from older keyboard rules. Do not
+        // dispatch both destinations for the same input.
+        const keyboardTargets = configuredTargets.filter(function(id) {
+            return isNativeAppleTVKeyboard(EntityController.get(id));
+        });
+        const targets = keyboardTargets.length ? keyboardTargets : configuredTargets;
         const requests = [];
         const seen = {};
         let blocked = false;
@@ -283,7 +290,7 @@ Item {
         }
         if (blocked || requests.length === 0) {
             if (!statusMessage)
-                statusMessage = qsTr("No usable target. Choose the Apple TV Remote in Keyboard settings.");
+                statusMessage = qsTr("Select an Apple TV Keyboard media player in Keyboard settings.");
             textEntry.showError(statusMessage);
             return;
         }
@@ -477,8 +484,10 @@ Item {
         }
 
         onClosed: {
-            if (!pendingSearchTarget) commandTimeout.stop();
-            sending = false;
+            if (!pendingSearchTarget) {
+                commandTimeout.stop();
+                sending = false;
+            }
             pendingTargetIds = [];
             statusMessage = "";
             closingKeyboard = true;
