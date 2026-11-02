@@ -49,16 +49,6 @@ EntityComponents.BaseDetail {
         if (state !== "open") activeWidgetGestures = 0;
     }
 
-    function openNativeWidgetDetail(target) {
-        if (!target || !target.enabled || !EntityController.mayCommandEntity(target.enabled))
-            return;
-        // Same third-container flow as the Activity's included-entity list.
-        loadThirdContainer(EntityController.screenUrl(target), {
-            "entityId": target.id,
-            "entityObj": target
-        });
-    }
-
     // Keypad selection in the activity menu (button navigation driven, see docs/key-navigation.md idiom b):
     // 0 is the button at the top of the current menu page ("Fix states" / "Back"), 1..n the list items below it.
     // The menu's ButtonNavigation owns the input while the menu is open, the popup on top of it takes over
@@ -251,9 +241,6 @@ EntityComponents.BaseDetail {
                             "entitySelector": widgetParts.slice(1).join(";").trim(),
                             "commandEntityId": item.command ? (item.command.entity_id || "") : "",
                             "activityEntity": entityObj,
-                            "openEntityDetail": function(target) {
-                                activityBase.openNativeWidgetDetail(target);
-                            },
                             "beginPageGesture": function() { activityBase.beginWidgetGesture(); },
                             "endPageGesture": function() { activityBase.endWidgetGesture(); },
                             "widgetActive": Qt.binding(function() {

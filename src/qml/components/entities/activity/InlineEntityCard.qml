@@ -7,11 +7,11 @@ import Entity.Light 1.0
 import Entity.Climate 1.0
 import Entity.Cover 1.0
 import "qrc:/components" as Components
+import "qrc:/components/entities/activity" as ActivityComponents
 
-// Activity card for LIGHT, CLIMATE and COVER. Tapping opens the SAME native
-// entity detail overlay as an entity tile (including its existing controls,
-// mode menus, temperature tumbler and position/color sliders). No duplicated
-// full-screen control logic or oversized sliders live inside the Activity grid.
+// Native Light feature pages are embedded inline. Climate and Cover expose
+// the same controls and styling as their native entity details, sized for the
+// Activity grid. No full-screen entity overlay is opened.
 Rectangle {
     id: card
     color: colors.dark
@@ -27,8 +27,7 @@ Rectangle {
     property var entityObj: null
     property string selectionError: ""
 
-    // Activity owns the third-container overlay and page-gesture lock.
-    property var openEntityDetail: function(entity) {}
+    // Activity owns the page-gesture lock. Native controls remain inline.
     property var beginPageGesture: function() {}
     property var endPageGesture: function() {}
     property bool gestureHeld: false
@@ -98,49 +97,17 @@ Rectangle {
         endPageGesture();
     }
 
-    function openNativeDetail() {
-        if (!ready) return;
-        // The Activity supplies loadThirdContainer(screenUrl(entity), ...).
-        // No new popup mimics the native entity UI.
-        openEntityDetail(entityObj);
-    }
-
-    function mainValue() {
-        if (!entityObj) return "";
-        switch (entityKind) {
-        case "LIGHT":
-            return entityObj.state === LightStates.On ? qsTr("On") : qsTr("Off");
-        case "CLIMATE":
-            if (!entityObj.hasFeature(ClimateFeatures.Target_temperature))
-                return entityObj.stateAsString;
-            return entityObj.targetTemperature.toLocaleString(Qt.locale(), 'f',
-                       entityObj.targetTemperatureStep === 1 ? 0 : 1) +
-                   entityObj.temperatureLabel;
-        case "COVER":
-            return entityObj.positionAvailable ? entityObj.position + "%" :
-                   entityObj.stateAsString;
-        default:
-            return entityObj.stateAsString;
-        }
-    }
-
-    function secondaryValue() {
-        if (!entityObj) return "";
-        switch (entityKind) {
-        case "LIGHT":
-            return entityObj.hasFeature(LightFeatures.Dim) ?
-                   Math.round(entityObj.brightness / 255 * 100) + "%" : entityObj.stateInfo;
-        case "CLIMATE":
-            return entityObj.currentTemperatureAvailable ?
-                   qsTr("Current %1%2").arg(entityObj.currentTemperature.toLocaleString(
-                       Qt.locale(), 'f', entityObj.targetTemperatureStep === 1 ? 0 : 1))
-                       .arg(entityObj.temperatureLabel) : entityObj.stateAsString;
-        case "COVER":
-            return entityObj.stateAsString;
-        default:
-            return "";
-        }
-    }
+    // Follow the same feature order as native Light.qml.
+    property int lightPage: 0
+    readonly property bool hasColor: entityObj && entityKind === "LIGHT" &&
+                                     entityObj.hasFeature(LightFeatures.Color)
+    readonly property string lightSource:
+        entityObj && entityKind === "LIGHT" ?
+          (!entityObj.hasFeature(LightFeatures.Dim)
+             ? "qrc:/components/entities/light/OnOff.qml"
+             : lightPage === 1 && hasColor
+               ? "qrc:/components/entities/light/Color.qml"
+               : "qrc:/components/entities/light/Brightness.qml") : ""
 
     Component.onCompleted: resolveTarget()
     Component.onDestruction: endGesture()
@@ -149,6 +116,7 @@ Rectangle {
     onCommandEntityIdChanged: if (!entitySelector) resolveTarget()
     onActivityEntityChanged: if (!entitySelector) resolveTarget()
     onEntityIdChanged: bindEntity()
+    onEntityObjChanged: lightPage = 0
     onWidgetActiveChanged: if (!widgetActive) endGesture()
 
     Connections {
@@ -159,60 +127,139 @@ Rectangle {
         }
     }
 
-    Column {
-        anchors { fill: parent; margins: 12 }
-        spacing: 8
+
+    // PointHandler is a PASSIVE pointer observer in Qt 5.15: it watches a
+    // press in the card (including child sliders and tumblers) without taking
+    // their exclusive grab. Unlike a MouseArea overlay, controls remain fully
+    // draggable. Page swiping is disabled from the first press until release.
+    PointHandler {
+        id: gestureObserver
+        enabled: card.ready
+        target: null
+        onActiveChanged: {
+            if (active) card.beginGesture();
+            else card.endGesture();
+        }
+    }
+
+    Item {
+        id: header
+        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 9 }
+        height: 40
         visible: card.entityObj !== null
-        Row {
-            width: parent.width
-            height: 40
-            spacing: 8
-            Components.Icon {
-                icon: card.entityObj ? card.entityObj.icon : ""
-                color: colors.offwhite
-                size: 40
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            Text {
-                width: Math.max(0, parent.width - 48)
-                text: card.entityObj ? card.entityObj.name : ""
-                anchors.verticalCenter: parent.verticalCenter
-                color: colors.offwhite
-                font: fonts.label()
-                maximumLineCount: 1
-                elide: Text.ElideRight
-            }
-        }
-        Text {
-            width: parent.width
-            height: Math.max(40, card.height - 147)
-            text: card.mainValue()
-            verticalAlignment: Text.AlignVCenter
+        Components.Icon {
+            id: entityIcon
+            icon: card.entityObj ? card.entityObj.icon : ""
+            size: 38
             color: colors.offwhite
-            font: fonts.primaryFont(Math.min(47, Math.max(27, card.width * .17)), "Light")
-            elide: Text.ElideRight
-            maximumLineCount: 1
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
         }
         Text {
-            width: parent.width
-            text: card.secondaryValue()
-            color: colors.light
-            font: fonts.help()
-            elide: Text.ElideRight
+            anchors { left: entityIcon.right; right: parent.right; leftMargin: 7; verticalCenter: parent.verticalCenter }
+            text: card.entityObj ? card.entityObj.name : ""
+            color: colors.offwhite
+            font: fonts.label()
             maximumLineCount: 1
+            elide: Text.ElideRight
         }
-        Row {
-            width: parent.width
-            spacing: 6
-            Components.Icon {
-                icon: "uc:arrow-up-right-and-arrow-down-left-from-center"
-                color: colors.light
-                size: 26
+        // Native Light's POWER / DPAD_MIDDLE action toggles the same entity.
+        // Keep it available on the card while brightness is the visible page.
+        Components.HapticMouseArea {
+            anchors { left: entityIcon.left; right: entityIcon.right; top: parent.top; bottom: parent.bottom }
+            visible: card.entityKind === "LIGHT"
+            enabled: card.ready && visible
+            preventStealing: true
+            onClicked: card.entityObj.toggle()
+        }
+    }
+
+    Item {
+        id: content
+        clip: true
+        anchors {
+            left: parent.left; right: parent.right
+            top: header.bottom; bottom: lightTabs.top
+            leftMargin: 10; rightMargin: 10; topMargin: 2
+        }
+
+        // These are not replicas: these are the actual native Light.qml
+        // feature pages. Only the viewport is scaled to the Activity cell.
+        // The unscaled sizes match the entity detail's original coordinates.
+        Loader {
+            id: nativeLightPage
+            active: card.ready && card.entityKind === "LIGHT"
+            asynchronous: false
+            source: card.lightSource
+            // Native on/off and brightness components accept a compact
+            // viewport. The unchanged Color wheel uses its native 440px
+            // geometry, scaled as a whole to keep drag coordinates correct.
+            readonly property bool colorPage: card.lightPage === 1 && card.hasColor
+            width: colorPage ? 460 : content.width
+            height: colorPage ? 650 : content.height
+            transformOrigin: Item.TopLeft
+            scale: colorPage ? Math.max(.1, Math.min(content.width / width,
+                                                       content.height / height)) : 1
+            onLoaded: {
+                if (!item) return;
+                item.entityObj = card.entityObj;
+                if (item.compact !== undefined) item.compact = true;
             }
-            Text {
-                text: qsTr("Open controls")
-                color: colors.light
-                font: fonts.help()
+        }
+        Binding {
+            target: nativeLightPage.item
+            property: "entityObj"
+            value: card.entityObj
+            when: nativeLightPage.status === Loader.Ready && nativeLightPage.item !== null
+        }
+
+        ActivityComponents.InlineClimateControls {
+            anchors.fill: parent
+            visible: card.entityKind === "CLIMATE" && card.entityObj !== null
+            enabled: card.ready
+            entityObj: card.entityKind === "CLIMATE" ? card.entityObj : null
+            acceptsCommands: card.ready
+        }
+
+        ActivityComponents.InlineCoverControls {
+            anchors.fill: parent
+            visible: card.entityKind === "COVER" && card.entityObj !== null
+            enabled: card.ready
+            entityObj: card.entityKind === "COVER" ? card.entityObj : null
+            acceptsCommands: card.ready
+        }
+    }
+
+    // Use the native Light detail's separate brightness and color feature
+    // pages; tab switching stays within the Activity card.
+    Row {
+        id: lightTabs
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 7 }
+        height: card.entityKind === "LIGHT" && card.hasColor ? 34 : 0
+        visible: height > 0
+        spacing: 6
+        Repeater {
+            model: [
+                {label: qsTr("Brightness"), index: 0},
+                {label: qsTr("Color"), index: 1}
+            ]
+            delegate: Rectangle {
+                width: (lightTabs.width - 6) / 2
+                height: lightTabs.height
+                radius: ui.cornerRadiusSmall
+                color: card.lightPage === modelData.index ? colors.offwhite : colors.medium
+                Text {
+                    anchors.centerIn: parent
+                    text: modelData.label
+                    font: fonts.help()
+                    color: card.lightPage === modelData.index ? colors.black : colors.offwhite
+                }
+                Components.HapticMouseArea {
+                    anchors.fill: parent
+                    preventStealing: true
+                    enabled: card.ready
+                    onClicked: card.lightPage = modelData.index
+                }
             }
         }
     }
@@ -227,18 +274,6 @@ Rectangle {
         wrapMode: Text.WordWrap
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
-    }
-
-    // Capture the complete card touch sequence so the activity PathView cannot
-    // steal a drag or interpret an attempted tap as a page swipe. Unlike a
-    // slider, no gesture is forwarded by this surface to a second controller.
-    Components.HapticMouseArea {
-        anchors.fill: parent
-        enabled: card.ready
-        preventStealing: true
-        onPressed: card.beginGesture()
-        onReleased: card.endGesture()
-        onCanceled: card.endGesture()
-        onClicked: card.openNativeDetail()
+        z: 2
     }
 }

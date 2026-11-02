@@ -14,6 +14,8 @@ Item {
     anchors.fill: parent
 
     property QtObject entityObj
+    // Native Light detail stays unchanged; opt-in inline dimensions.
+    property bool compact: false
     property alias brightnessSlider: brightnessSlider
     property alias colorTempSlider: colorTempSlider
 
@@ -110,22 +112,22 @@ Item {
             elide: Text.ElideRight
             maximumLineCount: 2
             color: colors.offwhite
-            anchors { left: parent.left; leftMargin: 30; right: parent.right; rightMargin: 30; bottom: brightnessSlider.top }
-            font: fonts.primaryFont(entityObj.hasFeature(LightFeatures.Color_temperature) ? 100 : 180, "Light")
+            anchors { left: parent.left; leftMargin: brightnessFeature.compact ? 4 : 30; right: parent.right; rightMargin: brightnessFeature.compact ? 4 : 30; bottom: brightnessSlider.top }
+            font: fonts.primaryFont(brightnessFeature.compact ? 34 : (entityObj.hasFeature(LightFeatures.Color_temperature) ? 100 : 180), "Light")
         }
 
         Slider {
             id: brightnessSlider
             live: true
-            width: parent.width - 60
-            height: 500
+            width: Math.max(25, parent.width - (brightnessFeature.compact ? 12 : 60))
+            height: brightnessFeature.compact ? Math.max(55, parent.height - 54) : 500
             snapMode: Slider.SnapAlways
             padding: 0
             orientation: Qt.Vertical
 
             transformOrigin: Item.Center
             rotation: 180
-            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 30 }
+            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: brightnessFeature.compact ? 4 : 30 }
 
             from: 255
             to: 0
@@ -177,24 +179,24 @@ Item {
         Components.Icon {
             color: Qt.darker(colors.light)
             icon: "uc:plus"
-            size: 60
-            anchors { right: brightnessSlider.right; rightMargin: 10; top: brightnessSlider.top; topMargin: 20 }
+            size: brightnessFeature.compact ? 26 : 60
+            anchors { right: brightnessSlider.right; rightMargin: brightnessFeature.compact ? 2 : 10; top: brightnessSlider.top; topMargin: brightnessFeature.compact ? 4 : 20 }
             visible: entityObj.hasFeature(LightFeatures.Color_temperature)
         }
 
         Components.Icon {
             color: Qt.darker(colors.light)
             icon: "uc:minus"
-            size: 60
-            anchors { right: brightnessSlider.right; rightMargin: 10; bottom: brightnessSlider.bottom; bottomMargin: 20 }
+            size: brightnessFeature.compact ? 26 : 60
+            anchors { right: brightnessSlider.right; rightMargin: brightnessFeature.compact ? 2 : 10; bottom: brightnessSlider.bottom; bottomMargin: brightnessFeature.compact ? 4 : 20 }
             visible: entityObj.hasFeature(LightFeatures.Color_temperature)
         }
 
         Components.Icon {
             color: colors.light
             icon: "uc:brightness"
-            anchors { left: brightnessSlider.left; leftMargin: 10; top: brightnessSlider.top; topMargin: 10 }
-            size: 80
+            anchors { left: brightnessSlider.left; leftMargin: brightnessFeature.compact ? 2 : 10; top: brightnessSlider.top; topMargin: brightnessFeature.compact ? 2 : 10 }
+            size: brightnessFeature.compact ? 32 : 80
         }
     }
 
@@ -210,22 +212,22 @@ Item {
             elide: Text.ElideRight
             maximumLineCount: 2
             color: colors.offwhite
-            anchors { left: parent.left; leftMargin: 30; right: parent.right; rightMargin: 30; bottom: colorTempSlider.top }
-            font: fonts.primaryFont(entityObj.hasFeature(LightFeatures.Dim) ? 100 : 180, "Light")
+            anchors { left: parent.left; leftMargin: brightnessFeature.compact ? 4 : 30; right: parent.right; rightMargin: brightnessFeature.compact ? 4 : 30; bottom: colorTempSlider.top }
+            font: fonts.primaryFont(brightnessFeature.compact ? 34 : (entityObj.hasFeature(LightFeatures.Dim) ? 100 : 180), "Light")
         }
 
         Slider {
             id: colorTempSlider
             live: true
-            width: parent.width - 60
-            height: 500
+            width: Math.max(25, parent.width - (brightnessFeature.compact ? 12 : 60))
+            height: brightnessFeature.compact ? Math.max(55, parent.height - 54) : 500
             snapMode: Slider.SnapAlways
             padding: 0
             orientation: Qt.Vertical
 
             transformOrigin: Item.Center
             rotation: 180
-            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 30 }
+            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: brightnessFeature.compact ? 4 : 30 }
 
             from: entityObj.colorTempSteps
             to: 0
@@ -264,16 +266,16 @@ Item {
         Components.Icon {
             color: Qt.lighter(colors.light)
             icon: "uc:arrow-up"
-            size: 60
-            anchors { right: colorTempSlider.right; rightMargin: 10; top: colorTempSlider.top; topMargin: 20 }
+            size: brightnessFeature.compact ? 26 : 60
+            anchors { right: colorTempSlider.right; rightMargin: brightnessFeature.compact ? 2 : 10; top: colorTempSlider.top; topMargin: brightnessFeature.compact ? 4 : 20 }
             visible: entityObj.hasFeature(LightFeatures.Color_temperature)
         }
 
         Components.Icon {
             color: Qt.lighter(colors.light)
             icon: "uc:arrow-down"
-            size: 60
-            anchors { right: colorTempSlider.right; rightMargin: 10; bottom: colorTempSlider.bottom; bottomMargin: 20 }
+            size: brightnessFeature.compact ? 26 : 60
+            anchors { right: colorTempSlider.right; rightMargin: brightnessFeature.compact ? 2 : 10; bottom: colorTempSlider.bottom; bottomMargin: brightnessFeature.compact ? 4 : 20 }
             visible: entityObj.hasFeature(LightFeatures.Color_temperature)
         }
 
@@ -281,8 +283,8 @@ Item {
             id: colorTempIcon
             color: colors.light
             icon: "uc:temperature-half"
-            anchors { left: colorTempSlider.left; leftMargin: 10; top: colorTempSlider.top; topMargin: 10 }
-            size: 80
+            anchors { left: colorTempSlider.left; leftMargin: brightnessFeature.compact ? 2 : 10; top: colorTempSlider.top; topMargin: brightnessFeature.compact ? 2 : 10 }
+            size: brightnessFeature.compact ? 32 : 80
         }
     }
 }
