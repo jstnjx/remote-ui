@@ -40,6 +40,10 @@ The Activity page uses a horizontal `PathView` for page swiping. A Light/Climate
 
 Only gestures beginning **outside** an interactive widget navigate between Activity pages. The Media Browser retains its existing internal `PathView` behavior and is not changed.
 
+## Background styling
+
+The Light, Climate, Cover and Touchpad widgets use a **transparent outer surface** with no gray rounded card background. The Activity page's background remains visible behind each widget. Native controls such as Light sliders, mode buttons, Cover actions, and the Touchpad's central select affordance retain their own contrast and active-state fills so they remain identifiable and usable.
+
 ## Layout and performance
 
 Each widget lives in its configured activity grid cell, uses native `colors`, `fonts`, `Components.Icon`, `Components.HapticMouseArea`, and `ui.cornerRadiusSmall`, and reads live entity state. Interaction is blocked when its activity page is not visible, the activity is off or the device is unavailable. The embedded controls reuse native UI components and their existing commands without opening a popup.

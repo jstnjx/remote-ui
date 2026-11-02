@@ -14,8 +14,10 @@ import "qrc:/components/entities/activity" as ActivityComponents
 // Activity grid. No full-screen entity overlay is opened.
 Rectangle {
     id: card
-    color: colors.dark
-    radius: ui.cornerRadiusSmall
+    // Blend into the Activity page. Only interactive controls keep their
+    // native fill; the widget itself has no gray card background.
+    color: colors.transparent
+    radius: 0
     clip: true
 
     property string entityKind: "LIGHT"
