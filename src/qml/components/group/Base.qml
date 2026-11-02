@@ -11,7 +11,7 @@ import "qrc:/components" as Components
 
 Rectangle {
     id: container
-    width: redesignedHomeStyle && parent ? parent.width : ui.width - 20
+    width: ui.width - 20
     height: redesignedHomeStyle ? 94 : groups.count * 140 + title.height
     border { color: colors.divider; width: redesignedHomeStyle ? 0 : 1 }
     radius: redesignedHomeStyle ? 0 : ui.cornerRadiusSmall
