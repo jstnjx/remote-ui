@@ -55,6 +55,8 @@ ListView {
     property string _id: pageId
     // Expose the first page's configured background to the optional home.
     readonly property string homeBackgroundImage: pageImage
+    // This is the default page's own running-entities model, including groups.
+    readonly property var homePageActivities: pageActivities
     property QtObject items: pageItems
     property bool _isCurrentItem: pages.currentItem._id === page._id
 
