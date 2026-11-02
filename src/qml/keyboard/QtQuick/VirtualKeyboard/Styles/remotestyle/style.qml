@@ -244,7 +244,9 @@ KeyboardStyle {
                     }
                 }
                 color: colors.offwhite
-                size: Math.max(30, Math.round(112 * scaleHint))
+                // Match the other keyboard special keys (Backspace, Language).
+                // Components.Icon renders the glyph at half its 'size'.
+                size: 60
             }
             Text {
                 id: enterKeyText
