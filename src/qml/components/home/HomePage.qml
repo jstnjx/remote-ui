@@ -176,7 +176,8 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: "#66000000"
+            color: colors.black
+            opacity: 0.4
             visible: heroImage.visible
         }
 
@@ -187,7 +188,7 @@ Item {
             start: Qt.point(0, 0)
             end: Qt.point(0, height)
             gradient: Gradient {
-                GradientStop { position: 0; color: "#00000000" }
+                GradientStop { position: 0; color: colors.transparent }
                 GradientStop { position: 1; color: colors.bg }
             }
         }
@@ -208,7 +209,7 @@ Item {
                     width: 26; height: 16; radius: 3
                     anchors.centerIn: parent
                     anchors.horizontalCenterOffset: -2
-                    color: "transparent"
+                    color: colors.transparent
                     border { color: colors.offwhite; width: 2 }
 
                     Rectangle {
