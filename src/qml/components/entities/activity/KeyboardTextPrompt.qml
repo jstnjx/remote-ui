@@ -582,13 +582,10 @@ Item {
                 enterKeyAction: EnterKeyAction.Search
                 inputField.inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
 
-                // MediaBrowser uses the native Search action and this exact
-                // accepted signal; use it here rather than a Send action that
-                // can hide Qt VirtualKeyboard without firing accepted.
-                Connections {
-                    target: textEntry.inputField
-                    function onAccepted() { keyboardBridge.submitText(); }
-                }
+                // Match the working MediaBrowser's SearchField: bind the
+                // TextField.accepted handler directly and let Qt VirtualKeyboard
+                // deliver its Search action without a MouseArea override.
+                inputField.onAccepted: keyboardBridge.submitText()
             }
 
             Text {
