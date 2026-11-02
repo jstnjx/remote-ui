@@ -143,6 +143,37 @@ EntityComponents.BaseDetail {
                 const widgetText = typeof item.text === "string" ? item.text.trim() : "";
                 const widgetParts = widgetText.split(";");
                 const widgetKind = widgetParts[0].trim().toUpperCase();
+                // Inline media browser: create a real grid widget from the
+                // stock Text button marker MB;<media_player_entity_id>.
+                // No popup, overlay or Core-API schema changes.
+                if (widgetKind === "MB") {
+                    const browserId = widgetParts.slice(1).join(";").trim();
+                    const browserComponent = Qt.createComponent(
+                        "qrc:/components/entities/activity/InlineMediaBrowser.qml");
+                    if (browserComponent.status === Component.Ready) {
+                        const widget = browserComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "entityId": browserId,
+                            "browserActive": Qt.binding(function() {
+                                return activityBase.state === "open"
+                                    && activityBase.visible
+                                    && uiPages.currentIndex === index
+                                    && entityObj.state === ActivityStates.On
+                                    && Power.powerMode === PowerModes.Normal;
+                            })
+                        });
+                        if (!widget)
+                            console.warn("Inline media browser could not be created:",
+                                         browserComponent.errorString());
+                    } else {
+                        console.warn("Inline media browser failed:", browserComponent.errorString());
+                    }
+                    break;
+                }
+
                 if (["KB", "KEYBOARD", "KEYBOARD_SHORTCUT"].indexOf(widgetKind) >= 0) {
                     const keyboardComponent = Qt.createComponent(
                         "qrc:/components/entities/activity/KeyboardShortcutWidget.qml");
