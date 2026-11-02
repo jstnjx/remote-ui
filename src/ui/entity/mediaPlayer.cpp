@@ -204,6 +204,27 @@ MediaPlayer::MediaPlayer(const QString &id, QVariantMap nameI18n, const QString 
     m_positionTimer.setTimerType(Qt::VeryCoarseTimer);
 
     QObject::connect(&m_positionTimer, &QTimer::timeout, this, &MediaPlayer::onPositionTimerTimeout);
+    // Home Assistant artwork URLs can change many times per second (e.g. a
+    // cache-busting query parameter). Fetch only after the last URL settles.
+    // This avoids saturating the UI and the integration's WebSocket with
+    // requests that are cancelled immediately after creation.
+    m_mediaImageDebounceTimer.setSingleShot(true);
+    m_mediaImageDebounceTimer.setInterval(350);
+    QObject::connect(&m_mediaImageDebounceTimer, &QTimer::timeout, this, [this] {
+        const QString imageUrl = m_mediaImageUrl;
+        if (imageUrl.isEmpty()) {
+            clearMediaImageState();
+            return;
+        }
+        const quint64 requestId = m_mediaImageProcessingRequestId->load();
+        const bool base64Image = imageUrl.startsWith("data:image/", Qt::CaseInsensitive) &&
+                                 imageUrl.contains(";base64,");
+        if (base64Image) {
+            processMediaImageAsync(imageUrl, QByteArray(), requestId, imageUrl);
+        } else {
+            getMediaImageColor(imageUrl, requestId);
+        }
+    });
     QObject::connect(&m_nam, &QNetworkAccessManager::finished, this, &MediaPlayer::onNetworkRequestFinished);
 
     QObject::connect(&m_nam, QOverload<QNetworkReply *, const QList<QSslError> &>::of(&QNetworkAccessManager::sslErrors),
@@ -211,6 +232,7 @@ MediaPlayer::MediaPlayer(const QString &id, QVariantMap nameI18n, const QString 
 }
 
 MediaPlayer::~MediaPlayer() {
+    m_mediaImageDebounceTimer.stop();
     // a worker that is still decoding artwork for this object stops at its next check
     ++*m_mediaImageProcessingRequestId;
 
@@ -916,14 +938,12 @@ bool MediaPlayer::updateAttribute(const QString &attribute, QVariant data) {
                 emit mediaImageUrlChanged();
 
                 m_mediaImageDownloadTries = 0;
-                const quint64 requestId = ++*m_mediaImageProcessingRequestId;
-
-                bool isBase64 = newImageUrl.startsWith("data:image/", Qt::CaseInsensitive) && newImageUrl.contains(";base64,");
-
-                if (!isBase64) {
-                    getMediaImageColor(m_mediaImageUrl, requestId);
+                ++*m_mediaImageProcessingRequestId;
+                if (newImageUrl.isEmpty()) {
+                    m_mediaImageDebounceTimer.stop();
+                    clearMediaImageState();
                 } else {
-                    processMediaImageAsync(m_mediaImageUrl, QByteArray(), requestId, newImageUrl);
+                    m_mediaImageDebounceTimer.start();
                 }
             }
             break;
@@ -1090,6 +1110,13 @@ void MediaPlayer::onNetworkError(QNetworkReply::NetworkError error) {
         return;
     }
 
+    // A superseded image request may be cancelled intentionally. Don't
+    // swamp the Remote logs with these harmless cancellations.
+    const quint64 requestId = reply->property("mediaImageRequestId").toULongLong();
+    if (error == QNetworkReply::OperationCanceledError ||
+            requestId != m_mediaImageProcessingRequestId->load() ||
+            reply->property("mediaImageUrl").toString() != m_mediaImageUrl)
+        return;
     qCWarning(lcMediaPlayer()) << "Image download network error:"
                                << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()
                                << error << reply->errorString();
