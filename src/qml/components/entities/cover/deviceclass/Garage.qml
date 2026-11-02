@@ -153,6 +153,7 @@ EntityComponents.BaseDetail {
 
         CoverComponents.OpenClose {
             id: openCloseFeature
+            entityObj: coverBase.entityObj
 
             Layout.alignment: Qt.AlignHCenter
             Layout.maximumWidth: parent.width - 60
