@@ -30,6 +30,19 @@ assert 'id: explicitSendButton' not in bridge
 assert 'sendOnEnter: true' in bridge
 assert 'function onAccepted() { keyboardBridge.submitText(); }' in bridge
 assert 'if (textPopup.opened && !keyboardBridge.closingKeyboard)' in bridge
+assert 'property var keyboardSendCallback: null' in (ROOT / "src/qml/main.qml").read_text()
+assert 'onPressed: root.keyboardSendCallback()' in style
+assert 'root.keyboardSendCallback = function() { keyboardBridge.submitText(); };' in bridge
+assert 'root.keyboardSendCallback = null;' in bridge
+assert 'Qt.inputMethod.commit();' in bridge
+assert 'function resolveStaleKeyboardId(entityId)' in bridge
+assert 'function configuredNativeKeyboards()' in bridge
+assert 'entity.state === MediaPlayerStates.On' in bridge
+assert 'entity.state !== MediaPlayerStates.Unavailable' in bridge
+assert 'resolveStaleKeyboardId(targets[i])' in bridge
+assert 'const resolvedId = resolveStaleKeyboardId(entityId);' in bridge
+assert 'Keyboard target no longer exists.' in bridge
+
 assert 'onClosed:' in bridge
 
 # The manual KB widget and saved per-activity rules still target configured
@@ -63,6 +76,15 @@ assert 'Q_INVOKABLE void searchMedia(' in media_header
 assert 'emit searchMediaRequested(m_id, params);' in media_cpp
 assert 'emit searchMediaResult(list, paginationToVariant(pagination));' in media_cpp
 assert 'emit searchMediaError(code, message);' in media_cpp
+
+# Suppress artwork download churn that can saturate the event loop and logs.
+media_header = (ROOT / "src/ui/entity/mediaPlayer.h").read_text()
+media_cpp = (ROOT / "src/ui/entity/mediaPlayer.cpp").read_text()
+assert "QTimer m_mediaImageDebounceTimer;" in media_header
+assert "m_mediaImageDebounceTimer.setSingleShot(true);" in media_cpp
+assert "m_mediaImageDebounceTimer.setInterval(350);" in media_cpp
+assert "m_mediaImageDebounceTimer.start();" in media_cpp
+assert "error == QNetworkReply::OperationCanceledError" in media_cpp
 
 # The picker distinguishes the special bridge from ordinary media players;
 # no valid Apple TV text is sent using Home Assistant remote.send_command.

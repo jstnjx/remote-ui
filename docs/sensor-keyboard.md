@@ -15,6 +15,15 @@ The keyboard invokes `mediaPlayer.searchMedia(text, "", "", [], 10, 1)`. The exi
 
 The UI can automatically match a Home Assistant Remote/media-player to an Apple TV Keyboard entity **only when their normalized device names match uniquely**. Otherwise explicitly choose the `Apple TV Keyboard:` entry. This avoids accidentally sending text to the wrong Apple TV when more than one is configured.
 
+### Stale Apple TV Keyboard entity IDs
+
+The November 2 integration log shows a **removed Apple TV Keyboard entity** repeatedly being subscribed while the integration reports a different active entity. This can happen after re-pairing or reconfiguring the integration. The `KB` shortcut now tries to recover an obsolete `.keyboard` entity ID **only when exactly one configured live keyboard entity can be identified**. If several Apple TVs are present, it does not guess.
+
+For a durable configuration, remove the obsolete media-player entry from the Remote's entity list, add the current **Apple TV Keyboard - <device>** entity again, and reselect it in **Settings → Keyboard input automation → Text input targets**. The removed and active IDs are shown in the integration logs.
+
+The Return/Send key now dispatches the callback on touch press rather than depending exclusively on `TextField.accepted`. IME composition is committed before reading the text. This prevents the virtual keyboard from clearing focus and closing its overlay before the text has been sent.
+
+
 ## Why Home Assistant's Remote entity cannot perform this
 
 The Home Assistant Apple TV `remote.send_command` service only accepts supported **remote control method names**, not `keyboard.text_set <text>`. The device logs showed `ValueError: Command not found. Exiting sequence` when the previous Remote UI tried that string. A successful UC Core ACK only means the command was submitted; it does not prove that tvOS accepted it.
@@ -29,4 +38,6 @@ For non-Apple-TV integrations, the original `keyboard.text_set` media-player com
 
 If you see **Apple TV Keyboard is unavailable** or **did not respond**, inspect the custom integration's connection/pairing status. The Remote logs may show a reconnect loop for the `appletv_keyboard` driver. If you see **Apple TV keyboard is not focused**, open a text field on tvOS before pressing Send. Successful text entry replaces the current field contents (matching `text_set`).
 
-The Remote logs supplied in the November 2 follow-up consisted mainly of rapid canceled artwork downloads, and the Home Assistant log covered a startup sequence. Neither captured a fresh `KB` text delivery attempt, so an end-to-end successful send still needs testing on the device.
+The later November 2 logs show **no `search_media` request arriving at the Apple TV Keyboard integration**, even though its Search feature is advertised. They also show repeated WebSocket keepalive timeouts and a large number of artwork downloads cancelled shortly after being started. The UI now coalesces rapid artwork URL updates for 350 ms and ignores stale cancellation warnings, reducing this avoidable load.
+
+No end-to-end successful send was present in the provided logs. After installing the updated UI, confirm that the Apple TV Keyboard integration log receives `search_media` when the Send arrow is pressed. If it does, the next issue to check is tvOS keyboard focus and Companion connectivity.

@@ -6,6 +6,7 @@ import QtQuick.VirtualKeyboard 2.3
 import Config 1.0
 import Entity.Controller 1.0
 import Entity.Remote 1.0
+import Entity.MediaPlayer 1.0
 import "qrc:/components" as Components
 
 // Per-activity, multi-sensor keyboard automation. Sensors need not appear in
@@ -108,13 +109,14 @@ Item {
             return;
         }
         if (!entityId) {
-            ui.createNotification(qsTr("Select an Apple TV Remote under Keyboard input automation"), true);
+            ui.createNotification(qsTr("Select an Apple TV Keyboard target in keyboard settings"), true);
             return;
         }
-        const target = EntityController.get(entityId);
+        const resolvedId = resolveStaleKeyboardId(entityId);
+        const target = EntityController.get(resolvedId);
         if (!target) {
-            pendingManualTarget = entityId;
-            EntityController.load(entityId);
+            pendingManualTarget = resolvedId;
+            EntityController.load(resolvedId);
             return;
         }
         const type = target.getTypeAsString();
@@ -122,9 +124,11 @@ Item {
             ui.createNotification(qsTr("Keyboard target must be a Remote or Media player"), true);
             return;
         }
+        if (resolvedId !== entityId)
+            console.log("KB shortcut: replaced stale Apple TV Keyboard target", entityId, "with", resolvedId);
         pendingManualTarget = "";
         manualMode = true;
-        activeRule = {id: "manual", mediaPlayerIds: [entityId]};
+        activeRule = {id: "manual", mediaPlayerIds: [resolvedId]};
         textPopup.open();
     }
 
@@ -137,6 +141,36 @@ Item {
         return integration.indexOf("appletv_keyboard") >= 0 ||
                id.indexOf("appletv_keyboard") >= 0 ||
                name.indexOf("apple tv keyboard -") === 0;
+    }
+
+    function configuredNativeKeyboards() {
+        const ids = EntityController.getIdsByType("media_player") || [];
+        const matches = [];
+        for (let i = 0; i < ids.length; ++i) {
+            const entity = EntityController.get(ids[i]);
+            if (isNativeAppleTVKeyboard(entity) && entity.enabled &&
+                    entity.state !== MediaPlayerStates.Unavailable)
+                matches.push(entity);
+        }
+        return matches;
+    }
+
+    function resolveStaleKeyboardId(entityId) {
+        const requested = String(entityId || "");
+        // The integration log shows a retired .keyboard UUID still subscribed
+        // while its replacement UUID is online. Only heal keyboard-specific
+        // IDs, never substitute an unrelated Remote or general media player.
+        if (requested.toLowerCase().indexOf("appletv_keyboard") < 0 &&
+                !/media_player\.[^.]+\.keyboard$/i.test(requested))
+            return requested;
+        const candidates = configuredNativeKeyboards();
+        const online = candidates.filter(function(entity) {
+            return entity.state === MediaPlayerStates.On;
+        });
+        const preferred = online.length === 1 ? online[0] :
+                          candidates.length === 1 ? candidates[0] : null;
+        if (preferred && preferred.id !== requested) return preferred.id;
+        return requested;
     }
 
     function isHomeAssistantEntity(target) {
@@ -154,7 +188,8 @@ Item {
     }
 
     function matchingNativeKeyboard(target) {
-        if (isNativeAppleTVKeyboard(target)) return target;
+        if (isNativeAppleTVKeyboard(target))
+            return EntityController.get(resolveStaleKeyboardId(target.id)) || target;
         if (!target) return null;
         const wanted = normalizeAppleTVName(target.name);
         if (!wanted) return null;
@@ -211,7 +246,9 @@ Item {
             textEntry.showError(qsTr("The activity or sensor is no longer active."));
             return;
         }
-        // Grab the text before the virtual keyboard changes focus or hides.
+        // Flush any in-progress IME composition before the virtual keyboard
+        // changes focus; otherwise Qt can expose an empty/partial field.
+        Qt.inputMethod.commit();
         const value = textEntry.inputValue;
         if (value.length === 0) {
             textEntry.showError(qsTr("Enter some text first."));
@@ -231,7 +268,7 @@ Item {
         let blocked = false;
 
         for (let i = 0; i < targets.length; ++i) {
-            const target = EntityController.get(targets[i]);
+            const target = EntityController.get(resolveStaleKeyboardId(targets[i]));
             if (!target) {
                 statusMessage = qsTr("Target not loaded: %1").arg(targets[i]);
                 blocked = true;
@@ -390,10 +427,19 @@ Item {
         }
 
         function onEntityLoaded(success, entityId) {
-            if (!success) return;
             if (entityId === keyboardBridge.pendingManualTarget) {
-                keyboardBridge.openManual(entityId);
+                if (success) {
+                    keyboardBridge.openManual(entityId);
+                } else {
+                    const recovered = keyboardBridge.resolveStaleKeyboardId(entityId);
+                    keyboardBridge.pendingManualTarget = "";
+                    if (recovered !== entityId)
+                        keyboardBridge.openManual(recovered);
+                    else
+                        ui.createNotification(qsTr("Keyboard target no longer exists. Re-select the Apple TV Keyboard entity in settings."), true);
+                }
             }
+            if (!success) return;
             if (keyboardBridge.watchedSensorIds.indexOf(entityId) >= 0) keyboardBridge.evaluate();
         }
     }
@@ -460,6 +506,10 @@ Item {
         }
 
         onOpened: {
+            // VirtualKeyboard may hide on EnterKeyAction.Send without emitting
+            // TextField.accepted. The native arrow's MouseArea calls this
+            // handler while the text field still has its focus and contents.
+            root.keyboardSendCallback = function() { keyboardBridge.submitText(); };
             if (!pendingSearchTarget) commandTimeout.stop();
             sending = false;
             pendingTargetIds = [];
@@ -485,6 +535,7 @@ Item {
             statusMessage = "";
             closingKeyboard = true;
             root.keyboardSendMode = false;
+            root.keyboardSendCallback = null;
             manualMode = false;
             keyboard.hide();
             keyboardNavigation.releaseControl();
