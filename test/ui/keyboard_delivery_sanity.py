@@ -39,7 +39,7 @@ assert 'function matchingCompanionRemote(mediaPlayer)' in bridge
 assert 'String(mediaPlayer.id).replace(".media_player.", ".remote.")' in bridge
 assert 'function isHomeAssistantMediaPlayer(target)' in bridge
 assert 'const companion = matchingCompanionRemote(target)' in bridge
-assert 'Select the Apple TV Remote entity, not its media player' in bridge
+assert 'Wrong target: %1 is a Media player. Select its Remote entity.' in bridge
 assert 'id: explicitSendButton' in bridge
 assert 'trigger: function() { keyboardBridge.submitText(); }' in bridge
 assert 'function onAccepted() { keyboardBridge.submitText(); }' in bridge
