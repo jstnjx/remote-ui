@@ -133,7 +133,34 @@ EntityComponents.BaseDetail {
                 !/^[a-zA-Z0-9_.:-]+$/.test(selector))
             return "";
 
-        const ids = EntityController.getIdsByType("media_player") || [];
+        // Include media players referenced by the activity even before their
+        // entities have finished loading into the controller's type index.
+        const ids = (EntityController.getIdsByType("media_player") || []).slice();
+        function addConfiguredId(id) {
+            if (typeof id === "string" &&
+                    (id.indexOf(".media_player.") >= 0 ||
+                     id.indexOf("media_player.") === 0) &&
+                    ids.indexOf(id) < 0)
+                ids.push(id);
+        }
+        const artworkSources = Config.activityArtworkSources;
+        if (artworkSources && entityObj)
+            addConfiguredId(artworkSources[entityObj.id]);
+        if (entityObj && entityObj.sliderConfig)
+            addConfiguredId(entityObj.sliderConfig.entityId);
+        const activityPages = entityObj && entityObj.ui ? entityObj.ui.pages || [] : [];
+        for (let i = 0; i < activityPages.length; ++i) {
+            const pageItems = activityPages[i].items || [];
+            for (let j = 0; j < pageItems.length; ++j) {
+                if (pageItems[j].type === "media_player")
+                    addConfiguredId(pageItems[j].media_player_id);
+            }
+        }
+        if (entityObj && entityObj.includedEntities) {
+            for (let k = 0; k < entityObj.includedEntities.length; ++k)
+                addConfiguredId(entityObj.includedEntities[k]);
+        }
+
         const needle = selector.toLowerCase();
         const exact = ids.filter(function(id) {
             const full = id.toLowerCase();
