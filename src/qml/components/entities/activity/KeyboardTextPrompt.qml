@@ -95,20 +95,47 @@ Item {
 
     // Called by a keyboard shortcut Text Button. Targets may be a Remote
     // entity or a media player; manual invocation needs no sensor.
-    function openManual(mediaId) {
-        if (!activityActive || !mediaId) return;
-        const media = EntityController.get(mediaId);
-        if (!media) {
-            pendingManualTarget = mediaId;
-            EntityController.load(mediaId);
+    function openManual(entityId) {
+        if (!activityActive) {
+            ui.createNotification(qsTr("Start the activity before using the keyboard"), true);
             return;
         }
-        const type = media.getTypeAsString();
-        if (type !== "media_player" && type !== "remote") return;
+        if (!entityId) {
+            ui.createNotification(qsTr("Select an Apple TV Remote under Keyboard input automation"), true);
+            return;
+        }
+        const target = EntityController.get(entityId);
+        if (!target) {
+            pendingManualTarget = entityId;
+            EntityController.load(entityId);
+            return;
+        }
+        const type = target.getTypeAsString();
+        if (type !== "media_player" && type !== "remote") {
+            ui.createNotification(qsTr("Keyboard target must be a Remote or Media player"), true);
+            return;
+        }
         pendingManualTarget = "";
         manualMode = true;
-        activeRule = {id: "manual", mediaPlayerIds: [mediaId]};
+        activeRule = {id: "manual", mediaPlayerIds: [entityId]};
         textPopup.open();
+    }
+
+    function matchingCompanionRemote(mediaPlayer) {
+        if (!mediaPlayer || !mediaPlayer.id) return null;
+        // Both entities from the same HA integration use the same suffix:
+        // integration.main.media_player.apple_tv -> integration.main.remote.apple_tv
+        const remoteId = String(mediaPlayer.id).replace(".media_player.", ".remote.");
+        if (remoteId === mediaPlayer.id) return null;
+        const remote = EntityController.get(remoteId);
+        return remote && remote.getTypeAsString() === "remote" ? remote : null;
+    }
+
+    function isHomeAssistantMediaPlayer(target) {
+        const id = String(target.id || "").toLowerCase();
+        const integration = String(target.integrationId || "").toLowerCase();
+        return /home[_-]?assistant|homeassistant/.test(id) ||
+               /home[_-]?assistant|homeassistant/.test(integration);
     }
 
     function submitText() {
@@ -125,6 +152,7 @@ Item {
         // Both media_player and remote entities are valid targets.
         const targets = activeRule.mediaPlayerIds || [];
         let sent = 0;
+        let hasWrongAppleTvTarget = false;
         for (let i = 0; i < targets.length; ++i) {
             const target = EntityController.get(targets[i]);
             if (!target || !EntityController.mayCommandEntity(target.enabled))
@@ -132,23 +160,40 @@ Item {
 
             const type = target.getTypeAsString();
             if (type === "remote") {
-                // The HA Apple TV remote entity accepts a send_command action
-                // with one command string: "keyboard.text_set <text>".
-                // The UC HA integration maps remote.send_cmd to that action.
-                // Text remains one command, including spaces and Unicode.
+                // UC HA maps remote.send_cmd to Home Assistant's
+                // remote.send_command; the value must be one command string.
                 EntityController.onEntityCommand(target.id, "remote.send_cmd",
                                                  {command: "keyboard.text_set " + value});
+                console.log("Apple TV keyboard text dispatched to Remote:", target.id);
                 sent++;
             } else if (type === "media_player") {
-                // Keep the original path for integrations supporting it.
-                EntityController.onEntityCommand(target.id, "keyboard.text_set", {text: value});
-                sent++;
+                const companion = matchingCompanionRemote(target);
+                if (companion && EntityController.mayCommandEntity(companion.enabled)) {
+                    // Recover gracefully if an old KB widget still points at
+                    // HA's media player rather than its companion Remote.
+                    EntityController.onEntityCommand(companion.id, "remote.send_cmd",
+                                                     {command: "keyboard.text_set " + value});
+                    console.log("Apple TV keyboard rerouted to companion Remote:", companion.id);
+                    sent++;
+                } else if (isHomeAssistantMediaPlayer(target)) {
+                    hasWrongAppleTvTarget = true;
+                } else {
+                    // Preserve direct input for integrations supporting it.
+                    EntityController.onEntityCommand(target.id, "keyboard.text_set", {text: value});
+                    sent++;
+                }
             }
         }
-        if (!sent) {
-            textEntry.showError(qsTr("No selected media player or remote is available."));
+        if (hasWrongAppleTvTarget) {
+            textEntry.showError(qsTr("Select the Apple TV Remote entity, not its media player, in Keyboard settings."));
             return;
         }
+        if (!sent) {
+            textEntry.showError(qsTr("No available keyboard target. Choose the Apple TV Remote in Keyboard settings."));
+            return;
+        }
+        // This is dispatch, not guaranteed delivery. Core reports command
+        // failures through its existing notifications.
         keyboard.hide();
         textPopup.close();
     }
@@ -194,15 +239,10 @@ Item {
         }
     }
 
-    // Closing the native keyboard must also dismiss its entire input overlay.
-    Connections {
-        target: keyboard
-        function onClosed() {
-            if (textPopup.opened && !keyboardBridge.closingKeyboard) {
-                textPopup.close();
-            }
-        }
-    }
+    // Hiding the virtual keyboard must not silently discard text. Qt can
+    // close the keyboard before delivering its Enter/Send action; the editor
+    // remains open with an explicit Send button until submitted or dismissed.
+
 
     // Reuse the remote's existing menu popup for the one-time question.
     Components.PopupMenu {
@@ -273,7 +313,7 @@ Item {
             Components.InputField {
                 id: textEntry
                 width: parent.width - 40
-                anchors { top: inputTitle.bottom; topMargin: 25; horizontalCenter: parent.horizontalCenter }
+                anchors { top: inputTitle.bottom; topMargin: 12; horizontalCenter: parent.horizontalCenter }
                 moveInput: false
                 keyboardFollowsFocus: true
                 label: qsTr("Text")
@@ -286,7 +326,20 @@ Item {
                 }
             }
 
-
+            // Also submit by touch. This is independent of whether the
+            // platform's virtual keyboard emits TextField.accepted().
+            Components.Button {
+                id: explicitSendButton
+                width: parent.width - 40
+                height: 64
+                anchors {
+                    top: textEntry.bottom
+                    topMargin: 20
+                    horizontalCenter: parent.horizontalCenter
+                }
+                text: qsTr("Send text")
+                trigger: function() { keyboardBridge.submitText(); }
+            }
         }
     }
 }
