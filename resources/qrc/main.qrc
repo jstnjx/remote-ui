@@ -110,6 +110,7 @@
         <file alias="components/entities/activity/LoadingScreen.qml">../../src/qml/components/entities/activity/LoadingScreen.qml</file>
         <file alias="components/entities/activity/MediaComponent.qml">../../src/qml/components/entities/activity/MediaComponent.qml</file>
         <file alias="components/entities/activity/VideoStream.qml">../../src/qml/components/entities/activity/VideoStream.qml</file>
+        <file alias="components/entities/activity/InlineMediaBrowser.qml">../../src/qml/components/entities/activity/InlineMediaBrowser.qml</file>
         <file alias="components/entities/activity/KeyboardShortcutWidget.qml">../../src/qml/components/entities/activity/KeyboardShortcutWidget.qml</file>
         <file alias="components/entities/activity/KeyboardTextPrompt.qml">../../src/qml/components/entities/activity/KeyboardTextPrompt.qml</file>
         <file alias="components/entities/button/deviceclass/Button.qml">../../src/qml/components/entities/button/deviceclass/Button.qml</file>
