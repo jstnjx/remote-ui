@@ -145,6 +145,6 @@ for marker in ("LIGHT;living", "CLIMATE;living", "COVER;shade", "TP;apple_tv"):
 assert "inline" in docs.lower()
 assert "OpenClose.qml" in docs
 assert "loadThirdContainer" not in docs
-assert "page swipe" in docs
+assert "page swiping" in docs or "page swipe" in docs
 
 print("Inline native entity controls and gesture capture contracts passed.")
