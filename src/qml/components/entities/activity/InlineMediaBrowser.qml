@@ -156,6 +156,7 @@ Rectangle {
 
     function reset() {
         navigationRevision++;
+        restoringModel = false;
         pendingRequestId = -1;
         history = [];
         currentContainer = null;
@@ -203,6 +204,7 @@ Rectangle {
         if (!item.media_id && !nestedItems.length) return;
         const savedIndex = carousel.currentIndex;
         navigationRevision++;
+        restoringModel = true;
         history = history.concat([{
             id: folderId, type: folderType, container: currentContainer,
             items: browseItems.slice(), page: pageNumber,
@@ -211,42 +213,53 @@ Rectangle {
         pendingRequestId = -1;
         folderId = item.media_id || "";
         folderType = item.media_type || "";
-        currentContainer = item;
-        // Some integrations embed children rather than expose a browseable
-        // media_id. Use those children directly instead of showing emptiness.
-        browseItems = nestedItems.slice();
         pageNumber = 1;
         requestedPage = 1;
         loading = false;
         loadingMore = false;
+        // Clear the parent's pagination BEFORE replacing the PathView model.
+        // Otherwise onCurrentIndexChanged can send the parent's load-more
+        // page number into the newly selected folder, blocking page one.
         hasMore = false;
         errorMessage = "";
+        currentContainer = item;
+        // Some integrations embed children rather than expose a browseable
+        // media_id. Use those children directly instead of showing emptiness.
+        browseItems = nestedItems.slice();
         if (item.media_id && item.can_browse)
             requestPage(1);
+        const revision = navigationRevision;
+        Qt.callLater(function() {
+            if (revision === browser.navigationRevision && browser.pendingRequestId < 0)
+                browser.restoringModel = false;
+        });
     }
 
     function goBack() {
         if (!history.length) return;
         navigationRevision++;
+        restoringModel = true;
         pendingRequestId = -1; // ignore replies for a folder we already left
         const previous = history[history.length - 1];
         history = history.slice(0, history.length - 1);
         folderId = previous.id;
         folderType = previous.type;
         currentContainer = previous.container;
-        browseItems = previous.items.slice();
         pageNumber = previous.page;
         requestedPage = previous.page;
-        hasMore = previous.more;
         loading = false;
         loadingMore = false;
         errorMessage = "";
+        hasMore = previous.more;
+        browseItems = previous.items.slice();
         const revision = navigationRevision;
         const indexToRestore = previous.index;
         Qt.callLater(function() {
             if (browser.browserActive && revision === browser.navigationRevision &&
                     carousel.count)
                 carousel.currentIndex = Math.max(0, Math.min(indexToRestore, carousel.count - 1));
+            if (revision === browser.navigationRevision)
+                browser.restoringModel = false;
         });
         // If we left a level before its first response, load it afresh.
         if (!browseItems.length && !currentContainer && canBrowse)
