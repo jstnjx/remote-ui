@@ -12,8 +12,10 @@ import "qrc:/components" as Components
 // feature with common direction names. No commands are sent while inactive.
 Rectangle {
     id: pad
-    color: colors.dark
-    radius: ui.cornerRadiusSmall
+    // Blend into the Activity page. Only interactive controls keep their
+    // native fill; the widget itself has no gray card background.
+    color: colors.transparent
+    radius: 0
     clip: true
 
     property string entitySelector: ""
