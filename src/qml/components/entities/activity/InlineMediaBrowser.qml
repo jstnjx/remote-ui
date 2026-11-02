@@ -179,7 +179,7 @@ Rectangle {
         loading = false;
         loadingMore = false;
         if (code === 404) {
-            browseItems = [];
+            if (!loadingMore) browseItems = [];
             hasMore = false;
         } else {
             errorMessage = message || qsTr("Unable to browse media");
@@ -196,6 +196,11 @@ Rectangle {
     Component.onCompleted: bindPlayer()
     onEntityIdChanged: bindPlayer()
     onPlayerChanged: if (browserActive) reload()
+    onCanBrowseChanged: {
+        // A media player may become available after the activity page opens.
+        if (browserActive && canBrowse && !browseItems.length && pendingRequestId < 0)
+            requestPage(1);
+    }
     onBrowserActiveChanged: {
         if (browserActive) reload();
         else pendingRequestId = -1;
