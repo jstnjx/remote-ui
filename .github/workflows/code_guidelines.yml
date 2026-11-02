@@ -90,6 +90,9 @@ jobs:
       - name: Verify home layout geometry and native send icon
         run: python test/ui/home_layout_sanity.py
 
+      - name: Verify inline activity media browser
+        run: python test/ui/inline_media_browser_sanity.py
+
       - name: cpplint
         shell: python
         run: |
