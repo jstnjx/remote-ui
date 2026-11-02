@@ -158,6 +158,7 @@ Rectangle {
     Components.Selectable {
         id: selection
         style: "fill"
+        radius: redesignedHomeStyle ? 0 : ui.cornerRadiusSmall
         selected: container.isSelected && container.state == "closed"
     }
 
