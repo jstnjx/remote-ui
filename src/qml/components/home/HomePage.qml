@@ -124,7 +124,7 @@ Item {
                     row.item.close();
                 }
             }
-        } else if (Config.entityButtonFuncInverted === !!longPress) {
+        } else if (Config.entityButtonFuncInverted !== !!longPress) {
             row.item.open();
         } else {
             row.item.control();
