@@ -17,11 +17,11 @@ Rectangle {
     Row {
         id: content
         anchors.fill: parent
-        spacing: 0
+        spacing: 18
 
         Item {
             id: artworkSlot
-            width: Math.max(0, content.width / 3)
+            width: Math.max(0, (content.width - content.spacing) / 3)
             height: content.height
             clip: true
 
@@ -41,8 +41,7 @@ Rectangle {
         }
 
         Column {
-            width: Math.max(0, content.width - artworkSlot.width - 18)
-            x: artworkSlot.width + 18
+            width: Math.max(0, content.width - artworkSlot.width - content.spacing - 12)
             anchors.verticalCenter: parent.verticalCenter
             spacing: 4
 
