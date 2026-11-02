@@ -120,8 +120,8 @@ Item {
         if (configured && !isNativeAppleTVKeyboard(configured) &&
                 isHomeAssistantEntity(configured) &&
                 /apple.?tv/i.test(String(configured.name || "") + " " + configured.id)) {
-            const native = matchingNativeKeyboard(configured);
-            if (native) resolvedId = native.id;
+            const nativeKeyboard = matchingNativeKeyboard(configured);
+            if (nativeKeyboard) resolvedId = nativeKeyboard.id;
         }
         const target = EntityController.get(resolvedId);
         if (!target) {
