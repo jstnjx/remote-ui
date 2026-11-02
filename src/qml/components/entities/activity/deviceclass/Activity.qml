@@ -35,6 +35,30 @@ EntityComponents.BaseDetail {
     // open the menu on the "Fix states" page once the screen is up, set by the error popup of the activity tile
     property bool openFixStates: false
 
+    // A touch belongs either to an interactive widget or to the Activity
+    // PathView, never both. Count holds so multiple widgets can exist on a
+    // page; release/cancel/destruction always restores page navigation.
+    property int activeWidgetGestures: 0
+    function beginWidgetGesture() {
+        activeWidgetGestures++;
+    }
+    function endWidgetGesture() {
+        activeWidgetGestures = Math.max(0, activeWidgetGestures - 1);
+    }
+    onStateChanged: {
+        if (state !== "open") activeWidgetGestures = 0;
+    }
+
+    function openNativeWidgetDetail(target) {
+        if (!target || !target.enabled || !EntityController.mayCommandEntity(target.enabled))
+            return;
+        // Same third-container flow as the Activity's included-entity list.
+        loadThirdContainer(EntityController.screenUrl(target), {
+            "entityId": target.id,
+            "entityObj": target
+        });
+    }
+
     // Keypad selection in the activity menu (button navigation driven, see docs/key-navigation.md idiom b):
     // 0 is the button at the top of the current menu page ("Fix states" / "Back"), 1..n the list items below it.
     // The menu's ButtonNavigation owns the input while the menu is open, the popup on top of it takes over
@@ -227,6 +251,11 @@ EntityComponents.BaseDetail {
                             "entitySelector": widgetParts.slice(1).join(";").trim(),
                             "commandEntityId": item.command ? (item.command.entity_id || "") : "",
                             "activityEntity": entityObj,
+                            "openEntityDetail": function(target) {
+                                activityBase.openNativeWidgetDetail(target);
+                            },
+                            "beginPageGesture": function() { activityBase.beginWidgetGesture(); },
+                            "endPageGesture": function() { activityBase.endWidgetGesture(); },
                             "widgetActive": Qt.binding(function() {
                                 return activityBase.state === "open"
                                     && activityBase.visible
@@ -257,6 +286,8 @@ EntityComponents.BaseDetail {
                             "entitySelector": widgetParts.slice(1).join(";").trim(),
                             "commandEntityId": item.command ? (item.command.entity_id || "") : "",
                             "activityEntity": entityObj,
+                            "beginPageGesture": function() { activityBase.beginWidgetGesture(); },
+                            "endPageGesture": function() { activityBase.endWidgetGesture(); },
                             "widgetActive": Qt.binding(function() {
                                 return activityBase.state === "open"
                                     && activityBase.visible
@@ -807,7 +838,10 @@ EntityComponents.BaseDetail {
         width: parent.width
         height: parent.height - title.height
         anchors { horizontalCenter: parent.horizontalCenter; top: title.bottom }
-        interactive: uiPages.count > 1
+        // PathView's swipe recognizer must never steal a card tap or
+        // touchpad swipe. Widgets hold and release this lock for the pointer
+        // sequence, even on cancellation.
+        interactive: uiPages.count > 1 && activityBase.activeWidgetGestures === 0
 
         snapMode: PathView.SnapToItem
         highlightRangeMode: PathView.StrictlyEnforceRange
