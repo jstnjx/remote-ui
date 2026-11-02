@@ -28,9 +28,22 @@ assert 'Styles/remotestyle/style.qml' in qrc
 
 # All native media-player keyboard rules and manual shortcuts remain supported.
 assert '"keyboard.text_set", {text: value}' in bridge
-assert 'function openManual(mediaId)' in bridge
+assert 'function openManual(entityId)' in bridge
 assert '["KB", "KEYBOARD", "KEYBOARD_SHORTCUT"]' in activity
 assert 'keyboardTextPrompt.openManual(target)' in activity
+assert 'const target = explicitId || ruleTarget || commandId ||' in activity
+assert 'candidate.type === EntityTypes.Remote' in activity
+assert 'ui.createNotification(qsTr("Select an Apple TV Remote' in activity
+assert 'function matchingCompanionRemote(mediaPlayer)' in bridge
+assert 'String(mediaPlayer.id).replace(".media_player.", ".remote.")' in bridge
+assert 'function isHomeAssistantMediaPlayer(target)' in bridge
+assert 'const companion = matchingCompanionRemote(target)' in bridge
+assert 'Select the Apple TV Remote entity, not its media player' in bridge
+assert 'id: explicitSendButton' in bridge
+assert 'trigger: function() { keyboardBridge.submitText(); }' in bridge
+assert 'function onAccepted() { keyboardBridge.submitText(); }' in bridge
+assert 'onClosed()' not in bridge  # virtual keyboard hides without dismissing text popup
+
 assert 'mediaPlayerIds' in bridge and 'mediaPlayerIds' in settings
 
 # The remote-entity route mirrors the already-working Home Assistant action:

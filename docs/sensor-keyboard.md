@@ -21,7 +21,7 @@ This is handled **directly through the existing Unfolded Circle Home Assistant i
 2. Select the activity where you placed your keyboard button.
 3. Under **Text input targets**, choose the entry labeled **Remote:** for the Apple TV's Home Assistant remote entity (`remote.apple_tv_4k_wohnzimmer_gen_2` in Home Assistant). **Do not choose its Media player:** entry.
 4. On that activity's UI page, add a **Text widget** containing `KB`. The widget turns into a keyboard icon.
-5. Focus the editable field on the Apple TV, tap the `KB` widget, type text, then press the return-arrow **Send** key.
+5. Focus the editable field on the Apple TV, tap the `KB` widget, type text, then tap **Send text** above the keyboard or use the native return-arrow **Send** key. Both invoke the same handler.
 
 The Remote UI builds the UC Core entity command:
 
@@ -32,6 +32,10 @@ The Remote UI builds the UC Core entity command:
 The Home Assistant integration translates `remote.send_cmd` to `remote.send_command` for the selected remote entity. Text, including spaces and punctuation, remains a **single command string**, just as in your working Home Assistant automation.
 
 The entity ID shown by the UC integration may have a prefix different from the Home Assistant ID. Select the correct remote **by name** in the target picker; you do not need to rename the entity or fit its full ID into the activity Text widget.
+
+If your `KB` Text widget still has an old command target attached, the keyboard rule's selected **Remote** takes precedence. When a Home Assistant media-player entity has a companion Remote entity with the same integration and device suffix, the keyboard can also redirect to that Remote. Otherwise, it displays a message asking you to select the Remote instead of attempting an unsupported media-player command.
+
+The keyboard editor **does not close when the virtual keyboard hides**; the text remains available for the explicit Send button. This prevents an Enter-key timing difference from silently discarding a submission. Core command failures are reported through the usual Remote UI notifications.
 
 ## Other integrations and existing rules
 

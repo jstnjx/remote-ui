@@ -259,19 +259,35 @@ EntityComponents.BaseDetail {
                             "openKeyboard": function() {
                                 const rules = Config.keyboardRules;
                                 let ruleTarget = "";
+                                // Prefer the explicitly configured Remote entity
+                                // for Apple TV text. The Text button may still
+                                // have an old media-player command attached;
+                                // that must NOT override the keyboard settings.
                                 for (let i = 0; i < rules.length; ++i) {
-                                    if (rules[i].activityId === activityBase.entityId &&
-                                            rules[i].mediaPlayerIds && rules[i].mediaPlayerIds.length) {
-                                        ruleTarget = rules[i].mediaPlayerIds[0];
-                                        break;
+                                    const rule = rules[i];
+                                    if (rule.activityId !== activityBase.entityId) continue;
+                                    const targets = rule.mediaPlayerIds || [];
+                                    for (let j = 0; j < targets.length; ++j) {
+                                        const candidate = EntityController.get(targets[j]);
+                                        if (candidate && candidate.type === EntityTypes.Remote) {
+                                            ruleTarget = targets[j];
+                                            break;
+                                        }
                                     }
+                                    if (!ruleTarget && targets.length)
+                                        ruleTarget = targets[0];
+                                    if (ruleTarget) break;
                                 }
                                 const explicitId = widgetParts.length > 1 ?
                                                    widgetParts.slice(1).join(";").trim() : "";
                                 const commandId = item.command ? item.command.entity_id || "" : "";
-                                const target = explicitId || commandId || ruleTarget ||
+                                const target = explicitId || ruleTarget || commandId ||
                                                (activityBase.mediaWidgetEntityObj ?
                                                 activityBase.mediaWidgetEntityObj.id : "");
+                                if (!target) {
+                                    ui.createNotification(qsTr("Select an Apple TV Remote in Keyboard input automation"), true);
+                                    return;
+                                }
                                 keyboardTextPrompt.openManual(target);
                             }
                         });
