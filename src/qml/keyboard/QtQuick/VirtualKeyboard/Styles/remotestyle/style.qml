@@ -221,43 +221,30 @@ KeyboardStyle {
             color: colors.black
             anchors.fill: enterKeyPanel
             anchors.margins: keyBackgroundMargin
-            Image {
+            // The old style referenced relative SVG image paths which are
+            // not present in the bundled keyboard QRC. Use the native icon
+            // font instead so the Send/Return arrow always renders.
+            Components.Icon {
                 id: enterKeyIcon
-                visible: enterKeyText.text.length === 0
                 anchors.centerIn: parent
-                readonly property size enterKeyIconSize: {
-                    switch (control.actionId) {
-                    case EnterKeyAction.Go:
-                    case EnterKeyAction.Send:
-                    case EnterKeyAction.Next:
-                    case EnterKeyAction.Done:
-                        return Qt.size(170, 119)
-                    case EnterKeyAction.Search:
-                        return Qt.size(148, 148)
-                    default:
-                        return Qt.size(211, 80)
-                    }
-                }
-                sourceSize.width: enterKeyIconSize.width * keyIconScale
-                sourceSize.height: enterKeyIconSize.height * keyIconScale
-                smooth: false
-                source: {
-                    // The user-facing keyboard Send action uses the native
-                    // return-arrow graphic instead of the uppercase word.
+                visible: enterKeyText.text.length === 0
+                icon: {
                     if (root.keyboardSendMode)
-                        return resourcePrefix + "images/enter-868482.svg";
+                        return "uc:arrow-turn-down";
                     switch (control.actionId) {
                     case EnterKeyAction.Go:
                     case EnterKeyAction.Send:
                     case EnterKeyAction.Next:
                     case EnterKeyAction.Done:
-                        return resourcePrefix + "images/check-868482.svg"
+                        return "uc:check";
                     case EnterKeyAction.Search:
-                        return resourcePrefix + "images/search-868482.svg"
+                        return "uc:magnifying-glass";
                     default:
-                        return resourcePrefix + "images/enter-868482.svg"
+                        return "uc:arrow-turn-down";
                     }
                 }
+                color: colors.offwhite
+                size: Math.max(30, Math.round(112 * scaleHint))
             }
             Text {
                 id: enterKeyText

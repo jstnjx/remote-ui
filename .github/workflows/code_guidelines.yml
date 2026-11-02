@@ -90,6 +90,9 @@ jobs:
       - name: Verify home layout geometry and native send icon
         run: python test/ui/home_layout_sanity.py
 
+      - name: Verify Apple TV keyboard text and Send icon
+        run: python test/ui/keyboard_delivery_sanity.py
+
       - name: Verify inline activity media browser
         run: python test/ui/inline_media_browser_sanity.py
 

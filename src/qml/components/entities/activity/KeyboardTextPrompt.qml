@@ -5,6 +5,7 @@ import QtQuick.Controls 2.15
 import QtQuick.VirtualKeyboard 2.3
 import Config 1.0
 import Entity.Controller 1.0
+import Entity.Remote 1.0
 import "qrc:/components" as Components
 
 // Per-activity, multi-sensor keyboard automation. Sensors need not appear in
@@ -21,7 +22,7 @@ Item {
     property bool manualMode: false
     property bool closingKeyboard: false
     property string pendingManualTarget: ""
-    property string currentPrompt: qsTr("Enter text on the media player?")
+    property string currentPrompt: qsTr("Enter text on the selected device?")
 
     readonly property var rules: Config.keyboardRules.filter(function(rule) {
         return rule.activityId === activityId;
@@ -92,8 +93,8 @@ Item {
         }
     }
 
-    // Called by a keyboard shortcut Text Button. The manual invocation shares
-    // the same native keyboard as sensor automation, but needs no sensor.
+    // Called by a keyboard shortcut Text Button. Targets may be a Remote
+    // entity or a media player; manual invocation needs no sensor.
     function openManual(mediaId) {
         if (!activityActive || !mediaId) return;
         const media = EntityController.get(mediaId);
@@ -102,7 +103,8 @@ Item {
             EntityController.load(mediaId);
             return;
         }
-        if (media.getTypeAsString() !== "media_player") return;
+        const type = media.getTypeAsString();
+        if (type !== "media_player" && type !== "remote") return;
         pendingManualTarget = "";
         manualMode = true;
         activeRule = {id: "manual", mediaPlayerIds: [mediaId]};
@@ -119,18 +121,32 @@ Item {
             textEntry.showError(qsTr("Enter some text first."));
             return;
         }
-        const players = activeRule.mediaPlayerIds || [];
+        // Retain the existing saved field name for backwards compatibility.
+        // Both media_player and remote entities are valid targets.
+        const targets = activeRule.mediaPlayerIds || [];
         let sent = 0;
-        for (let i = 0; i < players.length; ++i) {
-            const target = EntityController.get(players[i]);
-            if (target && target.getTypeAsString() === "media_player" &&
-                    EntityController.mayCommandEntity(target.enabled)) {
+        for (let i = 0; i < targets.length; ++i) {
+            const target = EntityController.get(targets[i]);
+            if (!target || !EntityController.mayCommandEntity(target.enabled))
+                continue;
+
+            const type = target.getTypeAsString();
+            if (type === "remote") {
+                // The HA Apple TV remote entity accepts a send_command action
+                // with one command string: "keyboard.text_set <text>".
+                // The UC HA integration maps remote.send_cmd to that action.
+                // Text remains one command, including spaces and Unicode.
+                EntityController.onEntityCommand(target.id, "remote.send_cmd",
+                                                 {command: "keyboard.text_set " + value});
+                sent++;
+            } else if (type === "media_player") {
+                // Keep the original path for integrations supporting it.
                 EntityController.onEntityCommand(target.id, "keyboard.text_set", {text: value});
                 sent++;
             }
         }
         if (!sent) {
-            textEntry.showError(qsTr("No selected media player is available."));
+            textEntry.showError(qsTr("No selected media player or remote is available."));
             return;
         }
         keyboard.hide();

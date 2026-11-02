@@ -1,27 +1,44 @@
 # Context-aware keyboard automation
 
-Navigate to **Settings → Keyboard input automation** to create multiple independently configured rules.
+Go to **Settings → Keyboard input automation** to configure a rule for an activity. Rules can use one or more On/Off sensors to prompt for input, or the short `KB` Text widget to open the same native keyboard manually.
 
-Each rule supports:
-- **Activity**: only active while that activity is open and On
-- **On/Off sensors**: select one or more configured binary On/Off sensors, or sensors placed on an activity UI page
-- **Media-player targets**: select one or more configured media players
-- **Prompt text**: edit the prompt shown on the activity UI before opening the native keyboard
+## Apple TV: choose the Remote entity, not the Media Player
 
-The sensor picker no longer depends on `activity.includedEntities`; sensor widgets remain selectable even when the Core API omits sensors from included entities. Any selected sensor reporting raw `on` fires a rule; the rule rearms only after **all** its sensors report `off`. Dismissing the prompt leaves it suppressed for that On cycle. Each rule has its own rearm state.
+The **Home Assistant Apple TV Remote** entity supports `remote.send_command`. For Apple TV text entry, send the exact command that works in Home Assistant:
 
-After choosing **Open keyboard**, the remote uses its native Qt Virtual Keyboard and sends the entered text to **each available selected media player**:
-
-```json
-{"cmd_id":"keyboard.text_set","params":{"text":"Your text"}}
+```yaml
+action: remote.send_command
+target:
+  entity_id: remote.apple_tv_4k_wohnzimmer_gen_2
+data:
+  command:
+    - "keyboard.text_set Hello from UC Remote"
 ```
 
-Each command uses the selected target's media-player entity ID. The media-player integration must implement `keyboard.text_set`; an ordinary media-player entity does not guarantee support. Text is sent only on an explicit Send/Enter, never on every keypress.
+This is handled **directly through the existing Unfolded Circle Home Assistant integration**, without any Home Assistant webhook, API token or helper automation.
 
-## Compatibility and limits
+1. On the UC Remote, open **Settings → Keyboard input automation** and create/select a rule.
+2. Select the activity where you placed your keyboard button.
+3. Under **Text input targets**, choose the entry labeled **Remote:** for the Apple TV's Home Assistant remote entity (`remote.apple_tv_4k_wohnzimmer_gen_2` in Home Assistant). **Do not choose its Media player:** entry.
+4. On that activity's UI page, add a **Text widget** containing `KB`. The widget turns into a keyboard icon.
+5. Focus the editable field on the Apple TV, tap the `KB` widget, type text, then press the return-arrow **Send** key.
 
-The original single-activity, single-sensor, single-player preference is automatically migrated into the first rule when `ui/keyboardRules` is missing. New rules are saved in `ui/keyboardRules` using QSettings; removing a rule does not alter activities or entities on the Core API.
+The Remote UI builds the UC Core entity command:
 
-Selectors list entities loaded by the UI; activity-page sensor widget IDs are also discovered and loaded. A sensor not yet configured or loaded may initially display its ID rather than its friendly name.
+```json
+{"cmd_id":"remote.send_cmd","params":{"command":"keyboard.text_set Hello from UC Remote"}}
+```
 
-The remote must have the selected activity open and its state On. The UI evaluates raw sensor values `on` and `off` rather than translated labels. The popup is dismissed if the activity closes or sensor returns to Off. Multiple simultaneous rules are offered sequentially rather than opening multiple overlapping dialogs.
+The Home Assistant integration translates `remote.send_cmd` to `remote.send_command` for the selected remote entity. Text, including spaces and punctuation, remains a **single command string**, just as in your working Home Assistant automation.
+
+The entity ID shown by the UC integration may have a prefix different from the Home Assistant ID. Select the correct remote **by name** in the target picker; you do not need to rename the entity or fit its full ID into the activity Text widget.
+
+## Other integrations and existing rules
+
+The original `keyboard.text_set` command with `{"text":"..."}` is retained for media-player integrations that implement it. The keyboard target picker now lists both **Remote** and **Media player** entities; existing `mediaPlayerIds` rule values are preserved to avoid changing user settings.
+
+A sensor-based rule prompts when any selected On/Off sensor turns on and re-arms when all sensors turn off. A manual `KB` widget uses the first configured target for that activity, or the Text button's explicitly configured command target. No sensor is required for manual use.
+
+An ordinary media-player entity does not automatically support keyboard text commands, and the Home Assistant Apple TV media-player entity is **not** the supported destination for `keyboard.text_set`. With Apple TV, always target the Home Assistant **remote** entity.
+
+A successful UC command dispatch does not by itself prove that tvOS accepted the text; the Apple TV must have an active text-entry field. For further problems inspect the Home Assistant integration and Apple TV logs.
