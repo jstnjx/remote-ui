@@ -114,7 +114,6 @@
         <file alias="components/entities/activity/InlineEntityCard.qml">../../src/qml/components/entities/activity/InlineEntityCard.qml</file>
         <file alias="components/entities/activity/InlineClimateControls.qml">../../src/qml/components/entities/activity/InlineClimateControls.qml</file>
         <file alias="components/entities/activity/InlineCoverControls.qml">../../src/qml/components/entities/activity/InlineCoverControls.qml</file>
-        <file alias="components/entities/activity/InlineTouchpad.qml">../../src/qml/components/entities/activity/InlineTouchpad.qml</file>
         <file alias="components/entities/activity/MediaArtworkWidget.qml">../../src/qml/components/entities/activity/MediaArtworkWidget.qml</file>
         <file alias="components/entities/activity/KeyboardShortcutWidget.qml">../../src/qml/components/entities/activity/KeyboardShortcutWidget.qml</file>
         <file alias="components/entities/activity/KeyboardTextPrompt.qml">../../src/qml/components/entities/activity/KeyboardTextPrompt.qml</file>
