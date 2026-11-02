@@ -260,12 +260,17 @@ Item {
         // changes focus; otherwise Qt can expose an empty/partial field.
         Qt.inputMethod.commit();
         const value = textEntry.inputField.text;
+        // Never log the entered text; only the event and byte-independent
+        // character count are needed to diagnose missing Search requests.
+        console.log("KB accepted native Search key; text length:", value.length,
+                    "manual:", manualMode);
         if (value.length === 0) {
             textEntry.showError(qsTr("Enter some text first."));
             return;
         }
 
         const configuredTargets = activeRule.mediaPlayerIds || [];
+        console.log("KB selected targets:", configuredTargets.join(", "));
         // A newly configured Apple TV Keyboard target supersedes any saved
         // Home Assistant Remote target from older keyboard rules. Do not
         // dispatch both destinations for the same input.
