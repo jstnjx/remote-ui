@@ -29,8 +29,12 @@ Rectangle {
 
     readonly property string typeName: entityKind === "LIGHT" ? "light" :
                                        entityKind === "CLIMATE" ? "climate" : "cover"
-    readonly property bool ready: widgetActive && entityObj &&
-                                  entityObj.enabled && EntityController.mayCommandEntity(entityObj.enabled)
+    readonly property bool entityAvailable: entityObj && (
+        entityKind === "LIGHT" ? entityObj.state !== LightStates.Unavailable :
+        entityKind === "CLIMATE" ? entityObj.state !== ClimateStates.Unavailable :
+                                   entityObj.state !== CoverStates.Unavailable)
+    readonly property bool ready: widgetActive && entityAvailable && entityObj.enabled &&
+                                  EntityController.mayCommandEntity(entityObj.enabled)
     readonly property bool hasPosition: entityKind === "COVER" && entityObj &&
                                         entityObj.hasFeature(CoverFeatures.Position)
     readonly property bool hasBrightness: entityKind === "LIGHT" && entityObj &&
@@ -84,6 +88,7 @@ Rectangle {
         if (!ready || entityKind !== "CLIMATE" ||
                 !entityObj.hasFeature(ClimateFeatures.Target_temperature))
             return;
+        if (entityObj.maxTemperature <= entityObj.minTemperature) return;
         const step = entityObj.targetTemperatureStep > 0 ? entityObj.targetTemperatureStep : 0.5;
         const target = Math.round((entityObj.targetTemperature + delta * step) / step) * step;
         entityObj.setTargetTemperature(Math.max(entityObj.minTemperature,
@@ -383,7 +388,7 @@ Rectangle {
 
     Text {
         anchors { fill: parent; margins: 12 }
-        visible: !card.entityObj || !card.widgetActive || !card.entityObj.enabled
+        visible: !card.ready
         text: card.selectionError || (!card.entityObj ? qsTr("Loading entity…") :
               !card.widgetActive ? qsTr("Activity inactive") : qsTr("Entity unavailable"))
         color: colors.textSecondary
