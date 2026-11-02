@@ -5,6 +5,7 @@ import QtQuick.Controls 2.15
 import QtQuick.VirtualKeyboard 2.3
 import Config 1.0
 import Entity.Controller 1.0
+import Entity.Remote 1.0
 import "qrc:/components" as Components
 
 // Per-activity, multi-sensor keyboard automation. Sensors need not appear in
@@ -20,10 +21,8 @@ Item {
     property var activeRule: null
     property bool manualMode: false
     property bool closingKeyboard: false
-    property bool submitting: false
-    property int submitSerial: 0
     property string pendingManualTarget: ""
-    property string currentPrompt: qsTr("Enter text on the media player?")
+    property string currentPrompt: qsTr("Enter text on the selected device?")
 
     readonly property var rules: Config.keyboardRules.filter(function(rule) {
         return rule.activityId === activityId;
@@ -94,8 +93,8 @@ Item {
         }
     }
 
-    // Called by a keyboard shortcut Text Button. The manual invocation shares
-    // the same native keyboard as sensor automation, but needs no sensor.
+    // Called by a keyboard shortcut Text Button. Targets may be a Remote
+    // entity or a media player; manual invocation needs no sensor.
     function openManual(mediaId) {
         if (!activityActive || !mediaId) return;
         const media = EntityController.get(mediaId);
@@ -104,95 +103,15 @@ Item {
             EntityController.load(mediaId);
             return;
         }
-        if (media.getTypeAsString() !== "media_player") return;
+        const type = media.getTypeAsString();
+        if (type !== "media_player" && type !== "remote") return;
         pendingManualTarget = "";
         manualMode = true;
-        // The optional HA bridge belongs to the current activity and its
-        // selected player. Reuse it for manual KB widgets as well as sensor
-        // prompts; never send an Apple TV webhook to an unrelated player.
-        let webhook = "";
-        for (let i = 0; i < rules.length; ++i) {
-            const selected = rules[i].mediaPlayerIds || [];
-            if (selected.indexOf(mediaId) >= 0 && rules[i].homeAssistantWebhookUrl) {
-                webhook = rules[i].homeAssistantWebhookUrl;
-                break;
-            }
-        }
-        activeRule = {id: "manual", mediaPlayerIds: [mediaId],
-                      homeAssistantWebhookUrl: webhook};
+        activeRule = {id: "manual", mediaPlayerIds: [mediaId]};
         textPopup.open();
     }
 
-    Timer {
-        id: submitTimeout
-        interval: 12000
-        repeat: false
-        onTriggered: {
-            if (keyboardBridge.submitting && textPopup.opened) {
-                keyboardBridge.submitSerial++;
-                keyboardBridge.submitting = false;
-                textEntry.showError(qsTr("Home Assistant did not respond."));
-            }
-        }
-    }
-
-    function finishSubmission() {
-        submitTimeout.stop();
-        submitting = false;
-        keyboard.hide();
-        textPopup.close();
-    }
-
-    function submitViaHomeAssistant(url, value) {
-        // A local HA webhook automation calls apple_tv.set_keyboard_text.
-        // UC's HA media_player entity does not implement keyboard.text_set
-        // and cannot call arbitrary HA actions through entity commands.
-        const endpoint = String(url || "").trim();
-        if ((endpoint.indexOf("http://") !== 0 && endpoint.indexOf("https://") !== 0) ||
-                endpoint.indexOf("/api/webhook/") < 8 ||
-                endpoint.indexOf(" ") >= 0 ||
-                endpoint.endsWith("/api/webhook/")) {
-            textEntry.showError(qsTr("Enter a valid Home Assistant webhook URL in keyboard settings."));
-            return;
-        }
-        submitting = true;
-        submitTimeout.restart();
-        const serial = ++submitSerial;
-        const request = new XMLHttpRequest();
-        request.onreadystatechange = function() {
-            if (request.readyState !== 4 || serial !== submitSerial ||
-                    !keyboardBridge.submitting || !textPopup.opened)
-                return;
-            submitTimeout.stop();
-            if (request.status >= 200 && request.status < 300) {
-                keyboardBridge.finishSubmission();
-            } else {
-                keyboardBridge.submitting = false;
-                textEntry.showError(qsTr("Home Assistant rejected the text (HTTP %1).").arg(request.status));
-            }
-        };
-        try {
-            request.open("POST", endpoint);
-            request.setRequestHeader("Content-Type", "application/json");
-            request.onerror = function() {
-                if (serial === submitSerial && keyboardBridge.submitting && textPopup.opened) {
-                    submitTimeout.stop();
-                    keyboardBridge.submitSerial++;
-                    keyboardBridge.submitting = false;
-                    textEntry.showError(qsTr("Could not reach the Home Assistant webhook."));
-                }
-            };
-            request.send(JSON.stringify({text: value}));
-        } catch (e) {
-            submitTimeout.stop();
-            submitSerial++;
-            submitting = false;
-            textEntry.showError(qsTr("Could not send text to Home Assistant."));
-        }
-    }
-
     function submitText() {
-        if (submitting) return;
         if (!activityActive || !activeRule || (!manualMode && !ruleOn(activeRule))) {
             textEntry.showError(qsTr("The activity or sensor is no longer active."));
             return;
@@ -202,46 +121,36 @@ Item {
             textEntry.showError(qsTr("Enter some text first."));
             return;
         }
-        const players = activeRule.mediaPlayerIds || [];
-        if (activeRule.homeAssistantWebhookUrl) {
-            if (players.length === 0) {
-                textEntry.showError(qsTr("Select an Apple TV media player for this rule."));
-                return;
-            }
-            submitViaHomeAssistant(activeRule.homeAssistantWebhookUrl, value);
-            return;
-        }
+        // Retain the existing saved field name for backwards compatibility.
+        // Both media_player and remote entities are valid targets.
+        const targets = activeRule.mediaPlayerIds || [];
         let sent = 0;
-        let homeAssistantTarget = false;
-        for (let i = 0; i < players.length; ++i) {
-            const target = EntityController.get(players[i]);
-            if (target && target.getTypeAsString() === "media_player" &&
-                    EntityController.mayCommandEntity(target.enabled)) {
-                // The bundled HA integration only implements regular media
-                // player services. It cannot dispatch apple_tv keyboard actions.
-                const integration = String(target.integrationId || "").toLowerCase();
-                const id = String(target.id || "").toLowerCase();
-                if (integration.indexOf("home-assistant") >= 0 ||
-                        integration.indexOf("home_assistant") >= 0 ||
-                        integration.indexOf("homeassistant") >= 0 ||
-                        integration.indexOf("hass") >= 0 ||
-                        id.indexOf("home_assistant") >= 0) {
-                    homeAssistantTarget = true;
-                    continue;
-                }
+        for (let i = 0; i < targets.length; ++i) {
+            const target = EntityController.get(targets[i]);
+            if (!target || !EntityController.mayCommandEntity(target.enabled))
+                continue;
+
+            const type = target.getTypeAsString();
+            if (type === "remote") {
+                // The HA Apple TV remote entity accepts a send_command action
+                // with one command string: "keyboard.text_set <text>".
+                // The UC HA integration maps remote.send_cmd to that action.
+                // Text remains one command, including spaces and Unicode.
+                EntityController.onEntityCommand(target.id, "remote.send_cmd",
+                                                 {command: "keyboard.text_set " + value});
+                sent++;
+            } else if (type === "media_player") {
+                // Keep the original path for integrations supporting it.
                 EntityController.onEntityCommand(target.id, "keyboard.text_set", {text: value});
                 sent++;
             }
         }
-        if (homeAssistantTarget) {
-            textEntry.showError(qsTr("Home Assistant Apple TV needs a webhook. Configure it in Keyboard input automation."));
-            return;
-        }
         if (!sent) {
-            textEntry.showError(qsTr("No selected media player is available."));
+            textEntry.showError(qsTr("No selected media player or remote is available."));
             return;
         }
-        finishSubmission();
+        keyboard.hide();
+        textPopup.close();
     }
 
     onActivityActiveChanged: evaluate()
@@ -289,7 +198,7 @@ Item {
     Connections {
         target: keyboard
         function onClosed() {
-            if (textPopup.opened && !keyboardBridge.closingKeyboard && !keyboardBridge.submitting) {
+            if (textPopup.opened && !keyboardBridge.closingKeyboard) {
                 textPopup.close();
             }
         }
@@ -320,8 +229,6 @@ Item {
         }
 
         onOpened: {
-            submitSerial++;
-            submitting = false;
             root.keyboardSendMode = true;
             closingKeyboard = false;
             textEntry.inputValue = "";
@@ -335,9 +242,6 @@ Item {
         }
 
         onClosed: {
-            submitTimeout.stop();
-            submitSerial++;
-            submitting = false;
             closingKeyboard = true;
             root.keyboardSendMode = false;
             manualMode = false;
