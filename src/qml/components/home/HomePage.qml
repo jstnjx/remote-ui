@@ -96,12 +96,40 @@ Item {
 
     function ensureSelectedVisible() {
         if (!visible || rowCount === 0 || entityList.height <= 0) return;
-        entityList.positionViewAtIndex(selectedIndex, ListView.Contain);
+        const row = entityList.itemAtIndex(selectedIndex);
+        if (!row || !row.isGroup || !row.item || row.item.state !== "open") {
+            entityList.positionViewAtIndex(selectedIndex, ListView.Contain);
+            return;
+        }
+        const current = row.item.groups ? row.item.groups.currentItem : null;
+        if (!current) {
+            entityList.positionViewAtIndex(selectedIndex, ListView.Beginning);
+            return;
+        }
+        // An expanded group can exceed the list viewport. Keep the focused
+        // member in view instead of trying to fit the entire group row.
+        const y = current.mapToItem(entityList.contentItem, 0, 0).y;
+        const bottom = y + current.height;
+        if (y < entityList.contentY)
+            entityList.contentY = Math.max(0, y - 8);
+        else if (bottom > entityList.contentY + entityList.height)
+            entityList.contentY = Math.min(Math.max(0, entityList.contentHeight - entityList.height),
+                                           bottom - entityList.height + 8);
     }
 
     function moveSelection(step) {
         if (rowCount === 0) return;
-        selectedIndex = (selectedIndex + step + rowCount) % rowCount;
+        const row = entityList.itemAtIndex(selectedIndex);
+        if (row && row.isGroup && row.item && row.item.state === "open" && row.item.groups) {
+            const members = row.item.groups;
+            const nextMember = members.currentIndex + step;
+            if (nextMember >= 0 && nextMember < members.count) {
+                members.currentIndex = nextMember;
+                Qt.callLater(ensureSelectedVisible);
+                return;
+            }
+        }
+        selectedIndex = Math.max(0, Math.min(rowCount - 1, selectedIndex + step));
         Qt.callLater(ensureSelectedVisible);
     }
 
@@ -372,7 +400,8 @@ Item {
         delegate: Loader {
             id: rowLoader
             width: entityList.width
-            height: item ? item.height : 94
+            // Let Loader follow the native entity/group item's own height.
+            // An explicit reciprocal height binding would prevent group expansion.
             asynchronous: true
             property bool isCurrentItem: ListView.isCurrentItem
             property bool editMode: false
