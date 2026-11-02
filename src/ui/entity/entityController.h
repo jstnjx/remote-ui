@@ -213,6 +213,11 @@ class EntityController : public QObject {
     void voiceAssistantCommandError(QString entityId, int code);
     void allEntitiesLoaded();
     void commandInProgressChanged();
+    // Reports the Core API acknowledgment or final failure of an entity
+    // command. A successful ACK does not prove the physical target acted.
+    // Used by the activity keyboard to avoid silently discarding typed text.
+    void entityCommandResult(QString entityId, QString command, bool success,
+                             int errorCode, QString errorMessage);
     void sequenceReadinessResult(int checkId, QVariantMap result);
 
  public slots:
