@@ -311,6 +311,8 @@ ApplicationWindow {
         property alias volume: volume
         property alias keyboard: keyboard
         property bool keyboardSendMode: false
+        // Optional callback for the activity KB shortcut's native Send key.
+        property var keyboardSendCallback: null
         property alias keyboardInputField: keyboardInputField
         property bool isActivityOpen: false
 
