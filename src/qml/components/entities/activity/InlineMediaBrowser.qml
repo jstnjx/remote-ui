@@ -188,6 +188,7 @@ Rectangle {
         if (pendingRequestId < 0) {
             loading = false;
             loadingMore = false;
+            restoringModel = false;
             errorMessage = qsTr("Unable to request media");
         }
     }
@@ -356,6 +357,7 @@ Rectangle {
         loading = false;
         loadingMore = false;
         hasMore = false;
+        restoringModel = false;
         // The server may legitimately have no children for a playable
         // playlist. Preserve its metadata, and show the playable cover.
         if (code === 404) {
