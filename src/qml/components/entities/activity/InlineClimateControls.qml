@@ -25,7 +25,7 @@ Item {
         const index = entityObj.getModelIndexFromTemperature(entityObj.targetTemperature);
         if (index < 0 || index >= temperatureTumbler.count) return;
         temperatureTumbler.currentIndex = index;
-        temperatureTumbler.positionViewAtIndex(index, Tumbler.Center);
+        temperatureTumbler.positionViewAtIndex(index, ListView.Center);
         initialized = true;
     }
     function commitTarget() {
@@ -39,7 +39,7 @@ Item {
         if (!canSet || temperatureTumbler.count < 1) return;
         temperatureTumbler.currentIndex = Math.min(temperatureTumbler.count - 1,
             Math.max(0, temperatureTumbler.currentIndex + delta));
-        temperatureTumbler.positionViewAtIndex(temperatureTumbler.currentIndex, Tumbler.Center);
+        temperatureTumbler.positionViewAtIndex(temperatureTumbler.currentIndex, ListView.Center);
         targetCommit.restart();
     }
     function changeMode() {
