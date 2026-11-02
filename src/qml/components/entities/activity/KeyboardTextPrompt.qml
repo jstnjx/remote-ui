@@ -179,6 +179,14 @@ Item {
             ui.createNotification(message, true);
     }
 
+    function showNativeKeyboardError(message) {
+        // The native Send action dismisses the keyboard, taking the popup
+        // with it. Always notify, even if the asynchronous response beats
+        // Popup.onClosed and the input field is still briefly visible.
+        statusMessage = message;
+        ui.createNotification(message, true);
+    }
+
 
     Timer {
         id: commandTimeout
@@ -190,7 +198,7 @@ Item {
             keyboardBridge.pendingTargetIds = [];
             if (keyboardBridge.pendingSearchTarget) {
                 keyboardBridge.pendingSearchTarget = null;
-                keyboardBridge.showKeyboardDeliveryError(qsTr("Apple TV Keyboard did not respond. Check its connection."));
+                keyboardBridge.showNativeKeyboardError(qsTr("Apple TV Keyboard did not respond. Check its connection."));
                 return;
             }
             keyboardBridge.showKeyboardDeliveryError(qsTr("No command acknowledgment received. Check Remote and Home Assistant logs."));
@@ -336,7 +344,7 @@ Item {
             const title = first ? String(first.title || "") : "";
             if (!first || title.indexOf("Text not sent") === 0 ||
                     title.indexOf("keyboard-not-sent") >= 0) {
-                keyboardBridge.showKeyboardDeliveryError(
+                keyboardBridge.showNativeKeyboardError(
                     first && first.subtitle ? String(first.subtitle)
                                             : qsTr("Apple TV Keyboard did not confirm text entry."));
             } else {
@@ -349,7 +357,7 @@ Item {
             commandTimeout.stop();
             keyboardBridge.sending = false;
             keyboardBridge.pendingSearchTarget = null;
-            keyboardBridge.showKeyboardDeliveryError(
+            keyboardBridge.showNativeKeyboardError(
                 qsTr("Apple TV Keyboard error %1: %2").arg(code).arg(message));
         }
     }
