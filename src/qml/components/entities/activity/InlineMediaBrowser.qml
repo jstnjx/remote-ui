@@ -33,10 +33,10 @@ Rectangle {
     property bool loadingMore: false
     property bool hasMore: false
     property string errorMessage: ""
-    property string pendingPlayId: ""
+    property bool restoringModel: false
 
-    readonly property bool canBrowse: player && player.enabled &&
-                                       player.hasFeature(MediaPlayerFeatures.Browse_media)
+    readonly property bool canBrowse: player && player.type === EntityTypes.Media_player &&
+                                       player.enabled && player.hasFeature(MediaPlayerFeatures.Browse_media)
     readonly property var currentItem: browseItems.length > 0 && carousel.currentIndex >= 0 &&
                                        carousel.currentIndex < browseItems.length
                                        ? browseItems[carousel.currentIndex] : null
@@ -48,8 +48,9 @@ Rectangle {
             player = null;
             return;
         }
-        player = EntityController.get(entityId);
-        if (!player) EntityController.load(entityId);
+        const entity = EntityController.get(entityId);
+        player = entity && entity.type === EntityTypes.Media_player ? entity : null;
+        if (!entity) EntityController.load(entityId);
     }
 
     function reset() {
@@ -65,7 +66,6 @@ Rectangle {
         loadingMore = false;
         hasMore = false;
         errorMessage = "";
-        pendingPlayId = "";
     }
 
     function requestPage(page) {
@@ -142,7 +142,6 @@ Rectangle {
         if (item.can_browse) {
             enterFolder(item);
         } else if (item.can_play) {
-            pendingPlayId = item.media_id || "";
             // PLAY_NOW is optional; normal play_media works on older integrations.
             if (player.hasFeature(MediaPlayerFeatures.Play_media_action) &&
                     item.play_media_action && item.play_media_action.indexOf("PLAY_NOW") >= 0)
@@ -158,6 +157,7 @@ Rectangle {
         const incoming = media && media.items ? media.items : [];
         const append = loadingMore && requestedPage > 1;
         const selected = append ? carousel.currentIndex : 0;
+        restoringModel = true;
         browseItems = append ? browseItems.concat(incoming) : incoming.slice();
         pageNumber = requestedPage;
         hasMore = incoming.length > 0 && (pagination && pagination.count > 0
@@ -169,6 +169,7 @@ Rectangle {
         Qt.callLater(function() {
             if (browser.browserActive && carousel.count)
                 carousel.currentIndex = Math.max(0, Math.min(selected, carousel.count - 1));
+            browser.restoringModel = false;
         });
     }
 
@@ -298,7 +299,9 @@ Rectangle {
             snapMode: PathView.SnapOneItem
             // PathView is cyclic by design: no first/last sentinel or dead end.
             onCurrentIndexChanged: {
-                if (currentIndex >= browser.browseItems.length - 3) browser.loadMore();
+                if (!browser.restoringModel && browser.browseItems.length &&
+                        currentIndex >= browser.browseItems.length - 3)
+                    browser.loadMore();
             }
 
             path: Path {
@@ -344,7 +347,7 @@ Rectangle {
                 transform: Rotation {
                     origin.x: cover.width / 2
                     origin.y: cover.height / 2
-                    axis { x: 0; y: 1; z: 0 }
+                    axis: Qt.vector3d(0, 1, 0)
                     angle: cover.PathView.coverAngle
                 }
 
@@ -411,8 +414,7 @@ Rectangle {
             leftMargin: 12
             rightMargin: 12
         }
-        height: Math.min(53, browser.height * 0.25)
-        spacing: 2
+        spacing: 0
         visible: browser.hasArtworkRoom && browser.currentItem !== null
 
         Text {
