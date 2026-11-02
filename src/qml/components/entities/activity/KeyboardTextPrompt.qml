@@ -21,6 +21,10 @@ Item {
     property var activeRule: null
     property bool manualMode: false
     property bool closingKeyboard: false
+    property bool sending: false
+    property var pendingTargetIds: []
+    property int succeededCommands: 0
+    property string statusMessage: ""
     property string pendingManualTarget: ""
     property string currentPrompt: qsTr("Enter text on the selected device?")
 
@@ -138,64 +142,106 @@ Item {
                /home[_-]?assistant|homeassistant/.test(integration);
     }
 
+    Timer {
+        id: commandTimeout
+        interval: 14000
+        repeat: false
+        onTriggered: {
+            if (!keyboardBridge.sending) return;
+            keyboardBridge.sending = false;
+            keyboardBridge.pendingTargetIds = [];
+            keyboardBridge.statusMessage = qsTr("No command acknowledgment received. Check Remote and Home Assistant logs.");
+            textEntry.showError(qsTr("Text was not confirmed by the Remote Core."));
+        }
+    }
+
     function submitText() {
+        if (sending) return;
         if (!activityActive || !activeRule || (!manualMode && !ruleOn(activeRule))) {
             textEntry.showError(qsTr("The activity or sensor is no longer active."));
             return;
         }
+        // Grab the text before the virtual keyboard changes focus or hides.
         const value = textEntry.inputValue;
         if (value.length === 0) {
             textEntry.showError(qsTr("Enter some text first."));
             return;
         }
-        // Retain the existing saved field name for backwards compatibility.
-        // Both media_player and remote entities are valid targets.
+
         const targets = activeRule.mediaPlayerIds || [];
-        let sent = 0;
-        let hasWrongAppleTvTarget = false;
+        const requests = [];
+        const seen = {};
+        let blocked = false;
+
         for (let i = 0; i < targets.length; ++i) {
             const target = EntityController.get(targets[i]);
-            if (!target || !EntityController.mayCommandEntity(target.enabled))
+            if (!target) {
+                statusMessage = qsTr("Target not loaded: %1").arg(targets[i]);
+                blocked = true;
                 continue;
+            }
+            if (!EntityController.mayCommandEntity(target.enabled)) {
+                statusMessage = qsTr("Target unavailable: %1").arg(target.name);
+                blocked = true;
+                continue;
+            }
 
+            let destination = target;
+            let cmd = "";
+            let params = ({});
             const type = target.getTypeAsString();
             if (type === "remote") {
-                // UC HA maps remote.send_cmd to Home Assistant's
-                // remote.send_command; the value must be one command string.
-                EntityController.onEntityCommand(target.id, "remote.send_cmd",
-                                                 {command: "keyboard.text_set " + value});
-                console.log("Apple TV keyboard text dispatched to Remote:", target.id);
-                sent++;
+                cmd = "remote.send_cmd";
+                params = {command: "keyboard.text_set " + value};
             } else if (type === "media_player") {
                 const companion = matchingCompanionRemote(target);
-                if (companion && EntityController.mayCommandEntity(companion.enabled)) {
-                    // Recover gracefully if an old KB widget still points at
-                    // HA's media player rather than its companion Remote.
-                    EntityController.onEntityCommand(companion.id, "remote.send_cmd",
-                                                     {command: "keyboard.text_set " + value});
-                    console.log("Apple TV keyboard rerouted to companion Remote:", companion.id);
-                    sent++;
+                if (companion) {
+                    if (!EntityController.mayCommandEntity(companion.enabled)) {
+                        statusMessage = qsTr("Companion Remote unavailable: %1").arg(companion.name);
+                        blocked = true;
+                        continue;
+                    }
+                    destination = companion;
+                    cmd = "remote.send_cmd";
+                    params = {command: "keyboard.text_set " + value};
                 } else if (isHomeAssistantMediaPlayer(target)) {
-                    hasWrongAppleTvTarget = true;
+                    statusMessage = qsTr("Wrong target: %1 is a Media player. Select its Remote entity.").arg(target.name);
+                    blocked = true;
+                    continue;
                 } else {
-                    // Preserve direct input for integrations supporting it.
-                    EntityController.onEntityCommand(target.id, "keyboard.text_set", {text: value});
-                    sent++;
+                    cmd = "keyboard.text_set";
+                    params = {text: value};
                 }
+            } else {
+                statusMessage = qsTr("Unsupported keyboard target: %1").arg(target.name);
+                blocked = true;
+                continue;
             }
+            if (seen[destination.id]) continue;
+            seen[destination.id] = true;
+            requests.push({entityId: destination.id, name: destination.name, command: cmd, params: params});
         }
-        if (hasWrongAppleTvTarget) {
-            textEntry.showError(qsTr("Select the Apple TV Remote entity, not its media player, in Keyboard settings."));
+        if (blocked || requests.length === 0) {
+            if (!statusMessage)
+                statusMessage = qsTr("No usable target. Choose the Apple TV Remote in Keyboard settings.");
+            textEntry.showError(statusMessage);
             return;
         }
-        if (!sent) {
-            textEntry.showError(qsTr("No available keyboard target. Choose the Apple TV Remote in Keyboard settings."));
-            return;
+
+        // Do not clear the text or close the popup simply because Core accepted
+        // the local API call. Wait for a real Core command acknowledgment, and
+        // keep diagnostic feedback visible for troubleshooting failed delivery.
+        pendingTargetIds = requests.map(function(request) { return request.entityId; });
+        succeededCommands = 0;
+        sending = true;
+        statusMessage = qsTr("Sending via %1 to %2 (%3)")
+                        .arg(requests[0].command).arg(requests[0].name).arg(requests[0].entityId);
+        commandTimeout.restart();
+        for (let j = 0; j < requests.length; ++j) {
+            const request = requests[j];
+            console.log("Keyboard submitting to entity:", request.entityId, request.command);
+            EntityController.onEntityCommand(request.entityId, request.command, request.params);
         }
-        // This is dispatch, not guaranteed delivery. Core reports command
-        // failures through its existing notifications.
-        keyboard.hide();
-        textPopup.close();
     }
 
     onActivityActiveChanged: evaluate()
@@ -205,6 +251,31 @@ Item {
 
     Connections {
         target: EntityController
+
+        function onEntityCommandResult(entityId, command, success, errorCode, errorMessage) {
+            if (!keyboardBridge.sending || !textPopup.opened ||
+                    (command !== "remote.send_cmd" && command !== "keyboard.text_set"))
+                return;
+            const index = keyboardBridge.pendingTargetIds.indexOf(entityId);
+            if (index < 0) return;
+
+            const remaining = keyboardBridge.pendingTargetIds.slice();
+            remaining.splice(index, 1);
+            keyboardBridge.pendingTargetIds = remaining;
+            if (!success) {
+                keyboardBridge.statusMessage = qsTr("Core rejected %1 (%2): %3")
+                    .arg(entityId).arg(errorCode).arg(errorMessage);
+                textEntry.showError(keyboardBridge.statusMessage);
+            } else {
+                keyboardBridge.succeededCommands++;
+                keyboardBridge.statusMessage = qsTr("Core accepted command for %1. If text is absent on Apple TV, check the Home Assistant integration logs.").arg(entityId);
+            }
+            if (remaining.length === 0) {
+                commandTimeout.stop();
+                keyboardBridge.sending = false;
+            }
+        }
+
         function onEntityLoaded(success, entityId) {
             if (!success) return;
             if (entityId === keyboardBridge.pendingManualTarget) {
@@ -269,6 +340,10 @@ Item {
         }
 
         onOpened: {
+            commandTimeout.stop();
+            sending = false;
+            pendingTargetIds = [];
+            statusMessage = "";
             root.keyboardSendMode = true;
             closingKeyboard = false;
             textEntry.inputValue = "";
@@ -282,6 +357,10 @@ Item {
         }
 
         onClosed: {
+            commandTimeout.stop();
+            sending = false;
+            pendingTargetIds = [];
+            statusMessage = "";
             closingKeyboard = true;
             root.keyboardSendMode = false;
             manualMode = false;
@@ -338,7 +417,27 @@ Item {
                     horizontalCenter: parent.horizontalCenter
                 }
                 text: qsTr("Send text")
+                enabled: !keyboardBridge.sending
                 trigger: function() { keyboardBridge.submitText(); }
+            }
+
+            Text {
+                id: deliveryStatus
+                anchors {
+                    top: explicitSendButton.bottom
+                    topMargin: 12
+                    left: parent.left
+                    right: parent.right
+                    leftMargin: 20
+                    rightMargin: 20
+                }
+                text: keyboardBridge.statusMessage
+                visible: text.length > 0
+                color: colors.textSecondary
+                wrapMode: Text.WordWrap
+                font: fonts.help()
+                maximumLineCount: 4
+                elide: Text.ElideRight
             }
         }
     }
