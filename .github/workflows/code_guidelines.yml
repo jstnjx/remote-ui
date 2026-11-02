@@ -96,6 +96,9 @@ jobs:
       - name: Verify inline activity media browser
         run: python test/ui/inline_media_browser_sanity.py
 
+      - name: Verify Light Climate Cover cards and Touchpad
+        run: python test/ui/activity_cards_touchpad_sanity.py
+
       - name: Verify inline media artwork Text widgets
         run: python test/ui/media_artwork_widget_sanity.py
 
