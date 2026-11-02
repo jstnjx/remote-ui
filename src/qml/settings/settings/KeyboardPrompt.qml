@@ -44,8 +44,7 @@ Settings.Page {
         const all = Config.keyboardRules.slice();
         all.push({id: "rule-" + Date.now() + "-" + Math.floor(Math.random() * 1000000),
                   activityId: "", sensorIds: [], mediaPlayerIds: [],
-                  prompt: qsTr("Enter text on the media player?"),
-                  homeAssistantWebhookUrl: ""});
+                  prompt: qsTr("Enter text on the media player?")});
         Config.keyboardRules = all;
         ruleIndex = all.length - 1;
     }
@@ -96,13 +95,18 @@ Settings.Page {
         pickerModel.clear();
         let ids = part === "activityId" ? EntityController.getIdsByType("activity") :
                   part === "sensorIds" ? sensorChoices() :
-                  EntityController.getIdsByType("media_player");
+                  EntityController.getIdsByType("media_player").concat(
+                      EntityController.getIdsByType("remote"));
         const multiple = part !== "activityId";
         const selected = multiple ? (rule[part] || []) : [];
         if (!multiple) pickerModel.append({name: qsTr("None"), value: ""});
         for (let i = 0; i < ids.length; ++i) {
             const checked = selected.indexOf(ids[i]) >= 0;
-            pickerModel.append({name: (checked ? "✓  " : "") + nameOf(ids[i]), value: ids[i]});
+            const item = EntityController.get(ids[i]);
+            const typeLabel = item && item.getTypeAsString() === "remote" ?
+                              qsTr("Remote: ") : part === "mediaPlayerIds" ?
+                              qsTr("Media player: ") : "";
+            pickerModel.append({name: (checked ? "✓  " : "") + typeLabel + nameOf(ids[i]), value: ids[i]});
         }
         selectionHandler = function(value) {
             if (!multiple) {
@@ -116,14 +120,19 @@ Settings.Page {
                 for (let j = 0; j < pickerModel.count; ++j) {
                     const item = pickerModel.get(j);
                     pickerModel.setProperty(j, "name",
-                                            ((chosen.indexOf(item.value) >= 0) ? "✓  " : "") + nameOf(item.value));
+                                            ((chosen.indexOf(item.value) >= 0) ? "✓  " : "") +
+                                            (part === "mediaPlayerIds" ?
+                                             ((EntityController.get(item.value) &&
+                                               EntityController.get(item.value).getTypeAsString() === "remote")
+                                              ? qsTr("Remote: ") : qsTr("Media player: ")) : "") +
+                                            nameOf(item.value));
                 }
                 if (pickerLoader.item) pickerLoader.item.popupListmodel.reload();
             }
         };
         pickerLoader.setSource("qrc:/components/PopupList.qml", {
             title: part === "activityId" ? qsTr("Activity") :
-                   part === "sensorIds" ? qsTr("On/Off sensors") : qsTr("Media players"),
+                   part === "sensorIds" ? qsTr("On/Off sensors") : qsTr("Remote / media-player targets"),
             listModel: pickerModel, showSearch: pickerModel.count > 8,
             closeOnSelected: !multiple
         });
@@ -213,7 +222,7 @@ Settings.Page {
 
             Components.MenuRow {
                 id: targetRow
-                text: qsTr("Target media players")
+                text: qsTr("Text input targets")
                 value: rule ? namesOf(rule.mediaPlayerIds) : ""
                 enabled: rule !== null
                 chevron: true
@@ -255,53 +264,6 @@ Settings.Page {
                 text: qsTr("Save prompt text")
                 trigger: function() { editRule("prompt", promptInput.inputValue.trim()); keyboard.hide(); }
                 KeyNavigation.up: promptInput.inputField
-                KeyNavigation.down: webhookInput.inputField
-            }
-            Components.Divider {}
-            Text {
-                Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                Layout.topMargin: 16
-                text: qsTr("Home Assistant Apple TV webhook")
-                color: colors.textPrimary
-                font: fonts.label()
-            }
-            Text {
-                Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                wrapMode: Text.WordWrap
-                text: qsTr("Optional. Sends text through a Home Assistant webhook automation using apple_tv.set_keyboard_text. Leave blank for native media-player keyboard commands.")
-                font: fonts.help()
-                color: colors.textSecondary
-            }
-            Components.InputField {
-                id: webhookInput
-                Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                enabled: rule !== null
-                moveInput: false
-                keyboardFollowsFocus: true
-                label: qsTr("Home Assistant webhook URL")
-                inputField.placeholderText: "http://homeassistant.local:8123/api/webhook/..."
-                inputValue: rule ? (rule.homeAssistantWebhookUrl || "") : ""
-                navUp: savePromptButton
-                navDown: saveWebhookButton
-            }
-            Components.Button {
-                id: saveWebhookButton
-                Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                enabled: rule !== null
-                text: qsTr("Save webhook URL")
-                trigger: function() {
-                    editRule("homeAssistantWebhookUrl", webhookInput.inputValue.trim());
-                    keyboard.hide();
-                }
-                KeyNavigation.up: webhookInput.inputField
                 KeyNavigation.down: deleteRuleButton
             }
             Components.Button {
@@ -313,7 +275,7 @@ Settings.Page {
                 variant: "destructive"
                 text: qsTr("Delete selected rule")
                 trigger: function() { settingsPage.removeRule(); }
-                KeyNavigation.up: saveWebhookButton
+                KeyNavigation.up: savePromptButton
             }
             Text {
                 Layout.fillWidth: true
@@ -325,8 +287,9 @@ Settings.Page {
                 color: colors.textSecondary
                 text: qsTr("Each rule applies only in its selected activity. Any selected sensor changing "
                            + "to On offers the keyboard once, until all sensors return to Off. "
-                           + "Text is submitted to all selected media players unless a Home Assistant Apple TV webhook is configured. "
-                           + "A webhook sends text to the Apple TV named in your HA automation. "
+                           + "For Apple TV, select its Home Assistant Remote entity. "
+                           + "The remote sends keyboard.text_set followed by the entered text using remote.send_cmd. "
+                           + "Other media-player integrations may accept keyboard.text_set directly. "
                            + "In multi-select lists, select entries to toggle them, then press Back.")
             }
         }
