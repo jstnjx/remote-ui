@@ -116,6 +116,7 @@ Rectangle {
     onCommandEntityIdChanged: if (!entitySelector) resolveTarget()
     onActivityEntityChanged: if (!entitySelector) resolveTarget()
     onEntityIdChanged: bindEntity()
+    onEntityObjChanged: lightPage = 0
     onWidgetActiveChanged: if (!widgetActive) endGesture()
 
     Connections {
