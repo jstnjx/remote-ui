@@ -134,7 +134,10 @@ Item {
         // UC's HA media_player entity does not implement keyboard.text_set
         // and cannot call arbitrary HA actions through entity commands.
         const endpoint = String(url || "").trim();
-        if (!/^https?:\\/\\/[^\\s]+\\/api\\/webhook\\/[^\\s/?#]+$/.test(endpoint)) {
+        if ((endpoint.indexOf("http://") !== 0 && endpoint.indexOf("https://") !== 0) ||
+                endpoint.indexOf("/api/webhook/") < 8 ||
+                endpoint.indexOf(" ") >= 0 ||
+                endpoint.endsWith("/api/webhook/")) {
             textEntry.showError(qsTr("Enter a valid Home Assistant webhook URL in keyboard settings."));
             return;
         }
@@ -142,7 +145,7 @@ Item {
         const serial = ++submitSerial;
         const request = new XMLHttpRequest();
         request.onreadystatechange = function() {
-            if (request.readyState !== XMLHttpRequest.DONE || serial !== submitSerial)
+            if (request.readyState !== 4 || serial !== submitSerial)
                 return;
             if (!textPopup.opened) return;
             if (request.status >= 200 && request.status < 300) {
