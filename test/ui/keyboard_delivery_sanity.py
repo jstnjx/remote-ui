@@ -63,6 +63,10 @@ assert 'const targets = keyboardTargets.length ? keyboardTargets : configuredTar
 # feedback and is connected to a native Apple TV Keyboard integration.
 assert 'function isNativeAppleTVKeyboard(target)' in bridge
 assert 'function matchingNativeKeyboard(target)' in bridge
+# 'native' is a reserved QML JavaScript token: qmlcachegen rejects
+# declarations such as 'const native = ...' with Expected token identifier.
+assert 'const native = ' not in bridge
+assert 'const nativeKeyboard = matchingNativeKeyboard(configured);' in bridge
 assert 'normalizeAppleTVName(candidate.name) !== wanted' in bridge
 assert 'return result || (candidates.length === 1 ? candidates[0] : null);' in bridge
 assert 'cmd = "native.search";' in bridge
