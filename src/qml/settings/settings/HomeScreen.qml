@@ -27,30 +27,17 @@ Settings.Page {
 
             Components.SettingRow {
                 title: qsTr("Use redesigned home screen")
-                help: qsTr("Show the single redesigned home layout. Turn this off to restore the original home screen.")
+                help: qsTr("Show the configured home page with a clock header, media strip and a single native entity list. Turn off to restore the original screen.")
                 Components.Switch {
                     id: enabledSwitch
                     icon: "uc:check"
                     checked: Config.redesignedHomeEnabled
                     trigger: function() { Config.redesignedHomeEnabled = !Config.redesignedHomeEnabled; }
                     highlight: activeFocus && ui.keyNavigationActive
-                    KeyNavigation.down: labelsSwitch
-                }
+                 }
             }
 
-            Components.SettingRow {
-                showDivider: false
-                title: qsTr("Show activity labels")
-                help: qsTr("Display the activity name below each launcher icon.")
-                Components.Switch {
-                    id: labelsSwitch
-                    icon: "uc:check"
-                    checked: Config.homeShowActivityLabels
-                    trigger: function() { Config.homeShowActivityLabels = !Config.homeShowActivityLabels; }
-                    highlight: activeFocus && ui.keyNavigationActive
-                    KeyNavigation.up: enabledSwitch
-                }
-            }
+
         }
     }
 }

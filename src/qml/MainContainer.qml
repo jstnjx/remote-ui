@@ -291,14 +291,8 @@ Item {
                         return;
                     }
 
-                    if (mainContainerRoot.redesignedHomeActive) {
-                        if (!redesignedHome.item.selectedActions.length ||
-                            redesignedHome.item.selectedIndex >= redesignedHome.item.selectedActions.length - 1)
-                            pages.incrementCurrentIndex();
-                        else
-                            redesignedHome.item.moveSelection(1);
-                        return;
-                    }
+                    // This home has one vertical entity list. LEFT/RIGHT retain
+                    // the same page-switching meaning as the original home.
                     pages.incrementCurrentIndex();
                 }
             },
@@ -313,10 +307,6 @@ Item {
                         return;
                     }
 
-                    if (mainContainerRoot.redesignedHomeActive) {
-                        redesignedHome.item.moveSelection(-1);
-                        return;
-                    }
                     pages.decrementCurrentIndex();
                 }
             },
@@ -395,7 +385,7 @@ Item {
                     }
 
                     if (mainContainerRoot.redesignedHomeActive) {
-                        redesignedHome.item.activateSelected();
+                        redesignedHome.item.activateSelected(false);
                         return;
                     }
 
@@ -435,7 +425,7 @@ Item {
                     }
 
                     if (mainContainerRoot.redesignedHomeActive) {
-                        redesignedHome.item.activateSelected();
+                        redesignedHome.item.activateSelected(true);
                         return;
                     }
 
@@ -494,6 +484,8 @@ Item {
                         return;
                     }
 
+                    if (mainContainerRoot.redesignedHomeActive) return;
+                    if (!currentEntity || !currentEntity.delegateItem) return;
                     if (currentEntity.delegateItem.groupObj) {
                         if (currentEntity.delegateItem.state === "closed") {
                             currentEntity.delegateItem.open();
@@ -513,6 +505,7 @@ Item {
                     }
                     if (mainContainerRoot.redesignedHomeActive) {
                         redesignedHome.item.selectedIndex = 0;
+                        redesignedHome.item.scrollToBeginning();
                         return;
                     }
                     pages.currentItem.currentIndex = 0;

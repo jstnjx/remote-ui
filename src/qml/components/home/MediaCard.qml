@@ -8,7 +8,7 @@ import "qrc:/components/entities/media_player" as MediaPlayerComponents
 Rectangle {
     id: card
     color: colors.surface
-    radius: ui.cornerRadiusSmall
+    radius: 0
     clip: true
 
     property var player: null
@@ -17,8 +17,7 @@ Rectangle {
     Row {
         id: content
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 12
+        spacing: 18
 
         Item {
             id: artworkSlot
@@ -29,7 +28,7 @@ Rectangle {
             MediaPlayerComponents.ImageLoader {
                 anchors.fill: parent
                 url: card.player && card.player.mediaImage ? card.player.mediaImage : ""
-                aspectFit: true
+                aspectFit: false
                 alignCentered: true
             }
             Components.Icon {
@@ -42,7 +41,7 @@ Rectangle {
         }
 
         Column {
-            width: Math.max(0, content.width - artworkSlot.width - content.spacing)
+            width: Math.max(0, content.width - artworkSlot.width - content.spacing - 12)
             anchors.verticalCenter: parent.verticalCenter
             spacing: 4
 
@@ -56,7 +55,7 @@ Rectangle {
             }
             Text {
                 width: parent.width
-                text: card.player ? card.player.mediaArtist || "" : ""
+                text: card.player ? card.player.mediaArtist || card.player.name || "" : ""
                 font: fonts.help()
                 color: colors.textSecondary
                 maximumLineCount: 1

@@ -7,25 +7,23 @@ import Config 1.0
 import Battery 1.0
 import Entity.Controller 1.0
 import Entity.Activity 1.0
+
 import "qrc:/components" as Components
 import "qrc:/components/home" as Home
 
-// A single optional home layout. The original first page stays loaded underneath.
+// Optional, single-layout redesigned home. The original Page stays loaded
+// below this surface, so disabling the setting restores it unchanged.
 Item {
     id: home
     width: parent ? parent.width : 480
     height: parent ? parent.height : 850
     clip: true
 
-    property var activityIds: []
-    property var activeActivity: null
-    property var mediaPlayer: null
+    readonly property var currentPage: containerMain.item ? containerMain.item.currentPage : null
+    readonly property string homeBackgroundImage: currentPage ? currentPage.homeBackgroundImage : ""
+    readonly property int rowCount: entityList.count
     property int selectedIndex: 0
-    readonly property var selectedActions: activityIds.map(function(id) {
-        return { type: "activity", id: id };
-    })
-    readonly property string homeBackgroundImage: containerMain.item && containerMain.item.currentPage
-                                                  ? containerMain.item.currentPage.homeBackgroundImage : ""
+    property var mediaPlayer: null
 
     function isMediaPlayer(id) {
         if (!id || id === "default") return null;
@@ -36,21 +34,18 @@ Item {
     function mediaForActivity(activity) {
         if (!activity) return null;
 
-        // Prefer the explicitly selected artwork/media source for this activity.
         const configured = Config.activityArtworkSources;
         let player = isMediaPlayer(configured ? configured[activity.id] : "");
         if (player) return player;
 
-        // The activity's linked media-player/slider entity is next.
         if (activity.sliderConfig) {
             player = isMediaPlayer(activity.sliderConfig.entityId);
             if (player) return player;
         }
 
-        // Match the media-player widgets used by the activity UI itself.
-        const activityPages = activity.ui && activity.ui.pages ? activity.ui.pages : [];
-        for (let i = 0; i < activityPages.length; ++i) {
-            const items = activityPages[i].items || [];
+        const pages = activity.ui && activity.ui.pages ? activity.ui.pages : [];
+        for (let i = 0; i < pages.length; ++i) {
+            const items = pages[i].items || [];
             for (let j = 0; j < items.length; ++j) {
                 if (items[j].type !== "media_player") continue;
                 player = isMediaPlayer(items[j].media_player_id);
@@ -58,7 +53,6 @@ Item {
             }
         }
 
-        // Finally, a media player explicitly included in this activity.
         const included = activity.includedEntities || [];
         for (let k = 0; k < included.length; ++k) {
             player = isMediaPlayer(included[k]);
@@ -67,38 +61,26 @@ Item {
         return null;
     }
 
-    function refresh() {
-        const ids = EntityController.getIdsByType("activity");
-        if (JSON.stringify(activityIds) !== JSON.stringify(ids))
-            activityIds = ids.slice();
+    // The default page already knows which running activities / players are
+    // on it, including activities inside configured groups. Do not use the
+    // global activity list: it ignores the page's configuration.
+    function refreshMedia() {
+        let player = null;
+        for (let i = 0; i < activePageItems.count; ++i) {
+            const delegate = activePageItems.itemAt(i);
+            const entity = delegate ? EntityController.get(delegate.entityId) : null;
+            if (!entity) continue;
 
-        let active = null;
-        for (let i = 0; i < ids.length; ++i) {
-            const entity = EntityController.get(ids[i]);
-            if (entity && entity.state === ActivityStates.On) {
-                active = entity;
+            if (entity.type === EntityTypes.Media_player) {
+                player = entity;
                 break;
             }
+            if (entity.type === EntityTypes.Activity && entity.state === ActivityStates.On) {
+                player = mediaForActivity(entity);
+                if (player) break;
+            }
         }
-        activeActivity = active;
-        mediaPlayer = mediaForActivity(active);
-        if (selectedIndex >= activityIds.length)
-            selectedIndex = Math.max(0, activityIds.length - 1);
-    }
-
-    function openEntity(id) {
-        const entity = EntityController.get(id);
-        if (!entity) {
-            EntityController.load(id);
-            return;
-        }
-        const url = EntityController.screenUrl(entity);
-        if (url.toString() !== "")
-            loadSecondContainer(url, {entityId: entity.id, entityObj: entity});
-    }
-
-    function openMedia() {
-        if (mediaPlayer) openEntity(mediaPlayer.id);
+        mediaPlayer = player;
     }
 
     function openSettings() {
@@ -106,60 +88,215 @@ Item {
             loadSecondContainer("qrc:/components/SettingsNew.qml");
     }
 
+    function openMedia() {
+        if (!mediaPlayer) return;
+        loadSecondContainer(EntityController.screenUrl(mediaPlayer),
+                            { "entityId": mediaPlayer.id, "entityObj": mediaPlayer });
+    }
+
     function ensureSelectedVisible() {
-        if (!visible || gridViewport.height <= 0) return;
-        const item = activityRepeater.itemAt(selectedIndex);
-        if (!item) return;
-        const top = item.mapToItem(gridContents, 0, 0).y;
-        const bottom = top + item.height;
-        if (top < gridViewport.contentY)
-            gridViewport.contentY = Math.max(0, top - 6);
-        else if (bottom > gridViewport.contentY + gridViewport.height)
-            gridViewport.contentY = Math.min(gridViewport.contentHeight - gridViewport.height,
-                                            bottom - gridViewport.height + 6);
+        if (!visible || rowCount === 0 || entityList.height <= 0) return;
+        const row = entityList.itemAtIndex(selectedIndex);
+        if (!row || !row.isGroup || !row.item || row.item.state !== "open") {
+            entityList.positionViewAtIndex(selectedIndex, ListView.Contain);
+            return;
+        }
+        const current = row.item.groups ? row.item.groups.currentItem : null;
+        if (!current) {
+            entityList.positionViewAtIndex(selectedIndex, ListView.Beginning);
+            return;
+        }
+        // An expanded group can exceed the list viewport. Keep the focused
+        // member in view instead of trying to fit the entire group row.
+        const y = current.mapToItem(entityList.contentItem, 0, 0).y;
+        const bottom = y + current.height;
+        if (y < entityList.contentY)
+            entityList.contentY = Math.max(0, y - 8);
+        else if (bottom > entityList.contentY + entityList.height)
+            entityList.contentY = Math.min(Math.max(0, entityList.contentHeight - entityList.height),
+                                           bottom - entityList.height + 8);
     }
 
     function moveSelection(step) {
-        if (!activityIds.length) return;
-        selectedIndex = (selectedIndex + step + activityIds.length) % activityIds.length;
+        if (rowCount === 0) return;
+        const row = entityList.itemAtIndex(selectedIndex);
+        if (row && row.isGroup && row.item && row.item.state === "open" && row.item.groups) {
+            const members = row.item.groups;
+            const nextMember = members.currentIndex + step;
+            if (nextMember >= 0 && nextMember < members.count) {
+                members.currentIndex = nextMember;
+                Qt.callLater(ensureSelectedVisible);
+                return;
+            }
+        }
+        selectedIndex = Math.max(0, Math.min(rowCount - 1, selectedIndex + step));
         Qt.callLater(ensureSelectedVisible);
     }
 
-    function activateSelected() {
-        if (activityIds.length)
-            openEntity(activityIds[selectedIndex]);
-    }
-
-    onSelectedIndexChanged: Qt.callLater(ensureSelectedVisible)
-    Component.onCompleted: refresh()
-
-    Connections {
-        target: EntityController
-        function onActivitiesChanged() { home.refresh(); }
-        function onEntityLoaded(success, entityId) {
-            if (success) home.refresh();
+    function activateSelected(longPress) {
+        if (rowCount === 0) return;
+        const row = entityList.itemAtIndex(selectedIndex);
+        if (!row || !row.item) return;
+        if (row.isGroup) {
+            if (row.item.state === "closed") {
+                if (Config.entityButtonFuncInverted === !!longPress) row.item.toggle();
+                else row.item.open();
+            } else {
+                const currentChild = row.item.groups ? row.item.groups.currentItem : null;
+                if (currentChild && currentChild.item) {
+                    if (Config.entityButtonFuncInverted === !!longPress)
+                        currentChild.item.control();
+                    else
+                        currentChild.item.open();
+                } else if (longPress) {
+                    row.item.close();
+                }
+            }
+        } else if (Config.entityButtonFuncInverted !== !!longPress) {
+            row.item.open();
+        } else {
+            row.item.control();
         }
     }
 
-    // State changes are delivered on entity objects; periodically reselect only
-    // the active source, without rebuilding an unchanged activities model.
+    function scrollToBeginning() {
+        if (entityList.count > 0) entityList.positionViewAtBeginning();
+    }
+
+    onSelectedIndexChanged: Qt.callLater(ensureSelectedVisible)
+    onCurrentPageChanged: {
+        selectedIndex = 0;
+        Qt.callLater(refreshMedia);
+    }
+    Component.onCompleted: Qt.callLater(refreshMedia)
+
+    Connections {
+        target: EntityController
+        ignoreUnknownSignals: true
+        function onActivitiesChanged() { home.refreshMedia(); }
+        function onEntityLoaded(success, id) {
+            if (success) home.refreshMedia();
+        }
+    }
+
     Timer {
         interval: 2000
-        running: home.visible
         repeat: true
-        onTriggered: home.refresh()
+        running: home.visible
+        onTriggered: home.refreshMedia()
+    }
+
+    // Mirrors the stock first page's running-entities model. Repeater items
+    // expose the PageItemList role without requiring a new Core-API endpoint.
+    Item {
+        visible: false
+        Repeater {
+            id: activePageItems
+            model: home.currentPage ? home.currentPage.homePageActivities : null
+            delegate: Item {
+                property string entityId: pageItemId
+            }
+            onItemAdded: Qt.callLater(home.refreshMedia)
+            onItemRemoved: Qt.callLater(home.refreshMedia)
+        }
     }
 
     Rectangle {
         anchors.fill: parent
-        color: colors.bg
+        color: colors.black
     }
+    // Block touch-through to the original Page behind the optional home.
     MouseArea { anchors.fill: parent }
+
+    // Status bar: one page title, battery percentage and settings. The clock
+    // appears only in the image header, never in this bar.
+    Rectangle {
+        id: topBar
+        z: 1
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+        height: 52
+        color: colors.black
+
+        Row {
+            anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 20 }
+            spacing: 12
+            Components.Icon {
+                icon: "uc:house"
+                size: 28
+                color: colors.offwhite
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                text: home.currentPage ? home.currentPage.title : qsTr("Home")
+                width: Math.min(180, Math.max(90, home.width - 260))
+                font: fonts.label()
+                color: colors.offwhite
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        Row {
+            anchors { right: parent.right; verticalCenter: parent.verticalCenter; rightMargin: 12 }
+            spacing: 9
+
+            Item {
+                width: 30
+                height: 30
+                anchors.verticalCenter: parent.verticalCenter
+                Rectangle {
+                    id: batteryOutline
+                    width: 25; height: 15; radius: 2
+                    anchors.centerIn: parent
+                    anchors.horizontalCenterOffset: -2
+                    color: colors.transparent
+                    border { color: colors.offwhite; width: 2 }
+                    Rectangle {
+                        x: 3; y: 3
+                        width: (batteryOutline.width - 6) * Math.max(0, Math.min(100, Battery.level)) / 100
+                        height: batteryOutline.height - 6
+                        color: Battery.low ? colors.red : colors.offwhite
+                    }
+                }
+                Rectangle {
+                    width: 3; height: 7
+                    color: colors.offwhite
+                    anchors { left: batteryOutline.right; verticalCenter: batteryOutline.verticalCenter }
+                }
+            }
+            Text {
+                text: Battery.level + "%"
+                font: fonts.help()
+                color: colors.offwhite
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Rectangle {
+                width: 1; height: 28
+                color: colors.light
+                opacity: 0.4
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Item {
+                width: 42; height: 42
+                anchors.verticalCenter: parent.verticalCenter
+                Components.Icon {
+                    anchors.centerIn: parent
+                    icon: "uc:gear"
+                    color: colors.offwhite
+                    size: 28
+                }
+                Components.HapticMouseArea {
+                    anchors.fill: parent
+                    onClicked: home.openSettings()
+                }
+            }
+        }
+    }
 
     Item {
         id: hero
-        anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: Math.min(320, Math.max(220, home.height * 0.39))
+        anchors { top: topBar.bottom; left: parent.left; right: parent.right }
+        height: Math.min(220, Math.max(165, home.height * 0.235))
         clip: true
 
         Image {
@@ -177,150 +314,41 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: colors.black
-            opacity: 0.4
+            opacity: 0.28
             visible: heroImage.visible
         }
 
         LinearGradient {
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            height: Math.min(140, hero.height * 0.5)
+            height: Math.min(86, hero.height * 0.45)
             visible: heroImage.visible
             start: Qt.point(0, 0)
             end: Qt.point(0, height)
             gradient: Gradient {
                 GradientStop { position: 0; color: colors.transparent }
-                GradientStop { position: 1; color: colors.bg }
-            }
-        }
-
-        Row {
-            id: rightHeader
-            anchors { top: parent.top; right: parent.right; topMargin: 26; rightMargin: 20 }
-            height: 46
-            spacing: 8
-
-            Item {
-                width: 31
-                height: 30
-                anchors.verticalCenter: parent.verticalCenter
-
-                Rectangle {
-                    id: batteryOutline
-                    width: 26; height: 16; radius: 3
-                    anchors.centerIn: parent
-                    anchors.horizontalCenterOffset: -2
-                    color: colors.transparent
-                    border { color: colors.offwhite; width: 2 }
-
-                    Rectangle {
-                        x: 3; y: 3
-                        width: (batteryOutline.width - 6) * Math.max(0, Math.min(100, Battery.level)) / 100
-                        height: batteryOutline.height - 6
-                        radius: 1
-                        color: Battery.low ? colors.red : colors.offwhite
-                    }
-                }
-                Rectangle {
-                    width: 3; height: 7; radius: 1
-                    anchors { left: batteryOutline.right; verticalCenter: batteryOutline.verticalCenter }
-                    color: colors.offwhite
-                }
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: Battery.level + "%"
-                font: fonts.help()
-                color: colors.offwhite
-            }
-
-            Item {
-                width: 46; height: 46
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: width / 2
-                    color: colors.surface
-                    opacity: 0.85
-                }
-                Components.Icon {
-                    anchors.centerIn: parent
-                    icon: "uc:gear"
-                    size: 26
-                    color: colors.offwhite
-                }
-                Components.HapticMouseArea {
-                    anchors.fill: parent
-                    onClicked: home.openSettings()
-                }
+                GradientStop { position: 1; color: colors.black }
             }
         }
 
         Column {
-            anchors {
-                left: parent.left
-                right: rightHeader.left
-                top: parent.top
-                leftMargin: 20
-                rightMargin: 8
-                topMargin: 29
-            }
+            anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 22 }
             spacing: 0
-
             Text {
-                width: parent.width
-                height: 76
                 text: Qt.formatTime(ui.time, Config.clock24h ? "HH:mm" : "hh:mm AP")
-                font: fonts.display(62)
-                fontSizeMode: Text.Fit
-                minimumPixelSize: 32
-                verticalAlignment: Text.AlignVCenter
+                width: Math.max(0, hero.width - 44)
+                font: fonts.display(65)
                 color: colors.offwhite
                 elide: Text.ElideRight
             }
             Text {
-                width: parent.width
-                text: Qt.formatDate(ui.time, "ddd, d MMM")
-                font: fonts.value()
-                color: colors.offwhite
-                opacity: 0.85
-                maximumLineCount: 1
-                elide: Text.ElideRight
-            }
-        }
-    }
-
-    Flickable {
-        id: gridViewport
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom
-                  leftMargin: 20; rightMargin: 20; bottomMargin: 24 }
-        height: Math.min(gridContents.implicitHeight,
-                         Math.max(0, home.height - hero.height - 24 -
-                                  (home.mediaPlayer ? 116 : 24)))
-        contentWidth: width
-        contentHeight: gridContents.implicitHeight
-        interactive: contentHeight > height
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
-
-        Grid {
-            id: gridContents
-            width: gridViewport.width
-            columns: 2
-            spacing: 12
-
-            Repeater {
-                id: activityRepeater
-                model: home.activityIds
-
-                delegate: Home.ActivityTile {
-                    width: Math.max(0, (gridContents.width - gridContents.spacing) / 2)
-                    height: 104
-                    entityId: modelData
-                    showLabel: Config.homeShowActivityLabels
-                    selected: index === home.selectedIndex && ui.keyNavigationActive
-                    onTriggered: home.openEntity(id)
+                // Read the time property so the date refreshes at midnight too.
+                text: {
+                    const tick = ui.time;
+                    return Qt.formatDate(new Date(), "ddd, d MMM");
                 }
+                font: fonts.help()
+                color: colors.offwhite
+                opacity: 0.8
             }
         }
     }
@@ -331,19 +359,81 @@ Item {
         player: home.mediaPlayer
         openPlayer: function() { home.openMedia(); }
         anchors {
-            left: gridViewport.left
-            right: gridViewport.right
-            bottom: gridViewport.top
-            bottomMargin: 16
+            top: hero.bottom
+            left: parent.left
+            right: parent.right
+            topMargin: visible ? 12 : 0
+            leftMargin: 10
+            rightMargin: 10
         }
-        height: 84
+        height: visible ? 100 : 0
+    }
+
+    ListView {
+        id: entityList
+        anchors {
+            top: mediaStrip.bottom
+            bottom: parent.bottom
+            left: parent.left
+            right: parent.right
+            topMargin: home.mediaPlayer ? 12 : 10
+            bottomMargin: 8
+            leftMargin: 10
+            rightMargin: 10
+        }
+        model: home.currentPage ? home.currentPage.items : null
+        currentIndex: home.selectedIndex
+        keyNavigationEnabled: false
+        maximumFlickVelocity: 6000
+        flickDeceleration: 1000
+        highlightMoveDuration: 200
+        spacing: 6
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        cacheBuffer: 500
+
+        onCountChanged: {
+            if (home.selectedIndex >= count)
+                home.selectedIndex = Math.max(0, count - 1);
+        }
+
+        delegate: Loader {
+            id: rowLoader
+            // Leave Loader geometry implicit, as on the stock Page delegate.
+            // Native entity/group items determine their own width and height.
+            // Let Loader follow the native entity/group item's own height.
+            // An explicit reciprocal height binding would prevent group expansion.
+            asynchronous: true
+            property bool isCurrentItem: ListView.isCurrentItem
+            property bool editMode: false
+            property bool isGroup: pageItemType !== 0
+
+            Component.onCompleted: {
+                if (pageItemType === 0) {
+                    setSource("qrc:/components/entities/Base.qml", {
+                        "entityId": pageItemId, "redesignedHomeStyle": true
+                    });
+                } else {
+                    setSource("qrc:/components/group/Base.qml", {
+                        "groupId": pageItemId, "redesignedHomeStyle": true
+                    });
+                }
+            }
+            onStatusChanged: {
+                if (status === Loader.Error)
+                    console.warn("Redesigned home row failed:", pageItemId);
+            }
+        }
     }
 
     Text {
-        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 36 }
-        visible: home.activityIds.length === 0
-        text: qsTr("No configured activities")
+        anchors.centerIn: entityList
+        width: Math.max(0, entityList.width - 24)
+        visible: entityList.count === 0
+        text: qsTr("Configure entities on this page in the Web Configurator")
         font: fonts.help()
+        wrapMode: Text.WordWrap
+        horizontalAlignment: Text.AlignHCenter
         color: colors.textSecondary
     }
 }

@@ -25,15 +25,19 @@ import "qrc:/components/entities/media_player" as MediaPlayerComponents
 
 Rectangle {
     id: entityBaseContainer
-    width: isInGroup ? ui.width - 40 : ui.width - 20; height: 130
-    color: colors.black
+    width: isInGroup ? ui.width - 40 : ui.width - 20
+    height: redesignedHomeStyle ? 94 : 130
+    color: redesignedHomeStyle ? colors.surface : colors.black
     opacity: currentEntityObj.enabled ? 1 : 0.5
-    radius: ui.cornerRadiusSmall
+    radius: redesignedHomeStyle ? 0 : ui.cornerRadiusSmall
     border {
         color: isInGroup && !editMode ? colors.divider : colors.transparent
         width: 1
     }
 
+    // The reference home uses the stock entity behavior with square, compact rows.
+    // This is opt-in; the default page retains its original styling.
+    property bool redesignedHomeStyle: false
     property string entityId
     property QtObject entityObjDummy: QtObject {
         property string name
@@ -416,6 +420,7 @@ Rectangle {
     Components.Selectable {
         id: selection
         style: "fill"
+        radius: redesignedHomeStyle ? 0 : ui.cornerRadiusSmall
         // in the edit mode too: the fill marks the selection, the page adds the ring while a tile is held (Q-5)
         selected: entityBaseContainer.isSelected
     }
@@ -460,7 +465,7 @@ Rectangle {
         icon: hasMediaImage ? "" : currentEntityObj.icon
         suffix: currentEntityObj.stateAsString
         anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter; }
-        size: 100
+        size: redesignedHomeStyle ? 66 : 100
         visible: currentEntityObj.enabled
         opacity: entityBaseContainer.iconOn ? 1 : 0.4
 
@@ -478,7 +483,7 @@ Rectangle {
 
     MediaPlayerComponents.ImageLoader {
         id: imageClosed
-        width: 100
+        width: redesignedHomeStyle ? 66 : 100
         height: width
         anchors.centerIn: icon
         opacity: visible ? 1 : 0
@@ -531,7 +536,7 @@ Rectangle {
         id: titleContainer
 
         spacing: 0
-        anchors { left: icon.right; leftMargin: 20; right: parent.right; rightMargin: editMode ? 100 : 20; verticalCenter: parent.verticalCenter; }
+        anchors { left: icon.right; leftMargin: 20; right: parent.right; rightMargin: editMode ? 100 : (redesignedHomeStyle ? 44 : 20); verticalCenter: parent.verticalCenter; }
 
         Text {
             id: titleText
@@ -543,7 +548,7 @@ Rectangle {
             maximumLineCount: 2
             elide: Text.ElideRight
             color: colors.offwhite
-            font: fonts.primaryFont(30)
+            font: fonts.primaryFont(redesignedHomeStyle ? 27 : 30)
             lineHeight: 0.8
         }
 
@@ -572,6 +577,16 @@ Rectangle {
                 visible: currentEntityObj.stateInfo !== ""
             }
         }
+    }
+
+    // Reference-style trailing chevron: the original entity remains in charge
+    // of tap, keypad, state, and unavailable-entity behavior.
+    Components.Icon {
+        icon: "uc:chevron-right"
+        size: 24
+        color: colors.light
+        anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+        visible: redesignedHomeStyle
     }
 
     Components.PopupMenu {

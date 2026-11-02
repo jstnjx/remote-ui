@@ -11,10 +11,13 @@ import "qrc:/components" as Components
 
 Rectangle {
     id: container
-    width: ui.width - 20; height: groups.count * 140 + title.height
-    border { color: colors.divider; width: 1 }
-    radius: ui.cornerRadiusSmall
+    width: ui.width - 20
+    height: redesignedHomeStyle ? 94 : groups.count * 140 + title.height
+    border { color: colors.divider; width: redesignedHomeStyle ? 0 : 1 }
+    radius: redesignedHomeStyle ? 0 : ui.cornerRadiusSmall
     clip: true
+
+    property bool redesignedHomeStyle: false
 
     state: "closed"
 
@@ -22,14 +25,14 @@ Rectangle {
         State {
             name: "open"
             PropertyChanges {target: groups; opacity: 1 }
-            PropertyChanges {target: container; height:  groups.count * 140 + titleContainer.height + 40 + (editMode ? 20 : 0); color: colors.black }
-            PropertyChanges {target: titleContainer; height: 120 }
+            PropertyChanges {target: container; height: redesignedHomeStyle ? 94 + groups.count * 100 + 12 : groups.count * 140 + titleContainer.height + 40 + (editMode ? 20 : 0); color: redesignedHomeStyle ? colors.surface : colors.black }
+            PropertyChanges {target: titleContainer; height: redesignedHomeStyle ? 94 : 120 }
         },
         State {
             name: "closed"
             PropertyChanges {target: groups; opacity: 0 }
-            PropertyChanges {target: container; height: 130; color: colors.black }
-            PropertyChanges {target: titleContainer; height: 130 }
+            PropertyChanges {target: container; height: redesignedHomeStyle ? 94 : 130; color: redesignedHomeStyle ? colors.surface : colors.black }
+            PropertyChanges {target: titleContainer; height: redesignedHomeStyle ? 94 : 130 }
         }
     ]
 
@@ -155,6 +158,7 @@ Rectangle {
     Components.Selectable {
         id: selection
         style: "fill"
+        radius: redesignedHomeStyle ? 0 : ui.cornerRadiusSmall
         selected: container.isSelected && container.state == "closed"
     }
 
@@ -162,7 +166,7 @@ Rectangle {
         anchors.fill: parent
         // the open group is a card
         color: colors.surface
-        radius: ui.cornerRadiusSmall
+        radius: redesignedHomeStyle ? 0 : ui.cornerRadiusSmall
         opacity: container.state == "open" ? 1 : 0
 
         Behavior on opacity {
@@ -196,7 +200,7 @@ Rectangle {
         color: colors.offwhite
         icon: "uc:arrow-up"
         anchors { left: parent.left; leftMargin: 10; verticalCenter: titleContainer.verticalCenter; }
-        size: container.state == "open" ? 60 : 100
+        size: redesignedHomeStyle ? 66 : (container.state == "open" ? 60 : 100)
         rotation: container.state == "open" ? 0 : 180
         opacity: groups.count === 0 ? 0.2 : 1
 
@@ -225,7 +229,7 @@ Rectangle {
             verticalAlignment: Text.AlignVCenter
             color: colors.offwhite
             anchors { verticalCenter: parent.verticalCenter; verticalCenterOffset: container.state == "closed" ? -15 : 0 }
-            font: fonts.primaryFont(30)
+            font: fonts.primaryFont(redesignedHomeStyle ? 27 : 30)
         }
 
         Text {
@@ -259,7 +263,7 @@ Rectangle {
 
     ListView {
         id: groups
-        width: parent.width-20; height: groups.count * 140
+        width: parent.width-20; height: groups.count * (redesignedHomeStyle ? 100 : 140)
         anchors { top: titleContainer.bottom; horizontalCenter: parent.horizontalCenter }
 
         maximumFlickVelocity: 6000
@@ -271,7 +275,7 @@ Rectangle {
 
         delegate: groupItem
 
-        spacing: 10
+        spacing: redesignedHomeStyle ? 6 : 10
     }
 
     ButtonGroup {
@@ -294,11 +298,12 @@ Rectangle {
             id: groupItemLoader
             asynchronous: true
             enabled: !editMode
+            width: groups.width
 
             property bool isCurrentItem: ListView.isCurrentItem
 
             Component.onCompleted: {
-                this.setSource("qrc:/components/entities/Base.qml", { "parentInputController": containerMain, "entityId":groupItemId, "isInGroup": true, "parentGroupId": groupId});
+                this.setSource("qrc:/components/entities/Base.qml", { "parentInputController": containerMain, "entityId":groupItemId, "isInGroup": true, "parentGroupId": groupId, "redesignedHomeStyle": container.redesignedHomeStyle});
             }
 
             onStatusChanged: {
