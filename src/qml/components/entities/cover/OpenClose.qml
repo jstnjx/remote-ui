@@ -12,12 +12,15 @@ import "qrc:/components" as Components
 
 ColumnLayout {
     id: openCloseRoot
-    spacing: 20
+    // Reused unchanged by native detail screens; inline cards can opt into
+    // the same native buttons with smaller typography and gaps.
+    property bool compact: false
+    spacing: compact ? 6 : 20
 
     Item {
         Layout.fillWidth: true
         implicitHeight: childrenRect.height
-        visible: openCloseFeature.visible
+        visible: openCloseRoot.visible
 
         Text {
             //: State of the cover entity (eg. blinds, shades)
@@ -37,7 +40,7 @@ ColumnLayout {
             }
 
             color: colors.offwhite
-            font: fonts.primaryFont(90)
+            font: fonts.primaryFont(openCloseRoot.compact ? 32 : 90)
         }
     }
 
