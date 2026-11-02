@@ -267,9 +267,17 @@ EntityComponents.BaseDetail {
                                     const rule = rules[i];
                                     if (rule.activityId !== activityBase.entityId) continue;
                                     const targets = rule.mediaPlayerIds || [];
+                                    // Prefer the dedicated Apple TV Keyboard entity:
+                                    // its media-player Search action performs real
+                                    // pyatv.keyboard.text_set rather than HA's
+                                    // unsupported remote.send_command variant.
                                     for (let j = 0; j < targets.length; ++j) {
                                         const candidate = EntityController.get(targets[j]);
-                                        if (candidate && candidate.type === EntityTypes.Remote) {
+                                        if (!candidate) continue;
+                                        const id = String(candidate.id || "").toLowerCase();
+                                        const name = String(candidate.name || "").toLowerCase();
+                                        if (id.indexOf("appletv_keyboard") >= 0 ||
+                                                name.indexOf("apple tv keyboard -") === 0) {
                                             ruleTarget = targets[j];
                                             break;
                                         }

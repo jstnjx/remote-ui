@@ -90,6 +90,20 @@ Settings.Page {
         return result;
     }
 
+    function keyboardTargetLabel(id, part) {
+        if (part !== "mediaPlayerIds") return "";
+        const item = EntityController.get(id);
+        const key = String(id || "").toLowerCase();
+        const integration = String(item ? item.integrationId : "").toLowerCase();
+        const name = String(item ? item.name : "").toLowerCase();
+        if (key.indexOf("appletv_keyboard") >= 0 ||
+                integration.indexOf("appletv_keyboard") >= 0 ||
+                name.indexOf("apple tv keyboard -") === 0)
+            return qsTr("Apple TV Keyboard: ");
+        return item && item.getTypeAsString() === "remote"
+                ? qsTr("Remote: ") : qsTr("Media player: ");
+    }
+
     function openPicker(part) {
         if (!rule) return;
         pickerModel.clear();
@@ -102,11 +116,9 @@ Settings.Page {
         if (!multiple) pickerModel.append({name: qsTr("None"), value: ""});
         for (let i = 0; i < ids.length; ++i) {
             const checked = selected.indexOf(ids[i]) >= 0;
-            const item = EntityController.get(ids[i]);
-            const typeLabel = item && item.getTypeAsString() === "remote" ?
-                              qsTr("Remote: ") : part === "mediaPlayerIds" ?
-                              qsTr("Media player: ") : "";
-            pickerModel.append({name: (checked ? "✓  " : "") + typeLabel + nameOf(ids[i]), value: ids[i]});
+            pickerModel.append({name: (checked ? "✓  " : "") +
+                                     keyboardTargetLabel(ids[i], part) + nameOf(ids[i]),
+                                value: ids[i]});
         }
         selectionHandler = function(value) {
             if (!multiple) {
@@ -121,10 +133,7 @@ Settings.Page {
                     const item = pickerModel.get(j);
                     pickerModel.setProperty(j, "name",
                                             ((chosen.indexOf(item.value) >= 0) ? "✓  " : "") +
-                                            (part === "mediaPlayerIds" ?
-                                             ((EntityController.get(item.value) &&
-                                               EntityController.get(item.value).getTypeAsString() === "remote")
-                                              ? qsTr("Remote: ") : qsTr("Media player: ")) : "") +
+                                            keyboardTargetLabel(item.value, part) +
                                             nameOf(item.value));
                 }
                 if (pickerLoader.item) pickerLoader.item.popupListmodel.reload();
@@ -287,9 +296,9 @@ Settings.Page {
                 color: colors.textSecondary
                 text: qsTr("Each rule applies only in its selected activity. Any selected sensor changing "
                            + "to On offers the keyboard once, until all sensors return to Off. "
-                           + "For Apple TV, select its Home Assistant Remote entity. "
-                           + "The remote sends keyboard.text_set followed by the entered text using remote.send_cmd. "
-                           + "Other media-player integrations may accept keyboard.text_set directly. "
+                           + "For Apple TV, select the Apple TV Keyboard media-player entity (Apple TV Keyboard:). "
+                           + "Its Search action sends text directly through the Apple TV Companion connection. "
+                           + "Home Assistant Apple TV Remote cannot send keyboard text using remote.send_command. "
                            + "In multi-select lists, select entries to toggle them, then press Back.")
             }
         }

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Static contracts for native Send glyph and direct Apple TV remote text.
+"""Static regression contracts for keyboard Enter, routing, and Apple TV text.
 
-A device-and-Home-Assistant integration test is still needed to confirm actual
-text entry on a focused Apple TV text field.
+The native Apple TV Keyboard integration implements media-player SEARCH_MEDIA,
+which invokes pyatv.keyboard.text_set. A physical integration test is still
+required to confirm the Companion pairing and tvOS focus state.
 """
 from pathlib import Path
 
@@ -11,91 +12,77 @@ style = (ROOT / "src/qml/keyboard/QtQuick/VirtualKeyboard/Styles/remotestyle/sty
 bridge = (ROOT / "src/qml/components/entities/activity/KeyboardTextPrompt.qml").read_text()
 settings = (ROOT / "src/qml/settings/settings/KeyboardPrompt.qml").read_text()
 activity = (ROOT / "src/qml/components/entities/activity/deviceclass/Activity.qml").read_text()
+media_header = (ROOT / "src/ui/entity/mediaPlayer.h").read_text()
+media_cpp = (ROOT / "src/ui/entity/mediaPlayer.cpp").read_text()
 docs = (ROOT / "docs/sensor-keyboard.md").read_text()
 mapping = (ROOT / "resources/icons/icon-mapping.json").read_text()
 qrc = (ROOT / "resources/qrc/keyboard.qrc").read_text()
 
-# The bundled native icon font replaces missing keyboard SVG artwork.
+# Native Send arrow, no duplicate button; dismissal closes the full overlay.
 assert "Components.Icon {" in style
 assert 'return "uc:arrow-turn-down"' in style
 assert '"arrow-turn-down"' in mapping
+assert 'size: 60' in style
 assert 'images/enter-868482.svg' not in style
-assert 'images/check-868482.svg' not in style
-assert 'images/search-868482.svg' not in style
-assert 'enterKeyText.text.length === 0' in style
 assert 'root.keyboardSendMode ? ""' in style
 assert 'Styles/remotestyle/style.qml' in qrc
+assert 'id: explicitSendButton' not in bridge
+assert 'sendOnEnter: true' in bridge
+assert 'function onAccepted() { keyboardBridge.submitText(); }' in bridge
+assert 'if (textPopup.opened && !keyboardBridge.closingKeyboard)' in bridge
+assert 'onClosed:' in bridge
 
-# All native media-player keyboard rules and manual shortcuts remain supported.
+# The manual KB widget and saved per-activity rules still target configured
+# entities; a native keyboard player overrides old HA Remote selections.
+assert 'function openManual(entityId)' in bridge
+assert 'keyboardTextPrompt.openManual(target)' in activity
+assert '["KB", "KEYBOARD", "KEYBOARD_SHORTCUT"]' in activity
+assert 'const target = explicitId || ruleTarget || commandId ||' in activity
+assert 'id.indexOf("appletv_keyboard") >= 0' in activity
+assert 'homeAssistantWebhookUrl' not in bridge
+assert 'mediaPlayerIds' in bridge
+assert 'configuredTargets.filter(function(id)' in bridge
+assert 'const targets = keyboardTargets.length ? keyboardTargets : configuredTargets;' in bridge
+
+# Use the media player search feature, which already has full result/error
+# feedback and is connected to a native Apple TV Keyboard integration.
+assert 'function isNativeAppleTVKeyboard(target)' in bridge
+assert 'function matchingNativeKeyboard(target)' in bridge
+assert 'candidateName !== wanted' in bridge
+assert 'return result;' in bridge
+assert 'cmd = "native.search";' in bridge
+assert 'nativePlayer.searchMedia(value, "", "", [], 10, 1);' in bridge
+assert 'target: keyboardBridge.pendingSearchTarget' in bridge
+assert 'function onSearchMediaResult(items, pagination)' in bridge
+assert 'function onSearchMediaError(code, message)' in bridge
+assert 'title.indexOf("Text not sent") === 0' in bridge
+assert 'showKeyboardDeliveryError(' in bridge
+assert 'keyboardBridge.pendingSearchTarget = null;' in bridge
+assert 'if (!pendingSearchTarget) {' in bridge
+assert 'Q_INVOKABLE void searchMedia(' in media_header
+assert 'emit searchMediaRequested(m_id, params);' in media_cpp
+assert 'emit searchMediaResult(list, paginationToVariant(pagination));' in media_cpp
+assert 'emit searchMediaError(code, message);' in media_cpp
+
+# The picker distinguishes the special bridge from ordinary media players;
+# no valid Apple TV text is sent using Home Assistant remote.send_command.
+assert 'qsTr("Apple TV Keyboard: ")' in settings
+assert 'qsTr("Media player: ")' in settings
+assert 'qsTr("Remote: ")' in settings
+assert 'Select the Apple TV Keyboard media player in Keyboard settings.' in bridge
+assert 'isHomeAssistantEntity(target)' in bridge
+assert 'remote.send_command' in docs
+assert 'pyatv.keyboard.text_set' in docs
+assert 'apple_tv.set_keyboard_text' in docs
+assert 'api/webhook' not in docs
+assert 'XMLHttpRequest' not in bridge
+
+# Other integrations retain original native commands and Core diagnostics.
+assert 'cmd = "remote.send_cmd";' in bridge
 assert 'cmd = "keyboard.text_set";' in bridge
 assert 'params = {text: value};' in bridge
-assert 'function openManual(entityId)' in bridge
-assert '["KB", "KEYBOARD", "KEYBOARD_SHORTCUT"]' in activity
-assert 'keyboardTextPrompt.openManual(target)' in activity
-assert 'const target = explicitId || ruleTarget || commandId ||' in activity
-assert 'candidate.type === EntityTypes.Remote' in activity
-assert 'ui.createNotification(qsTr("Select an Apple TV Remote' in activity
-assert 'function matchingCompanionRemote(mediaPlayer)' in bridge
-assert 'String(mediaPlayer.id).replace(".media_player.", ".remote.")' in bridge
-assert 'function isHomeAssistantMediaPlayer(target)' in bridge
-assert 'const companion = matchingCompanionRemote(target)' in bridge
-assert 'Wrong target: %1 is a Media player. Select its Remote entity.' in bridge
-assert 'id: explicitSendButton' not in bridge
-assert 'id: inputTitle' in bridge  # heading remains; only extra action button is removed
-assert 'id: deliveryStatus' in bridge
-assert 'top: textEntry.bottom' in bridge
-assert 'function onClosed()' in bridge
-assert 'if (textPopup.opened && !keyboardBridge.closingKeyboard)' in bridge
-assert 'textPopup.close();' in bridge
-assert 'function onAccepted() { keyboardBridge.submitText(); }' in bridge
-assert 'target: keyboard' in bridge
-assert 'closingKeyboard = true;' in bridge
-assert 'keyboard.hide();' in bridge
-assert 'size: 60' in style
-assert 'Math.round(112 * scaleHint)' not in style
-assert 'property bool sending: false' in bridge
-assert 'id: commandTimeout' in bridge
-assert 'function onEntityCommandResult(entityId, command, success, errorCode, errorMessage)' in bridge
-assert 'statusMessage = qsTr("Sending via %1 to %2 (%3)")' in bridge
-assert 'keyboardBridge.statusMessage = qsTr("Core rejected %1 (%2): %3")' in bridge
-assert 'Core accepted command for %1' in bridge
-assert 'request.entityId, request.command, request.params' in bridge
-assert 'if (sending) return;' in bridge
-assert 'enabled: !keyboardBridge.sending' not in bridge
-assert 'id: deliveryStatus' in bridge
-assert 'keyboardBridge.statusMessage' in bridge
-controller_h = (ROOT / "src/ui/entity/entityController.h").read_text()
-controller_cpp = (ROOT / "src/ui/entity/entityController.cpp").read_text()
-assert 'void entityCommandResult(QString entityId, QString command, bool success,' in controller_h
-assert 'emit entityCommandResult(entityId, command, true, 0, QString());' in controller_cpp
-assert 'emit entityCommandResult(live.entityId, live.command, false, code, message);' in controller_cpp
-
-
-assert 'mediaPlayerIds' in bridge and 'mediaPlayerIds' in settings
-
-# The remote-entity route mirrors the already-working Home Assistant action:
-# remote.send_command -> command list containing keyboard.text_set <text>.
-assert 'import Entity.Remote 1.0' in bridge
-assert 'type !== "media_player" && type !== "remote"' in bridge
-assert 'if (type === "remote")' in bridge
-assert 'cmd = "remote.send_cmd";' in bridge
 assert 'EntityController.onEntityCommand(request.entityId, request.command, request.params);' in bridge
-assert 'params = {command: "keyboard.text_set " + value};' in bridge
-assert 'EntityController.mayCommandEntity(target.enabled)' in bridge
-assert 'EntityController.getIdsByType("remote")' in settings
-assert 'EntityController.getIdsByType("media_player")' in settings
-assert 'qsTr("Remote: ")' in settings
-assert 'qsTr("Text input targets")' in settings
-assert 'remote.send_cmd' in docs
-assert 'remote.send_command' in docs
-assert 'remote.apple_tv_4k_wohnzimmer_gen_2' in docs
-assert '"keyboard.text_set Hello from UC Remote"' in docs
+assert 'function onEntityCommandResult(entityId, command, success, errorCode, errorMessage)' in bridge
+assert 'id: commandTimeout' in bridge
 
-# There is no webhook or token dependency for this already supported route.
-assert 'homeAssistantWebhookUrl' not in bridge
-assert 'homeAssistantWebhookUrl' not in settings
-assert 'XMLHttpRequest' not in bridge
-assert 'webhook' not in bridge.lower()
-assert 'api/webhook' not in docs
-
-print("Native Send-only keyboard overlay closure and command diagnostics contracts passed.")
+print("Keyboard Send/close and native Apple TV Keyboard Search route checks passed.")

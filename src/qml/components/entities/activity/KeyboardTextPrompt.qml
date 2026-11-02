@@ -22,6 +22,9 @@ Item {
     property bool manualMode: false
     property bool closingKeyboard: false
     property bool sending: false
+    // Search results are delivered asynchronously by the native Apple TV
+    // Keyboard media-player integration, after the on-screen keyboard closes.
+    property var pendingSearchTarget: null
     property var pendingTargetIds: []
     property int succeededCommands: 0
     property string statusMessage: ""
@@ -125,22 +128,65 @@ Item {
         textPopup.open();
     }
 
-    function matchingCompanionRemote(mediaPlayer) {
-        if (!mediaPlayer || !mediaPlayer.id) return null;
-        // Both entities from the same HA integration use the same suffix:
-        // integration.main.media_player.apple_tv -> integration.main.remote.apple_tv
-        const remoteId = String(mediaPlayer.id).replace(".media_player.", ".remote.");
-        if (remoteId === mediaPlayer.id) return null;
-        const remote = EntityController.get(remoteId);
-        return remote && remote.getTypeAsString() === "remote" ? remote : null;
+
+    function isNativeAppleTVKeyboard(target) {
+        if (!target || target.getTypeAsString() !== "media_player") return false;
+        const id = String(target.id || "").toLowerCase();
+        const integration = String(target.integrationId || "").toLowerCase();
+        const name = String(target.name || "").toLowerCase();
+        return integration.indexOf("appletv_keyboard") >= 0 ||
+               id.indexOf("appletv_keyboard") >= 0 ||
+               name.indexOf("apple tv keyboard -") === 0;
     }
 
-    function isHomeAssistantMediaPlayer(target) {
+    function isHomeAssistantEntity(target) {
+        if (!target) return false;
         const id = String(target.id || "").toLowerCase();
         const integration = String(target.integrationId || "").toLowerCase();
         return /home[_-]?assistant|homeassistant/.test(id) ||
                /home[_-]?assistant|homeassistant/.test(integration);
     }
+
+    function normalizeAppleTVName(name) {
+        return String(name || "").toLowerCase()
+            .replace(/^apple\s*tv\s*keyboard\s*[-:–]\s*/, "")
+            .replace(/[^a-z0-9]+/g, "");
+    }
+
+    function matchingNativeKeyboard(target) {
+        if (isNativeAppleTVKeyboard(target)) return target;
+        if (!target) return null;
+        const wanted = normalizeAppleTVName(target.name);
+        if (!wanted) return null;
+        const ids = EntityController.getIdsByType("media_player") || [];
+        let result = null;
+        for (let i = 0; i < ids.length; ++i) {
+            const candidate = EntityController.get(ids[i]);
+            if (!isNativeAppleTVKeyboard(candidate)) continue;
+            const candidateName = normalizeAppleTVName(candidate.name);
+            if (!candidateName || candidateName !== wanted) continue;
+            if (result && result.id !== candidate.id) return null;
+            result = candidate;
+        }
+        return result;
+    }
+
+    function showKeyboardDeliveryError(message) {
+        statusMessage = message;
+        if (textPopup.opened)
+            textEntry.showError(message);
+        else
+            ui.createNotification(message, true);
+    }
+
+    function showNativeKeyboardError(message) {
+        // The native Send action dismisses the keyboard, taking the popup
+        // with it. Always notify, even if the asynchronous response beats
+        // Popup.onClosed and the input field is still briefly visible.
+        statusMessage = message;
+        ui.createNotification(message, true);
+    }
+
 
     Timer {
         id: commandTimeout
@@ -150,8 +196,12 @@ Item {
             if (!keyboardBridge.sending) return;
             keyboardBridge.sending = false;
             keyboardBridge.pendingTargetIds = [];
-            keyboardBridge.statusMessage = qsTr("No command acknowledgment received. Check Remote and Home Assistant logs.");
-            textEntry.showError(qsTr("Text was not confirmed by the Remote Core."));
+            if (keyboardBridge.pendingSearchTarget) {
+                keyboardBridge.pendingSearchTarget = null;
+                keyboardBridge.showNativeKeyboardError(qsTr("Apple TV Keyboard did not respond. Check its connection."));
+                return;
+            }
+            keyboardBridge.showKeyboardDeliveryError(qsTr("No command acknowledgment received. Check Remote and Home Assistant logs."));
         }
     }
 
@@ -168,7 +218,14 @@ Item {
             return;
         }
 
-        const targets = activeRule.mediaPlayerIds || [];
+        const configuredTargets = activeRule.mediaPlayerIds || [];
+        // A newly configured Apple TV Keyboard target supersedes any saved
+        // Home Assistant Remote target from older keyboard rules. Do not
+        // dispatch both destinations for the same input.
+        const keyboardTargets = configuredTargets.filter(function(id) {
+            return isNativeAppleTVKeyboard(EntityController.get(id));
+        });
+        const targets = keyboardTargets.length ? keyboardTargets : configuredTargets;
         const requests = [];
         const seen = {};
         let blocked = false;
@@ -190,24 +247,27 @@ Item {
             let cmd = "";
             let params = ({});
             const type = target.getTypeAsString();
-            if (type === "remote") {
-                cmd = "remote.send_cmd";
-                params = {command: "keyboard.text_set " + value};
-            } else if (type === "media_player") {
-                const companion = matchingCompanionRemote(target);
-                if (companion) {
-                    if (!EntityController.mayCommandEntity(companion.enabled)) {
-                        statusMessage = qsTr("Companion Remote unavailable: %1").arg(companion.name);
+            if (isNativeAppleTVKeyboard(target)) {
+                cmd = "native.search";
+                params = {query: value};
+            } else if (type === "remote" || type === "media_player") {
+                const nativeKeyboard = matchingNativeKeyboard(target);
+                if (nativeKeyboard) {
+                    if (!EntityController.mayCommandEntity(nativeKeyboard.enabled)) {
+                        statusMessage = qsTr("Apple TV Keyboard integration is unavailable: %1").arg(nativeKeyboard.name);
                         blocked = true;
                         continue;
                     }
-                    destination = companion;
-                    cmd = "remote.send_cmd";
-                    params = {command: "keyboard.text_set " + value};
-                } else if (isHomeAssistantMediaPlayer(target)) {
-                    statusMessage = qsTr("Wrong target: %1 is a Media player. Select its Remote entity.").arg(target.name);
+                    destination = nativeKeyboard;
+                    cmd = "native.search";
+                    params = {query: value};
+                } else if (isHomeAssistantEntity(target)) {
+                    statusMessage = qsTr("Home Assistant Apple TV Remote cannot send text. Select the Apple TV Keyboard media player in Keyboard settings.");
                     blocked = true;
                     continue;
+                } else if (type === "remote") {
+                    cmd = "remote.send_cmd";
+                    params = {command: "keyboard.text_set " + value};
                 } else {
                     cmd = "keyboard.text_set";
                     params = {text: value};
@@ -223,14 +283,36 @@ Item {
         }
         if (blocked || requests.length === 0) {
             if (!statusMessage)
-                statusMessage = qsTr("No usable target. Choose the Apple TV Remote in Keyboard settings.");
+                statusMessage = qsTr("Select an Apple TV Keyboard media player in Keyboard settings.");
             textEntry.showError(statusMessage);
             return;
         }
 
-        // Do not clear the text or close the popup simply because Core accepted
-        // the local API call. Wait for a real Core command acknowledgment, and
-        // keep diagnostic feedback visible for troubleshooting failed delivery.
+        // Native Apple TV Keyboard uses the existing media-player search
+        // operation, backed by pyatv.keyboard.text_set. This is NOT the Home
+        // Assistant remote.send_command action, which rejects keyboard.text_set.
+        if (requests.length === 1 && requests[0].command === "native.search") {
+            const nativePlayer = EntityController.get(requests[0].entityId);
+            if (!nativePlayer || !nativePlayer.searchMedia) {
+                showKeyboardDeliveryError(qsTr("Apple TV Keyboard search is unavailable."));
+                return;
+            }
+            pendingSearchTarget = nativePlayer;
+            pendingTargetIds = [];
+            succeededCommands = 0;
+            sending = true;
+            statusMessage = qsTr("Sending text through %1").arg(nativePlayer.name);
+            commandTimeout.restart();
+            console.log("Apple TV keyboard search dispatched to", nativePlayer.id);
+            nativePlayer.searchMedia(value, "", "", [], 10, 1);
+            keyboard.hide();
+            return;
+        }
+        if (requests.some(function(request) { return request.command === "native.search"; })) {
+            showKeyboardDeliveryError(qsTr("Select only one Apple TV Keyboard target for text entry."));
+            return;
+        }
+
         pendingTargetIds = requests.map(function(request) { return request.entityId; });
         succeededCommands = 0;
         sending = true;
@@ -248,6 +330,37 @@ Item {
     onActivityIdChanged: { prompted = ({}); evaluate(); }
     onRulesChanged: evaluate()
     Component.onCompleted: evaluate()
+
+    Connections {
+        target: keyboardBridge.pendingSearchTarget
+        ignoreUnknownSignals: true
+
+        function onSearchMediaResult(items, pagination) {
+            if (!keyboardBridge.pendingSearchTarget) return;
+            commandTimeout.stop();
+            keyboardBridge.sending = false;
+            keyboardBridge.pendingSearchTarget = null;
+            const first = items && items.length ? items[0] : null;
+            const title = first ? String(first.title || "") : "";
+            if (!first || title.indexOf("Text not sent") === 0 ||
+                    title.indexOf("keyboard-not-sent") >= 0) {
+                keyboardBridge.showNativeKeyboardError(
+                    first && first.subtitle ? String(first.subtitle)
+                                            : qsTr("Apple TV Keyboard did not confirm text entry."));
+            } else {
+                keyboardBridge.statusMessage = qsTr("Text delivered through Apple TV Keyboard.");
+                console.log("Apple TV Keyboard confirmed text entry");
+            }
+        }
+        function onSearchMediaError(code, message) {
+            if (!keyboardBridge.pendingSearchTarget) return;
+            commandTimeout.stop();
+            keyboardBridge.sending = false;
+            keyboardBridge.pendingSearchTarget = null;
+            keyboardBridge.showNativeKeyboardError(
+                qsTr("Apple TV Keyboard error %1: %2").arg(code).arg(message));
+        }
+    }
 
     Connections {
         target: EntityController
@@ -347,7 +460,7 @@ Item {
         }
 
         onOpened: {
-            commandTimeout.stop();
+            if (!pendingSearchTarget) commandTimeout.stop();
             sending = false;
             pendingTargetIds = [];
             statusMessage = "";
@@ -364,8 +477,10 @@ Item {
         }
 
         onClosed: {
-            commandTimeout.stop();
-            sending = false;
+            if (!pendingSearchTarget) {
+                commandTimeout.stop();
+                sending = false;
+            }
             pendingTargetIds = [];
             statusMessage = "";
             closingKeyboard = true;
