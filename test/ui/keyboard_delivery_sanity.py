@@ -43,6 +43,25 @@ assert 'id: explicitSendButton' in bridge
 assert 'trigger: function() { keyboardBridge.submitText(); }' in bridge
 assert 'function onAccepted() { keyboardBridge.submitText(); }' in bridge
 assert 'onClosed()' not in bridge  # virtual keyboard hides without dismissing text popup
+assert 'size: 60' in style
+assert 'Math.round(112 * scaleHint)' not in style
+assert 'property bool sending: false' in bridge
+assert 'id: commandTimeout' in bridge
+assert 'function onEntityCommandResult(entityId, command, success, errorCode, errorMessage)' in bridge
+assert 'statusMessage = qsTr("Sending via %1 to %2 (%3)")' in bridge
+assert 'keyboardBridge.statusMessage = qsTr("Core rejected %1 (%2): %3")' in bridge
+assert 'Core accepted command for %1' in bridge
+assert 'request.entityId, request.command, request.params' in bridge
+assert 'if (sending) return;' in bridge
+assert 'enabled: !keyboardBridge.sending' in bridge
+assert 'id: deliveryStatus' in bridge
+assert 'keyboardBridge.statusMessage' in bridge
+controller_h = (ROOT / "src/ui/entity/entityController.h").read_text()
+controller_cpp = (ROOT / "src/ui/entity/entityController.cpp").read_text()
+assert 'void entityCommandResult(QString entityId, QString command, bool success,' in controller_h
+assert 'emit entityCommandResult(entityId, command, true, 0, QString());' in controller_cpp
+assert 'emit entityCommandResult(live.entityId, live.command, false, code, message);' in controller_cpp
+
 
 assert 'mediaPlayerIds' in bridge and 'mediaPlayerIds' in settings
 
