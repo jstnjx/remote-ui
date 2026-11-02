@@ -205,9 +205,9 @@ EntityComponents.BaseDetail {
             try {
                 switch (item.type) {
             case "text":
-                // Stock Text widgets limit text length. The marker "KB" is
-                // short enough; target the media player through the optional
-                // command entity or an activity keyboard automation rule.
+                // Stock Text widgets limit text length. "KB" uses the target
+                // remote or media-player entity configured by a keyboard rule
+                // (or the Text button's optional command entity).
                 const widgetText = typeof item.text === "string" ? item.text.trim() : "";
                 const widgetParts = widgetText.split(";");
                 const widgetKind = widgetParts[0].trim().toUpperCase();
