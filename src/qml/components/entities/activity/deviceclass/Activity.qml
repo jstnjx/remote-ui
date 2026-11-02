@@ -124,6 +124,47 @@ EntityComponents.BaseDetail {
         }
     }
 
+    // Treat a Text widget as a live media artwork widget only when its text
+    // identifies a media-player entity. This leaves ordinary Text widgets,
+    // keyboard shortcuts, RTSP widgets and MB coverflow markers untouched.
+    function mediaArtworkEntityId(widgetText) {
+        const selector = (widgetText || "").trim();
+        if (!selector || selector.indexOf(";") !== -1 ||
+                !/^[a-zA-Z0-9_.:-]+$/.test(selector))
+            return "";
+
+        const ids = EntityController.getIdsByType("media_player") || [];
+        const needle = selector.toLowerCase();
+        const exact = ids.filter(function(id) {
+            const full = id.toLowerCase();
+            const tail = full.substring(full.lastIndexOf(".") + 1);
+            return full === needle || tail === needle;
+        });
+        if (exact.length === 1) return exact[0];
+        if (exact.length > 1) return "";
+
+        // The stock text widget has a short label limit. Accept unique
+        // prefixes of the final entity-ID segment (e.g. "ps5") while keeping
+        // normal text unchanged if no known media player matches.
+        if (needle.length >= 3 && needle.indexOf(".") === -1) {
+            const prefixMatches = ids.filter(function(id) {
+                const full = id.toLowerCase();
+                const tail = full.substring(full.lastIndexOf(".") + 1);
+                return tail.indexOf(needle) === 0;
+            });
+            if (prefixMatches.length === 1) return prefixMatches[0];
+            if (prefixMatches.length > 1) return "";
+        }
+
+        // A full ID may arrive through a manually PATCHed page before the
+        // entity list is populated. It is safe to defer loading this explicit
+        // media-player path to the widget itself.
+        if (needle.indexOf(".media_player.") !== -1 ||
+                needle.indexOf("media_player.") === 0)
+            return selector;
+        return "";
+    }
+
     function parsePageItems(page, index, container) {
         const items = page.items
         const gridWidth = page.grid ? page.grid.width : 4;
@@ -234,6 +275,29 @@ EntityComponents.BaseDetail {
                         });
                     } else {
                         console.warn("Unable to create RTSP video component");
+                    }
+                    break;
+                }
+                // A Text widget whose value is a media-player ID (or a
+                // unique shortened final ID segment) becomes live artwork.
+                // No extra marker and no command target are required.
+                const artworkPlayerId = activityBase.mediaArtworkEntityId(widgetText);
+                if (artworkPlayerId) {
+                    const artworkComponent = Qt.createComponent(
+                        "qrc:/components/entities/activity/MediaArtworkWidget.qml");
+                    if (artworkComponent.status === Component.Ready) {
+                        const artworkWidget = artworkComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "entityId": artworkPlayerId
+                        });
+                        if (!artworkWidget)
+                            console.warn("Media artwork widget could not be created:",
+                                         artworkComponent.errorString());
+                    } else {
+                        console.warn("Media artwork widget failed:", artworkComponent.errorString());
                     }
                     break;
                 }
