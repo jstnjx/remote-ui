@@ -92,7 +92,11 @@ assert "Show activity labels" not in settings
 
 # The keyboard's native send/return key must not regress.
 assert 'root.keyboardSendMode ? ""' in style
-assert 'return resourcePrefix + "images/enter-868482.svg"' in style
+assert 'id: enterKeyIcon' in style
+assert 'Components.Icon {' in style
+assert 'return "uc:arrow-turn-down"' in style
+assert 'id: enterKeyText' in style
+assert 'images/enter-868482.svg' not in style
 assert 'EnterKeyAction.label: ""' in field
 
 # 480x850 is the intended Remote simulator viewport. The long one-column
