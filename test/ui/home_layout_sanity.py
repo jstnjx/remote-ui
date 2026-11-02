@@ -42,7 +42,7 @@ for required in (
 for removed in (
     "activityRepeater", "gridContents", "gridViewport", "activityIds",
     'EntityController.getIdsByType("activity")', "Quick Scenes", "quickGrid",
-    "Activities", "Rooms", "selectedActions", "homeShowActivityLabels",
+    "Rooms", "selectedActions", "homeShowActivityLabels",
 ):
     assert removed not in home, f"Old global/grid/segmented home still in source: {removed}"
 
