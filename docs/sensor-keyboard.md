@@ -35,7 +35,9 @@ The entity ID shown by the UC integration may have a prefix different from the H
 
 If your `KB` Text widget still has an old command target attached, the keyboard rule's selected **Remote** takes precedence. When a Home Assistant media-player entity has a companion Remote entity with the same integration and device suffix, the keyboard can also redirect to that Remote. Otherwise, it displays a message asking you to select the Remote instead of attempting an unsupported media-player command.
 
-The keyboard editor **does not close when the virtual keyboard hides**; the text remains available for the explicit Send button. This prevents an Enter-key timing difference from silently discarding a submission. Core command failures are reported through the usual Remote UI notifications.
+The keyboard editor **does not close when the virtual keyboard hides**; the text remains available for the explicit Send button. The Send arrow is now the same size as the other special-key symbols.
+
+After pressing Send, the text remains in the field while the UI waits for the Core API's command result. A status message shows the **exact entity ID and command** used, followed by **Core accepted** or a failure code/error. The Send button is temporarily disabled while a request is outstanding, and a timeout allows retrying. These messages distinguish wrong routing, an unavailable entity or a rejected Core API command from a downstream Apple TV issue. **Core accepted means the Core API acknowledged the command; it does not prove the Home Assistant action succeeded or text appeared on tvOS.** If Core accepted but no text appears, inspect the Home Assistant Apple TV integration and ensure a text field is focused on the TV.
 
 ## Other integrations and existing rules
 
