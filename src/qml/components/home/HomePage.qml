@@ -177,6 +177,8 @@ Item {
         anchors.fill: parent
         color: colors.black
     }
+    // Block touch-through to the original Page behind the optional home.
+    MouseArea { anchors.fill: parent }
 
     // Status bar: one page title, battery percentage and settings. The clock
     // appears only in the image header, never in this bar.
