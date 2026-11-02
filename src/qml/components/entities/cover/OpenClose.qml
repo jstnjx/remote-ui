@@ -14,6 +14,7 @@ ColumnLayout {
     id: openCloseRoot
     // Reused unchanged by native detail screens; inline cards can opt into
     // the same native buttons with smaller typography and gaps.
+    property QtObject entityObj
     property bool compact: false
     spacing: compact ? 6 : 20
 
