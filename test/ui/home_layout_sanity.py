@@ -97,7 +97,7 @@ assert 'Components.Icon {' in style
 assert 'return "uc:arrow-turn-down"' in style
 assert 'id: enterKeyText' in style
 assert 'images/enter-868482.svg' not in style
-assert 'EnterKeyAction.label: ""' in field
+assert 'EnterKeyAction.label: inputFieldContainer.enterKeyLabel' in field
 
 # 480x850 is the intended Remote simulator viewport. The long one-column
 # list scrolls below the media strip rather than overlapping the header.
