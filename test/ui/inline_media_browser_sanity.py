@@ -36,10 +36,62 @@ assert "requestId !== pendingRequestId" in browser
 assert "pendingRequestId = -1;" in browser
 assert "browserActive" in browser
 assert "function goBack()" in browser and "function enterFolder(item)" in browser
+# A PathView model swap emits currentIndexChanged. Disable parent pagination
+# before entering the next folder or we can wrongly send page N+1 of the
+# previous directory to the new folder and then block its first-page request.
+enter_folder = browser.split("    function enterFolder(item) {", 1)[1].split("    function goBack()", 1)[0]
+assert enter_folder.index("hasMore = false;") < enter_folder.index("browseItems = nestedItems.slice();")
+assert enter_folder.index("restoringModel = true;") < enter_folder.index("browseItems = nestedItems.slice();")
+assert "browser.pendingRequestId < 0" in enter_folder
+go_back = browser.split("    function goBack() {", 1)[1].split("    function loadMore()", 1)[0]
+assert go_back.index("restoringModel = true;") < go_back.index("browseItems = previous.items.slice();")
+assert "browser.restoringModel = false;" in go_back
+assert "restoringModel = false;" in browser.split("    function reset() {", 1)[1].split("    function requestPage(", 1)[0]
+
+assert "browseItems = previous.items.slice();" in browser
+assert "previous.container" in browser
+
 assert "function loadMore()" in browser and "pageSize: 20" in browser
 assert "pagination.count" in browser
-assert "browseMedia(folderId, folderType, pageSize, page)" in browser
+assert "browseMedia(requestedId, requestedType, pageSize, page)" in browser
 assert "player.playMedia(item.media_id, item.media_type" in browser
+
+# Deep folder/playlist regression: preserve the complete per-level container
+# as in the stock MediaBrowser, rather than flattening only media.items.
+assert "property var currentContainer: null" in browser
+assert "property int navigationRevision: 0" in browser
+assert "navigationRevision++" in browser
+assert "container: currentContainer" in browser
+assert "currentContainer = previous.container" in browser
+assert "if (history.length) {" in browser
+assert "currentContainer = Object.assign({}, previousContainer, media || {});" in browser
+assert "currentContainer.media_id = folderId" in browser
+assert "currentContainer.media_type = folderType" in browser
+assert "browseItems = nestedItems.slice();" in browser
+assert "incoming.length ? incoming.slice() : browseItems" in browser
+assert "const revision = navigationRevision" in browser
+assert "revision === browser.navigationRevision" in browser
+
+# Playable containers with no child items must not display the erroneous
+# "No media found" placeholder. Let the current container behave as a
+# playable cover, while blocking it from recursively browsing itself.
+for text in (
+    "readonly property var displayItems:",
+    'currentContainer.media_class === "playlist"',
+    'currentContainer.media_class === "album"',
+    "__containerPlay: true, can_browse: false",
+    "model: browser.displayItems",
+    "browser.displayItems.length > 0",
+    "!item.__containerPlay",
+    'qsTr("Tap cover to play")',
+):
+    assert text in browser, f"Nested media browser contract missing: {text}"
+assert "enterFolder(item);" in browser
+assert "if (index !== carousel.currentIndex)" in browser
+assert "requestId !== pendingRequestId" in browser
+assert "console.log(\"Inline MB accepted browse reply:\"" in browser
+assert "console.warn(\"Inline MB browse failed:\"" in browser
+
 # Short selectors must not require renaming the real entity or exceeding the
 # text button length limit. The long original marker remains backward compatible.
 for required in (
