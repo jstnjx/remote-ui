@@ -275,7 +275,9 @@ KeyboardStyle {
                 visible: root.keyboardSendMode &&
                          typeof root.keyboardSendCallback === "function"
                 preventStealing: true
-                onClicked: root.keyboardSendCallback()
+                // Run on press, before the virtual keyboard can hide and
+                // destroy the focused field on the subsequent release.
+                onPressed: root.keyboardSendCallback()
             }
         }
 
