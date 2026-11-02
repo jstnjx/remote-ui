@@ -25,7 +25,8 @@ Rectangle {
     property string selectionError: ""
     property string feedback: ""
     readonly property bool ready: widgetActive && remoteObj &&
-                                  remoteObj.enabled && EntityController.mayCommandEntity(remoteObj.enabled)
+                                  remoteObj.enabled && remoteObj.state !== RemoteStates.Unavailable &&
+                                  EntityController.mayCommandEntity(remoteObj.enabled)
     readonly property bool haRemote: remoteObj &&
                                      /home[_-]?assistant|homeassistant/i.test(
                                         String(remoteObj.integrationId || "") + " " +
