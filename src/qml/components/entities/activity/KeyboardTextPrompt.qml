@@ -123,7 +123,21 @@ Item {
         textPopup.open();
     }
 
+    Timer {
+        id: submitTimeout
+        interval: 12000
+        repeat: false
+        onTriggered: {
+            if (keyboardBridge.submitting && textPopup.opened) {
+                keyboardBridge.submitSerial++;
+                keyboardBridge.submitting = false;
+                textEntry.showError(qsTr("Home Assistant did not respond."));
+            }
+        }
+    }
+
     function finishSubmission() {
+        submitTimeout.stop();
         submitting = false;
         keyboard.hide();
         textPopup.close();
@@ -142,12 +156,14 @@ Item {
             return;
         }
         submitting = true;
+        submitTimeout.restart();
         const serial = ++submitSerial;
         const request = new XMLHttpRequest();
         request.onreadystatechange = function() {
-            if (request.readyState !== 4 || serial !== submitSerial)
+            if (request.readyState !== 4 || serial !== submitSerial ||
+                    !keyboardBridge.submitting || !textPopup.opened)
                 return;
-            if (!textPopup.opened) return;
+            submitTimeout.stop();
             if (request.status >= 200 && request.status < 300) {
                 keyboardBridge.finishSubmission();
             } else {
@@ -158,21 +174,18 @@ Item {
         try {
             request.open("POST", endpoint);
             request.setRequestHeader("Content-Type", "application/json");
-            request.timeout = 12000;
-            request.ontimeout = function() {
-                if (serial === submitSerial && textPopup.opened) {
-                    keyboardBridge.submitting = false;
-                    textEntry.showError(qsTr("Home Assistant did not respond."));
-                }
-            };
             request.onerror = function() {
-                if (serial === submitSerial && textPopup.opened) {
+                if (serial === submitSerial && keyboardBridge.submitting && textPopup.opened) {
+                    submitTimeout.stop();
+                    keyboardBridge.submitSerial++;
                     keyboardBridge.submitting = false;
                     textEntry.showError(qsTr("Could not reach the Home Assistant webhook."));
                 }
             };
             request.send(JSON.stringify({text: value}));
         } catch (e) {
+            submitTimeout.stop();
+            submitSerial++;
             submitting = false;
             textEntry.showError(qsTr("Could not send text to Home Assistant."));
         }
@@ -276,7 +289,7 @@ Item {
     Connections {
         target: keyboard
         function onClosed() {
-            if (textPopup.opened && !keyboardBridge.closingKeyboard) {
+            if (textPopup.opened && !keyboardBridge.closingKeyboard && !keyboardBridge.submitting) {
                 textPopup.close();
             }
         }
@@ -322,6 +335,7 @@ Item {
         }
 
         onClosed: {
+            submitTimeout.stop();
             submitSerial++;
             submitting = false;
             closingKeyboard = true;
