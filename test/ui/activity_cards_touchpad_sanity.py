@@ -110,8 +110,12 @@ for widget in (cards, touchpad):
         assert 'target: null' in widget
         assert 'onActiveChanged:' in widget
         assert 'onClicked: card.openNativeDetail()' not in widget
-    assert 'onReleased:' in widget
-    assert 'onCanceled:' in widget
+    if widget == touchpad:
+        assert 'onReleased:' in widget
+        assert 'onCanceled:' in widget
+    else:
+        assert 'if (active) card.beginGesture();' in widget
+        assert 'else card.endGesture();' in widget
     assert widget.index('beginPageGesture();') < widget.index('endPageGesture();')
 
 # Touchpad dispatch is still one command on release, never on every pixel.
@@ -143,4 +147,4 @@ assert "OpenClose.qml" in docs
 assert "loadThirdContainer" not in docs
 assert "page swipe" in docs
 
-print("Native entity detail overlays and widget gesture capture contracts passed.")
+print("Inline native entity controls and gesture capture contracts passed.")
