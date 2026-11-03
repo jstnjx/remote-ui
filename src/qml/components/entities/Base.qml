@@ -19,6 +19,7 @@ import Entity.Select 1.0
 import Integration.Controller 1.0
 
 import Haptic 1.0
+import Config 1.0
 
 import "qrc:/components" as Components
 import "qrc:/components/entities/media_player" as MediaPlayerComponents
@@ -560,7 +561,8 @@ Rectangle {
                 icon: "uc:link-slash"
                 size: 40
                 // the integration objects are dropped and loaded again after a reconnect: null in between
-                visible: integrationObj ? integrationObj.state != "connected" && integrationObj.state != "" : false
+                visible: Config.showIntegrationConnectionIcon && integrationObj
+                         && integrationObj.state != "connected" && integrationObj.state != ""
             }
 
             Text {

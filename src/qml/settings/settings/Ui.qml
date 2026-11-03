@@ -94,6 +94,25 @@ Settings.Page {
                     /** KEYBOARD NAVIGATION **/
                     highlight: activeFocus && ui.keyNavigationActive
                     KeyNavigation.up: batteryPercentSwitch
+                    KeyNavigation.down: integrationConnectionIconSwitch
+                }
+            }
+
+            /** INTEGRATION CONNECTION ICON **/
+            Components.SettingRow {
+                title: qsTr("Show reconnecting icons")
+                help: qsTr("Show the red disconnected icon next to entity widgets when their integration is offline. Turning this off does not affect reconnection.")
+
+                Components.Switch {
+                    id: integrationConnectionIconSwitch
+                    icon: "uc:check"
+                    checked: Config.showIntegrationConnectionIcon
+                    trigger: function() {
+                        Config.showIntegrationConnectionIcon = !Config.showIntegrationConnectionIcon;
+                    }
+
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: batteryEveryWhereSwitch
                     KeyNavigation.down: activityBarSwitch
                 }
             }
@@ -113,7 +132,7 @@ Settings.Page {
 
                     /** KEYBOARD NAVIGATION **/
                     highlight: activeFocus && ui.keyNavigationActive
-                    KeyNavigation.up: batteryEveryWhereSwitch
+                    KeyNavigation.up: integrationConnectionIconSwitch
                     KeyNavigation.down: apiActivitySwitch
                 }
             }

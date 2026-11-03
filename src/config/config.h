@@ -99,6 +99,8 @@ class Config : public QObject {
                    showBatteryPercentageChanged)
     Q_PROPERTY(bool showBatteryEveryWhere READ getShowBatteryEveryWhere WRITE setShowBatteryEveryWhere NOTIFY
                    showBatteryEveryWhereChanged)
+    Q_PROPERTY(bool showIntegrationConnectionIcon READ getShowIntegrationConnectionIcon WRITE
+                   setShowIntegrationConnectionIcon NOTIFY integrationConnectionIconChanged)
 
     Q_PROPERTY(
         bool enableActivityBar READ getEnableActivityBar WRITE setEnableActivityBar NOTIFY enableActivityBarChanged)
@@ -211,6 +213,8 @@ class Config : public QObject {
 
     bool getShowBatteryEveryWhere();
     void setShowBatteryEveryWhere(bool value);
+    bool getShowIntegrationConnectionIcon();
+    void setShowIntegrationConnectionIcon(bool value);
 
     bool getEnableActivityBar();
     void setEnableActivityBar(bool value);
@@ -430,6 +434,7 @@ class Config : public QObject {
     void entityButtonFuncInvertedChanged();
     void showBatteryPercentageChanged();
     void showBatteryEveryWhereChanged();
+    void integrationConnectionIconChanged();
     void enableActivityBarChanged();
     void openActivityOnApiStartChanged();
     void fillMediaArtworkChanged();

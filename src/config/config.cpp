@@ -457,6 +457,16 @@ void Config::setShowBatteryEveryWhere(bool value) {
     emit showBatteryEveryWhereChanged();
 }
 
+bool Config::getShowIntegrationConnectionIcon() {
+    return m_settings->value("ui/showIntegrationConnectionIcon", true).toBool();
+}
+
+void Config::setShowIntegrationConnectionIcon(bool value) {
+    if (getShowIntegrationConnectionIcon() == value) return;
+    m_settings->setValue("ui/showIntegrationConnectionIcon", value);
+    emit integrationConnectionIconChanged();
+}
+
 bool Config::getEnableActivityBar() {
     return m_settings->value("ui/activityBar", true).toBool();
 }
