@@ -159,7 +159,6 @@ HEADERS += \
     src/ui/profile/profile.h \
     src/ui/profile/profiles.h \
     src/ui/resources.h \
-    src/ui/lovelaceFrame.h \
     src/ui/rtspStream.h \
     src/ui/soundEffects.h \
     src/ui/uiController.h \
@@ -230,7 +229,6 @@ SOURCES += \
         src/ui/page/pages.cpp \
         src/ui/profile/profiles.cpp \
         src/ui/resources.cpp \
-        src/ui/lovelaceFrame.cpp \
         src/ui/rtspStream.cpp \
         src/ui/soundEffects.cpp \
         src/ui/uiController.cpp \
