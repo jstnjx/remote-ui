@@ -9,6 +9,10 @@
 
 #include <memory>
 
+#ifdef UC_LOVELACE_WEBENGINE
+#include <QtWebEngine/QtWebEngine>
+#endif
+
 #include "config/config.h"
 #include "core/core.h"
 #include "dock/dockController.h"
@@ -87,6 +91,9 @@ int main(int argc, char *argv[]) {
     qputenv("QT_VIRTUALKEYBOARD_STYLE", "remotestyle");
 
     QGuiApplication app(argc, argv);
+#ifdef UC_LOVELACE_WEBENGINE
+    QtWebEngine::initialize();
+#endif
     // Heap allocated to control the destruction order: the engine must go before the controllers, see the end of main().
     auto engine = std::make_unique<QQmlApplicationEngine>();
 
