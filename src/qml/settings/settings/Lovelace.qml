@@ -57,8 +57,13 @@ Settings.Page {
             pickerHandler = function(value) { loadEntry(Number(value)); };
         } else if (kind === "engine") {
             pickerModel.append({ name: qsTr("Remote Chromium renderer"), value: "remote" });
-            pickerModel.append({ name: qsTr("Local Qt WebEngine (if installed)"), value: "local" });
-            pickerHandler = function(value) { selectedEngine = value; };
+            pickerModel.append({ name: qsTr("Local browser (requires unsupported firmware changes)"), value: "local" });
+            pickerHandler = function(value) {
+                selectedEngine = value;
+                message.text = value === "local"
+                    ? qsTr("Local Qt WebEngine is not included in the Remote 2/3 firmware. Select Remote to use the Chromium service.")
+                    : "";
+            };
         } else {
             pickerModel.append({ name: qsTr("Home screen overlay"), value: "overlay" });
             pickerModel.append({ name: qsTr("Additional dashboard page"), value: "page" });
@@ -82,6 +87,10 @@ Settings.Page {
         if (!validUrl(url)) {
             message.text = qsTr("Enter a valid HTTP(S) Home Assistant dashboard URL.");
             urlInput.showError(message.text);
+            return;
+        }
+        if (selectedEngine === "local") {
+            message.text = qsTr("Local rendering is unavailable in this firmware. Select Remote rendering.");
             return;
         }
         if (selectedEngine === "remote" && !validUrl(renderer)) {
@@ -347,7 +356,7 @@ Settings.Page {
                 Layout.topMargin: 18
                 Layout.bottomMargin: 28
                 wrapMode: Text.WordWrap
-                text: qsTr("Local rendering requires Qt WebEngine on the remote. Remote rendering uses the Chromium service on your network.")
+                text: qsTr("Local rendering requires an unsupported browser-enabled firmware build. Use Remote rendering with the Chromium service.")
                 color: colors.textSecondary
                 font: fonts.help()
             }
