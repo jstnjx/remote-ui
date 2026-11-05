@@ -75,6 +75,11 @@ Settings.Page {
                     icon: "uc:house"
                 },
                 {
+                    itemTitle: QT_TR_NOOP("Home Assistant dashboards"),
+                    page: "Lovelace",
+                    icon: "uc:house"
+                },
+                {
                     itemTitle: QT_TR_NOOP("Media player widgets"),
                     page: "MediaWidgets",
                     icon: "uc:music"
