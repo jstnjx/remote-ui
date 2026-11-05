@@ -15,7 +15,7 @@ from aiohttp import web
 from playwright.async_api import async_playwright
 
 ORIGIN = os.environ.get("HA_ORIGIN", "").rstrip("/")
-PROFILE = Path(os.environ.get("LOVELACE_PROFILE", "./browser-profile")).resolve()
+PROFILE = Path(os.environ.get("LOVELACE_PROFILE", str(Path(__file__).resolve().parent / "browser-profile"))).expanduser().resolve()
 HOST = os.environ.get("LOVELACE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("LOVELACE_PORT", "8765"))
 FPS_LIMIT = float(os.environ.get("LOVELACE_FPS_LIMIT", "3"))
@@ -53,6 +53,7 @@ async def page_for(url, width, height):
         pages[url] = page
         locks[url] = asyncio.Lock()
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        log.info("Dashboard opened: %s -> %s", urlsplit(url).path, urlsplit(page.url).path)
     page = pages[url]
     if page.viewport_size != {"width": width, "height": height}:
         await page.set_viewport_size({"width": width, "height": height})
@@ -68,6 +69,13 @@ async def screenshot(request):
         raise web.HTTPBadRequest(text="Invalid viewport")
     page = await page_for(url, width, height)
     async with locks[url]:
+        # Do not silently stream the Home Assistant login page.
+        destination = urlsplit(page.url)
+        if destination.path.startswith("/auth/") or destination.path.startswith("/login"):
+            log.warning("Home Assistant login required (profile %s)", PROFILE)
+            raise web.HTTPUnauthorized(
+                text="Home Assistant needs authentication. Stop the renderer and "
+                     "run login.py using the same HA_ORIGIN and LOVELACE_PROFILE.")
         # Constrain CPU even if a client polls faster than the configured limit.
         now = asyncio.get_running_loop().time()
         previous = last_frame.get(url)
@@ -171,13 +179,24 @@ async def preflight(request):
 
 
 async def health(request):
-    return web.json_response({"ok": True, "dashboards": len(pages)})
+    return web.json_response({
+        "ok": True,
+        "dashboards": len(pages),
+        "profile_directory": str(PROFILE),
+        "sessions": [{
+            "dashboard_path": urlsplit(url).path,
+            "browser_path": urlsplit(page.url).path,
+            "login_required": (urlsplit(page.url).path.startswith("/auth/") or
+                               urlsplit(page.url).path.startswith("/login"))
+        } for url, page in pages.items()]
+    })
 
 
 async def on_startup(app):
     global browser, playwright
     if not ORIGIN or ALLOWED_ORIGIN.scheme not in ("http", "https"):
         raise RuntimeError("Set HA_ORIGIN=http(s)://your-home-assistant:8123")
+    log.info("Chromium profile directory: %s", PROFILE)
     playwright = await async_playwright().start()
     browser = await playwright.chromium.launch_persistent_context(
         str(PROFILE), headless=True,
