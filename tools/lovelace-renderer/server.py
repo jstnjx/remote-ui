@@ -166,6 +166,10 @@ async def cors_middleware(request, handler):
     return response
 
 
+async def preflight(request):
+    return web.Response(status=204)
+
+
 async def health(request):
     return web.json_response({"ok": True, "dashboards": len(pages)})
 
@@ -195,7 +199,7 @@ async def main():
     app = web.Application(client_max_size=4096, middlewares=[cors_middleware])
     app.router.add_get("/frame", screenshot)
     app.router.add_post("/input", input_event)
-    app.router.add_options("/input", lambda request: web.Response(status=204))
+    app.router.add_options("/input", preflight)
     app.router.add_get("/health", health)
     app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)
