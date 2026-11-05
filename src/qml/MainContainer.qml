@@ -767,7 +767,8 @@ Item {
         visible: mainContainerRoot.lovelacePickerOpen && !ui.profile.restricted
         MouseArea { anchors.fill: parent }
         Column {
-            anchors { fill: parent; margins: 20 }; spacing: 12
+            anchors { fill: parent; margins: 20 }
+            spacing: 12
             Text { text: qsTr("Home Assistant dashboards"); color: "white"; font.pixelSize: 24 }
             Repeater {
                 model: mainContainerRoot.lovelaceDashboards
