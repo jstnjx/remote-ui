@@ -33,7 +33,21 @@ Settings.Page {
         message.text = "";
     }
 
+    function dismissKeyboard() {
+        // Move focus away from the InputField before hiding the panel, otherwise
+        // keyboardFollowsFocus may immediately reopen it.
+        doneButton.forceActiveFocus();
+        keyboard.hide();
+        Qt.inputMethod.hide();
+    }
+
+    function saveFromToolbar() {
+        dismissKeyboard();
+        saveEntry();
+    }
+
     function openPicker(kind) {
+        dismissKeyboard();
         pickerModel.clear();
         if (kind === "dashboard") {
             for (let i = 0; i < entries.length; ++i) {
@@ -90,7 +104,7 @@ Settings.Page {
         if (editingIndex < 0) dashboards.push(entry);
         else dashboards[editingIndex] = entry;
         Config.lovelaceDashboards = dashboards;
-        keyboard.hide();
+        dismissKeyboard();
         loadEntry(-1);
         message.text = qsTr("Dashboard saved.");
     }
@@ -100,18 +114,51 @@ Settings.Page {
         const dashboards = entries.slice();
         dashboards.splice(editingIndex, 1);
         Config.lovelaceDashboards = dashboards;
-        keyboard.hide();
+        dismissKeyboard();
         loadEntry(-1);
         message.text = qsTr("Dashboard removed.");
     }
 
     ListModel { id: pickerModel }
 
+    // Fixed toolbar stays visible when the virtual keyboard covers the lower form.
+    Rectangle {
+        id: actionBar
+        z: 3
+        anchors { top: topNavigation.bottom; left: parent.left; right: parent.right }
+        height: 96
+        color: colors.bg
+
+        RowLayout {
+            anchors { fill: parent; leftMargin: 20; rightMargin: 20; topMargin: 8; bottomMargin: 8 }
+            spacing: 12
+            Components.Button {
+                id: doneButton
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                variant: "secondary"
+                text: qsTr("Done")
+                trigger: function() { settingsPage.dismissKeyboard(); }
+                KeyNavigation.down: dashboardRow.enabled ? dashboardRow : newButton
+            }
+            Components.Button {
+                id: saveTopButton
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                text: qsTr("Save")
+                trigger: function() { settingsPage.saveFromToolbar(); }
+                KeyNavigation.down: dashboardRow.enabled ? dashboardRow : newButton
+            }
+        }
+        Components.Divider { anchors.bottom: parent.bottom }
+    }
+
     Flickable {
         id: flickable
-        anchors { left: parent.left; right: parent.right; top: topNavigation.bottom; bottom: parent.bottom }
+        anchors { left: parent.left; right: parent.right; top: actionBar.bottom; bottom: parent.bottom }
         contentWidth: width
-        contentHeight: content.height + 24
+        contentHeight: content.height + 40
+        flickableDirection: Flickable.VerticalFlick
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
@@ -264,7 +311,7 @@ Settings.Page {
                 selected: activeFocus && ui.keyNavigationActive
                 onClicked: settingsPage.openPicker("placement")
                 KeyNavigation.up: selectedEngine === "remote" ? rendererInput.inputField : engineRow
-                KeyNavigation.down: saveButton
+                KeyNavigation.down: saveTopButton
             }
             Components.Divider {}
 
@@ -281,17 +328,6 @@ Settings.Page {
             }
 
             Components.Button {
-                id: saveButton
-                Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                Layout.topMargin: 16
-                text: qsTr("Save dashboard")
-                trigger: function() { settingsPage.saveEntry(); }
-                KeyNavigation.up: placementRow
-                KeyNavigation.down: removeButton
-            }
-            Components.Button {
                 id: removeButton
                 Layout.fillWidth: true
                 Layout.leftMargin: 20
@@ -302,7 +338,7 @@ Settings.Page {
                 variant: "destructive"
                 text: qsTr("Delete dashboard")
                 trigger: function() { settingsPage.removeEntry(); }
-                KeyNavigation.up: saveButton
+                KeyNavigation.up: placementRow
             }
             Text {
                 Layout.fillWidth: true
