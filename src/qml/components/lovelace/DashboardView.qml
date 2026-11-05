@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import Lovelace 1.0
 
 Item {
     id: dashboard
@@ -24,120 +25,49 @@ Item {
         onLoaded: item.dashboardUrl = Qt.binding(function() { return dashboard.dashboardUrl })
     }
 
-    // Double-buffered JPEG playback. Never clear the currently visible frame
-    // until the next download has completed, even on a slow network.
-    property int frontSlot: -1
-    property int pendingSlot: -1
-    property int frameNumber: 0
+    // A single persistent painted surface prevents blank frames and QML Image
+    // texture churn. It draws the last valid JPEG until another one is decoded.
     property string inputError: ""
     property var pendingRequests: []
 
-    function frameSource() {
-        return rendererUrl + "/frame?url=" + encodeURIComponent(dashboardUrl)
-               + "&width=" + Math.round(frameArea.width)
-               + "&height=" + Math.round(frameArea.height)
-               + "&v=" + (++frameNumber);
-    }
-
-    function requestFrame() {
-        if (!isActive || engine !== "remote" || !rendererUrl || !dashboardUrl ||
-                frameArea.width <= 0 || frameArea.height <= 0 || pendingSlot !== -1)
-            return;
-        pendingSlot = frontSlot === 0 ? 1 : 0;
-        if (pendingSlot === 0) frameA.source = frameSource();
-        else frameB.source = frameSource();
-    }
-
-    function onFrameStatus(slot, status) {
-        if (pendingSlot !== slot) return;
-        if (status === Image.Ready) {
-            frontSlot = slot;
-            pendingSlot = -1;
-        } else if (status === Image.Error) {
-            pendingSlot = -1;
-            console.warn("Lovelace screenshot failed:", slot);
-        }
-    }
-
-    function resetFrames() {
-        pendingSlot = -1;
-        frontSlot = -1;
-        frameA.source = "";
-        frameB.source = "";
-        if (isActive && engine === "remote") Qt.callLater(requestFrame);
-    }
-
-    onDashboardUrlChanged: resetFrames()
-    onRendererUrlChanged: resetFrames()
-    onEngineChanged: resetFrames()
-    onIsActiveChanged: if (isActive) requestFrame()
-    Component.onCompleted: requestFrame()
-
-    Timer {
-        interval: 900
-        repeat: true
-        running: dashboard.isActive && dashboard.engine === "remote" &&
-                 dashboard.rendererUrl !== ""
-        onTriggered: dashboard.requestFrame()
-    }
-
-    Item {
-        id: frameArea
+    LovelaceFrame {
+        id: frame
         anchors { fill: parent; topMargin: 54 }
-        clip: true
+        renderer: dashboard.rendererUrl
+        dashboardUrl: dashboard.dashboardUrl
+        active: dashboard.isActive && dashboard.engine === "remote"
         visible: dashboard.engine === "remote"
-
-        Image {
-            id: frameA
-            anchors.fill: parent
-            visible: dashboard.frontSlot === 0
-            asynchronous: true
-            cache: false
-            fillMode: Image.Stretch
-            onStatusChanged: dashboard.onFrameStatus(0, status)
+    }
+    MouseArea {
+        id: touchLayer
+        anchors.fill: frame
+        z: 1
+        enabled: dashboard.isActive && dashboard.engine === "remote" &&
+                 dashboard.rendererUrl !== ""
+        preventStealing: true
+        propagateComposedEvents: false
+        acceptedButtons: Qt.LeftButton
+        property real downX: 0
+        property real downY: 0
+        onPressed: {
+            downX = mouse.x;
+            downY = mouse.y;
+            mouse.accepted = true;
         }
-        Image {
-            id: frameB
-            anchors.fill: parent
-            visible: dashboard.frontSlot === 1
-            asynchronous: true
-            cache: false
-            fillMode: Image.Stretch
-            onStatusChanged: dashboard.onFrameStatus(1, status)
+        onReleased: {
+            const dx = mouse.x - downX;
+            const dy = mouse.y - downY;
+            if (Math.abs(dx) < 10 && Math.abs(dy) < 10)
+                dashboard.sendEvent({type:"click", x:mouse.x, y:mouse.y});
+            else
+                dashboard.sendEvent({type:"swipe", x:downX, y:downY,
+                                     toX:mouse.x, toY:mouse.y});
+            mouse.accepted = true;
         }
-
-        // The interaction layer is *above* both frames and owns the gesture.
-        // This prevents the native PathView from stealing scroll gestures.
-        MouseArea {
-            id: touchLayer
-            anchors.fill: parent
-            enabled: dashboard.isActive && dashboard.rendererUrl !== ""
-            preventStealing: true
-            propagateComposedEvents: false
-            hoverEnabled: false
-            acceptedButtons: Qt.LeftButton
-            property real downX: 0
-            property real downY: 0
-            onPressed: {
-                downX = mouse.x;
-                downY = mouse.y;
-                mouse.accepted = true;
-            }
-            onReleased: {
-                const dx = mouse.x - downX;
-                const dy = mouse.y - downY;
-                if (Math.abs(dx) < 10 && Math.abs(dy) < 10)
-                    dashboard.sendEvent({type:"click", x:mouse.x, y:mouse.y});
-                else
-                    dashboard.sendEvent({type:"swipe", x:downX, y:downY,
-                                         toX:mouse.x, toY:mouse.y});
-                mouse.accepted = true;
-            }
-            onWheel: {
-                dashboard.sendEvent({type:"scroll", x:wheel.x, y:wheel.y,
-                                     deltaY:-wheel.angleDelta.y});
-                wheel.accepted = true;
-            }
+        onWheel: {
+            dashboard.sendEvent({type:"scroll", x:wheel.x, y:wheel.y,
+                                 deltaY:-wheel.angleDelta.y});
+            wheel.accepted = true;
         }
     }
 
@@ -145,7 +75,6 @@ Item {
         if (engine !== "remote" || !rendererUrl) return;
         const xhr = new XMLHttpRequest();
         const endpoint = rendererUrl + "/input?url=" + encodeURIComponent(dashboardUrl);
-        // text/plain avoids an unnecessary CORS preflight from the QML engine.
         xhr.open("POST", endpoint);
         xhr.setRequestHeader("Content-Type", "text/plain;charset=UTF-8");
         pendingRequests.push(xhr);
@@ -158,11 +87,22 @@ Item {
                 console.warn("Lovelace input failed:", xhr.status, xhr.responseText);
             } else {
                 inputError = "";
-                // Let the browser process the event before scheduling another frame.
-                Qt.callLater(requestFrame);
+                frame.refresh();
             }
         };
         xhr.send(JSON.stringify(eventData));
+    }
+
+    Text {
+        visible: dashboard.engine === "remote" && (frame.error !== "" || inputError !== "")
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom;
+                  margins: 12 }
+        z: 3
+        color: "#ffbd7a"
+        font.pixelSize: 15
+        horizontalAlignment: Text.AlignHCenter
+        wrapMode: Text.WordWrap
+        text: frame.error !== "" ? frame.error : inputError
     }
 
     // Keep errors inside the content viewport, below the fixed title bar.
