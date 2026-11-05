@@ -680,6 +680,38 @@ void Config::setKeyboardMediaPlayerId(const QString& value) {
     emit keyboardMediaPlayerIdChanged();
 }
 
+QVariantList Config::getLovelaceDashboards() {
+    return m_settings->value("ui/lovelaceDashboards").toList();
+}
+
+void Config::setLovelaceDashboards(const QVariantList& dashboards) {
+    // Keep the persisted format deliberately limited to URLs and presentation settings.
+    QVariantList sanitized;
+    for (const QVariant& entry : dashboards) {
+        const QVariantMap item = entry.toMap();
+        const QUrl url(item.value("url").toString());
+        if (!url.isValid() || (url.scheme() != "http" && url.scheme() != "https") ||
+            url.host().isEmpty() || !url.userInfo().isEmpty()) {
+            continue;
+        }
+        QVariantMap cleaned;
+        cleaned.insert("name", item.value("name").toString().left(80));
+        cleaned.insert("url", url.toString());
+        cleaned.insert("engine", item.value("engine").toString() == "local" ? "local" : "remote");
+        cleaned.insert("placement", item.value("placement").toString() == "overlay" ? "overlay" : "page");
+        const QUrl renderer(item.value("renderer").toString());
+        cleaned.insert("renderer", renderer.isValid() &&
+            (renderer.scheme() == "http" || renderer.scheme() == "https") &&
+            renderer.userInfo().isEmpty() ? renderer.toString() : QString());
+        sanitized.append(cleaned);
+        if (sanitized.size() >= 12) break;
+    }
+    if (getLovelaceDashboards() == sanitized) return;
+    m_settings->setValue("ui/lovelaceDashboards", sanitized);
+    m_settings->sync();
+    emit lovelaceDashboardsChanged();
+}
+
 QVariantList Config::getKeyboardRules() {
     if (m_settings->contains("ui/keyboardRules")) {
         return m_settings->value("ui/keyboardRules").toList();
