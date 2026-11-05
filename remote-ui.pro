@@ -1,5 +1,15 @@
 QT += qml quick websockets quickcontrols2 multimedia network
 
+# Option A is only supported when Qt and QtWebEngine are built shared.
+# The standard Remote 2/3 toolchain is static and cannot build WebEngine.
+contains(CONFIG, lovelace_webengine) {
+    contains(CONFIG, static) {
+        error("Qt WebEngine requires a shared Qt toolchain, not static.")
+    }
+    QT += webengine
+    DEFINES += UC_LOVELACE_WEBENGINE
+}
+
 static {
     QTPLUGIN += qtvirtualkeyboardplugin
     QT += svg
