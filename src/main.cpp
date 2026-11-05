@@ -19,6 +19,7 @@
 #include "softwareupdate/softwareUpdate.h"
 #include "translation/translation.h"
 #include "ui/rtspStream.h"
+#include "ui/lovelaceFrame.h"
 #include "ui/uiController.h"
 #include "voice.h"
 
@@ -109,6 +110,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     qmlRegisterType<RtspStream>("Rtsp", 1, 0, "RtspStream");
+    qmlRegisterType<LovelaceFrame>("Lovelace", 1, 0, "LovelaceFrame");
     engine->addImportPath("qrc:/keyboard");
 
     QCoreApplication::setOrganizationName("Unfolded Circle");
