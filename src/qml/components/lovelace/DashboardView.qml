@@ -70,26 +70,49 @@ Item {
         frameNumber++;
     }
 
-    Column {
-        anchors.centerIn: parent
-        visible: dashboard.engine === "remote" && dashboard.rendererUrl === ""
-        width: parent.width - 32
-        spacing: 12
-        Text {
-            width: parent.width; wrapMode: Text.WordWrap; horizontalAlignment: Text.AlignHCenter
-            color: "white"
-            text: qsTr("Configure a rendering service address for this dashboard.")
-        }
-    }
-    Column {
-        anchors.centerIn: parent
-        visible: dashboard.engine === "local" && localBrowser.status === Loader.Error
-        width: parent.width - 32
-        spacing: 12
-        Text {
-            width: parent.width; wrapMode: Text.WordWrap; horizontalAlignment: Text.AlignHCenter
-            color: "white"
-            text: qsTr("Qt WebEngine is unavailable in this firmware build. Select Remote rendering instead.")
+    // Keep errors inside the content viewport, below the fixed title bar.
+    // Qt's default text size is much too large for the Remote 3 screen.
+    Item {
+        id: emptyState
+        anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom;
+                  topMargin: 54 }
+        visible: (dashboard.engine === "remote" && dashboard.rendererUrl === "") ||
+                 (dashboard.engine === "local" && localBrowser.status === Loader.Error)
+        z: 2
+
+        Column {
+            width: Math.min(parent.width - 48, 420)
+            anchors.centerIn: parent
+            spacing: 14
+            Text {
+                width: parent.width
+                color: "white"
+                font.pixelSize: 21
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                text: dashboard.engine === "local" ? qsTr("Local rendering unavailable") :
+                                                     qsTr("Renderer not configured")
+            }
+            Text {
+                width: parent.width
+                color: "#c0c0c0"
+                font.pixelSize: 17
+                lineHeight: 1.15
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                text: dashboard.engine === "local"
+                      ? qsTr("This Remote UI build has no Qt WebEngine browser. Use Remote rendering with the Chromium companion service.")
+                      : qsTr("Set a rendering service address in Home Assistant dashboard settings.")
+            }
+            Text {
+                width: parent.width
+                color: "#aaaaaa"
+                font.pixelSize: 15
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                text: qsTr("Press Close to return.")
+            }
         }
     }
     Rectangle {
