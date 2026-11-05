@@ -12,7 +12,7 @@ import "qrc:/components" as Components
 Settings.Page {
     id: settingsPage
     scrollTarget: flickable
-    initialFocusItem: dashboardRow
+    initialFocusItem: entries.length > 0 ? dashboardRow : newButton
 
     property int editingIndex: -1
     property string selectedEngine: "remote"
