@@ -104,3 +104,6 @@ qt-creator-license-template
 **/skills/openspec-*/
 /tools/env/
 /_work/
+
+# Local source/runtime workspace for experimental Qt WebEngine cross-build
+.qt-webengine-work/
