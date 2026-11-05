@@ -33,6 +33,16 @@ Item {
     property alias statusBar: statusBar
     property alias pages: pages
     property alias currentPage: pages.currentItem
+    property int lovelaceIndex: -1
+    property bool lovelacePickerOpen: false
+    readonly property var lovelaceDashboards: Config.lovelaceDashboards
+    function showLovelace(index) {
+        if (index < 0 || index >= lovelaceDashboards.length) return;
+        lovelaceIndex = index;
+        lovelacePickerOpen = false;
+    }
+    function hideLovelace() { lovelaceIndex = -1; }
+
     property QtObject currentEntity: pages.currentItem ? pages.currentItem.currentItem : null
     // The native first page always remains loaded. A failed optional QML
     // home component never blocks it or the hardware / Settings entry points.
@@ -312,6 +322,8 @@ Item {
             },
             "BACK": {
                 "pressed": function() {
+                    if (lovelaceIndex >= 0) { hideLovelace(); return; }
+                    if (lovelacePickerOpen) { lovelacePickerOpen = false; return; }
                     if (ui.editMode) {
                         ui.editMode = false;
                     }
@@ -733,6 +745,78 @@ Item {
         onStatusChanged: {
             if (status === Loader.Error) {
                 console.warn("Redesigned home could not load; original page remains available:", source);
+            }
+        }
+    }
+
+
+    // Lovelace launcher is independent of the redesigned home and stock pages.
+    Rectangle {
+        id: lovelaceLauncher
+        width: 58; height: 48; radius: 8
+        anchors { right: parent.right; rightMargin: 10; bottom: parent.bottom; bottomMargin: 65 }
+        color: "#33363c"; z: 17
+        visible: mainContainerRoot.lovelaceDashboards.length > 0 &&
+                 mainContainerRoot.lovelaceIndex < 0 && !ui.profile.restricted
+        Text { anchors.centerIn: parent; text: "HA"; color: "white"; font.pixelSize: 22; font.bold: true }
+        MouseArea { anchors.fill: parent; onClicked: mainContainerRoot.lovelacePickerOpen = true }
+    }
+    Rectangle {
+        id: lovelacePicker
+        anchors.fill: parent; z: 19; color: "#101115"
+        visible: mainContainerRoot.lovelacePickerOpen && !ui.profile.restricted
+        MouseArea { anchors.fill: parent }
+        Column {
+            anchors { fill: parent; margins: 20 }
+            spacing: 12
+            Text { text: qsTr("Home Assistant dashboards"); color: "white"; font.pixelSize: 24 }
+            Repeater {
+                model: mainContainerRoot.lovelaceDashboards
+                delegate: Rectangle {
+                    width: parent.width; height: 64; radius: 6; color: "#303238"
+                    Text {
+                        text: modelData.name || modelData.url
+                        anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
+                        color: "white"; font.pixelSize: 18
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: mainContainerRoot.showLovelace(index) }
+                }
+            }
+            Rectangle {
+                width: parent.width; height: 56; color: "#343434"; radius: 6
+                Text { anchors.centerIn: parent; text: qsTr("Close"); color: "white" }
+                MouseArea { anchors.fill: parent; onClicked: mainContainerRoot.lovelacePickerOpen = false }
+            }
+        }
+    }
+    Loader {
+        id: lovelaceOverlay
+        anchors.fill: parent; z: 20
+        active: mainContainerRoot.lovelaceIndex >= 0 && !ui.profile.restricted
+        visible: active && status === Loader.Ready
+        source: "qrc:/components/lovelace/DashboardView.qml"
+        onLoaded: item.definition = Qt.binding(function() {
+            return mainContainerRoot.lovelaceIndex >= 0
+                ? mainContainerRoot.lovelaceDashboards[mainContainerRoot.lovelaceIndex] : ({});
+        })
+        Connections {
+            target: lovelaceOverlay.item; ignoreUnknownSignals: true
+            function onCloseRequested() { mainContainerRoot.hideLovelace(); }
+        }
+    }
+    // Page dots avoid stealing scrolling and swiping from the Lovelace browser.
+    Row {
+        z: 21; spacing: 10
+        visible: lovelaceOverlay.visible && mainContainerRoot.lovelaceIndex >= 0 &&
+                 mainContainerRoot.lovelaceDashboards[mainContainerRoot.lovelaceIndex].placement === "page"
+        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 10 }
+        Repeater {
+            model: mainContainerRoot.lovelaceDashboards
+            delegate: Rectangle {
+                width: 26; height: 26; radius: 13
+                color: index === mainContainerRoot.lovelaceIndex ? "#ffffff" : "#777777"
+                visible: modelData.placement === "page"
+                MouseArea { anchors.fill: parent; onClicked: mainContainerRoot.showLovelace(index) }
             }
         }
     }

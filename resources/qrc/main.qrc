@@ -68,6 +68,9 @@
         <file alias="settings/settings/Display.qml">../../src/qml/settings/settings/Display.qml</file>
         <file alias="settings/settings/Ui.qml">../../src/qml/settings/settings/Ui.qml</file>
         <file alias="settings/settings/HomeScreen.qml">../../src/qml/settings/settings/HomeScreen.qml</file>
+        <file alias="components/lovelace/LocalBrowser.qml">../../src/qml/components/lovelace/LocalBrowser.qml</file>
+        <file alias="components/lovelace/DashboardView.qml">../../src/qml/components/lovelace/DashboardView.qml</file>
+        <file alias="settings/settings/Lovelace.qml">../../src/qml/settings/settings/Lovelace.qml</file>
         <file alias="components/home/HomePage.qml">../../src/qml/components/home/HomePage.qml</file>
         <file alias="components/home/ActivityTile.qml">../../src/qml/components/home/ActivityTile.qml</file>
         <file alias="components/home/MediaCard.qml">../../src/qml/components/home/MediaCard.qml</file>

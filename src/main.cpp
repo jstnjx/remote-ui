@@ -2,12 +2,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <QGuiApplication>
+#include <QDir>
+#include <QStandardPaths>
+#include <QQmlContext>
 #include <QMetaObject>
 #include <QQmlApplicationEngine>
 #include <QScreen>
 #include <QQuickWindow>
 
 #include <memory>
+
+#ifdef UC_LOVELACE_WEBENGINE
+#include <QtWebEngine/QtWebEngine>
+#endif
 
 #include "config/config.h"
 #include "core/core.h"
@@ -86,6 +93,9 @@ int main(int argc, char *argv[]) {
     qputenv("QT_VIRTUALKEYBOARD_STYLE", "remotestyle");
 
     QGuiApplication app(argc, argv);
+#ifdef UC_LOVELACE_WEBENGINE
+    QtWebEngine::initialize();
+#endif
     // Heap allocated to control the destruction order: the engine must go before the controllers, see the end of main().
     auto engine = std::make_unique<QQmlApplicationEngine>();
 
@@ -114,6 +124,20 @@ int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationName("Unfolded Circle");
     QCoreApplication::setOrganizationDomain("uc.io");
     QCoreApplication::setApplicationName("remote-ui");
+
+#ifdef UC_LOVELACE_WEBENGINE
+    // Persist Home Assistant login under UC_DATA_HOME when provided by UCOS.
+    // The browser's cookies and local storage must survive UI restarts.
+    const QString dataHome = qEnvironmentVariable("UC_DATA_HOME");
+    const QString profilePath = dataHome.isEmpty()
+        ? QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+              + QStringLiteral("/lovelace-webengine")
+        : QDir(dataHome).filePath(QStringLiteral("lovelace-webengine"));
+    if (!QDir().mkpath(profilePath)) {
+        qCWarning(lcApp()) << "Could not create Lovelace browser storage directory:" << profilePath;
+    }
+    engine->rootContext()->setContextProperty(QStringLiteral("lovelaceBrowserStoragePath"), profilePath);
+#endif
 
     QScreen *screen = QGuiApplication::primaryScreen();
     qCDebug(lcApp()) << "Screen Width" << screen->geometry().width();
