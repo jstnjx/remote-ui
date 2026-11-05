@@ -21,6 +21,7 @@ WebEngineView {
     profile: WebEngineProfile {
         storageName: "lovelace"
         offTheRecord: false
+        persistentStoragePath: lovelaceBrowserStoragePath
         persistentCookiesPolicy: WebEngineProfile.ForcePersistentCookies
         httpCacheType: WebEngineProfile.DiskHttpCache
     }
