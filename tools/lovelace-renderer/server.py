@@ -6,6 +6,8 @@ A persistent Chromium profile holds the Home Assistant login session.
 Only dashboard URLs under HA_ORIGIN are accepted.
 """
 import asyncio
+import json
+import logging
 import os
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -23,6 +25,7 @@ locks = {}
 last_frame = {}
 browser = None
 playwright = None
+log = logging.getLogger("lovelace-renderer")
 
 
 def allowed(url):
@@ -77,32 +80,94 @@ async def screenshot(request):
                         headers={"Cache-Control": "no-store"})
 
 
+async def touch_swipe(page, x, y, to_x, to_y):
+    """Send real mobile touch gestures, not mouse drag events.
+
+    Lovelace mobile cards and browser scrolling listen to touch events.
+    Chromium's CDP dispatch produces trusted touch input.
+    """
+    session = await page.context.new_cdp_session(page)
+    try:
+        await session.send("Input.dispatchTouchEvent", {
+            "type": "touchStart",
+            "touchPoints": [{"x": x, "y": y, "id": 1}],
+        })
+        steps = max(6, min(20, int(max(abs(to_x - x), abs(to_y - y)) / 18)))
+        for step in range(1, steps + 1):
+            part = step / steps
+            await session.send("Input.dispatchTouchEvent", {
+                "type": "touchMove",
+                "touchPoints": [{
+                    "x": x + (to_x - x) * part,
+                    "y": y + (to_y - y) * part,
+                    "id": 1,
+                }],
+            })
+            await asyncio.sleep(0.016)
+    finally:
+        await session.send("Input.dispatchTouchEvent", {
+            "type": "touchEnd", "touchPoints": [],
+        })
+        await session.detach()
+
+
 async def input_event(request):
     url = request.query.get("url", "")
     if not allowed(url):
-        raise web.HTTPForbidden()
+        raise web.HTTPForbidden(text="Dashboard URL is not under HA_ORIGIN")
     if url not in pages:
-        raise web.HTTPConflict(text="Open dashboard first")
-    data = await request.json()
-    page = pages[url]
-    x, y = float(data.get("x", 0)), float(data.get("y", 0))
-    async with locks[url]:
+        raise web.HTTPConflict(text="Open the dashboard frame first")
+
+    try:
+        # QML sends text/plain to avoid browser preflight; accept application/json
+        # for diagnostics and third-party clients as well.
+        data = json.loads(await request.text())
+        if not isinstance(data, dict):
+            raise ValueError("JSON object expected")
         kind = data.get("type")
+        x, y = float(data.get("x", 0)), float(data.get("y", 0))
+        page = pages[url]
+        viewport = page.viewport_size or {"width": 480, "height": 796}
+        x = max(0, min(viewport["width"] - 1, x))
+        y = max(0, min(viewport["height"] - 1, y))
+        if kind in ("swipe", "scroll"):
+            to_x = float(data.get("toX", x))
+            to_y = float(data.get("toY", y))
+    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+        raise web.HTTPBadRequest(text=f"Invalid input data: {exc}") from exc
+
+    async with locks[url]:
         if kind == "click":
-            await page.mouse.click(x, y)
+            await page.touchscreen.tap(x, y)
         elif kind == "swipe":
-            await page.mouse.move(x, y)
-            await page.mouse.down()
-            dest_x, dest_y = float(data.get("toX", x)), float(data.get("toY", y))
-            await page.mouse.move(dest_x, dest_y, steps=12)
-            await page.mouse.up()
+            to_x = max(0, min(viewport["width"] - 1, to_x))
+            to_y = max(0, min(viewport["height"] - 1, to_y))
+            await touch_swipe(page, x, y, to_x, to_y)
         elif kind == "scroll":
-            await page.mouse.move(x, y)
             await page.mouse.wheel(0, float(data.get("deltaY", 0)))
         else:
             raise web.HTTPBadRequest(text="Unknown input event")
         last_frame.pop(url, None)
+    log.info("Input %s on %s (%.0f, %.0f)", kind, urlsplit(url).path, x, y)
     return web.json_response({"ok": True})
+
+
+@web.middleware
+async def cors_middleware(request, handler):
+    # The remote's QML XMLHttpRequest does not share Chromium's origin.
+    # Do not publish this unauthenticated endpoint beyond a trusted LAN.
+    if request.method == "OPTIONS" and request.path == "/input":
+        response = web.Response(status=204)
+    else:
+        response = await handler(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
+
+
+async def health(request):
+    return web.json_response({"ok": True, "dashboards": len(pages)})
 
 
 async def on_startup(app):
@@ -126,9 +191,12 @@ async def on_cleanup(app):
 
 
 async def main():
-    app = web.Application(client_max_size=4096)
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    app = web.Application(client_max_size=4096, middlewares=[cors_middleware])
     app.router.add_get("/frame", screenshot)
     app.router.add_post("/input", input_event)
+    app.router.add_options("/input", lambda request: web.Response(status=204))
+    app.router.add_get("/health", health)
     app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)
     print(f"Listening on {HOST}:{PORT}; accessible Home Assistant origin: {ORIGIN}")
