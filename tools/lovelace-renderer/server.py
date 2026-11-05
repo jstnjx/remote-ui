@@ -46,9 +46,7 @@ async def page_for(url, width, height):
         locks.pop(old, None)
         last_frame.pop(old, None)
     if url not in pages:
-        page = await browser.new_page(viewport={"width": width, "height": height},
-                                      device_scale_factor=1, is_mobile=True,
-                                      has_touch=True)
+        page = await browser.new_page()
         pages[url] = page
         locks[url] = asyncio.Lock()
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
@@ -114,6 +112,8 @@ async def on_startup(app):
     playwright = await async_playwright().start()
     browser = await playwright.chromium.launch_persistent_context(
         str(PROFILE), headless=True,
+        viewport={"width": 480, "height": 796}, is_mobile=True, has_touch=True,
+        device_scale_factor=1,
         args=["--no-first-run", "--disable-background-networking"])
     # Session data remains in the profile directory on the rendering host.
 
