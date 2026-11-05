@@ -28,6 +28,8 @@ QTDIR_STATIC ?= $(HOME)/Qt/$(QT_VERSION)/$(QT_SPEC)-static
 JOBS         ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu)
 # Docker toolchain images (docs/cross-compile.md, docs/static-compile.md). `docker pull <image>` to update one.
 TOOLCHAIN_IMAGE ?= unfoldedcircle/r2-toolchain-qt-5.15.19-static:latest
+# Supply a custom AArch64 SHARED Qt 5.15 + QtWebEngine toolchain image.
+WEBENGINE_TOOLCHAIN_IMAGE ?=
 DESKTOP_IMAGE   ?= unfoldedcircle/remote-ui-toolchain-qt-5.15.19-static-x64:latest
 WINDOWS_IMAGE   ?= unfoldedcircle/remote-ui-toolchain-qt-5.15.19-static-windows-x64:latest
 
@@ -85,6 +87,25 @@ ucr2: OUT_DIR = $(ROOT)/binaries/linux-arm64/release
 ucr2: ## Cross-compile the static Remote Two/3 (aarch64) binary in the Docker toolchain -> binaries/linux-arm64/release/remote-ui
 	$(docker_build)
 	@echo "Install it on the device as described in docs/cross-compile.md"
+
+ucr2-webengine: ## Build local Lovelace on a SHARED Qt 5.15 + WebEngine ARM64 toolchain (requires image)
+	@test -n "$(WEBENGINE_TOOLCHAIN_IMAGE)" || { \
+	  echo "ERROR: No shared QtWebEngine ARM64 toolchain image configured."; \
+	  echo "The standard 'make ucr2' static toolchain CANNOT build Qt WebEngine."; \
+	  echo "Set WEBENGINE_TOOLCHAIN_IMAGE=<your-aarch64-shared-qtwebengine-image>."; exit 2; }
+	@mkdir -p "$(ROOT)/build/webengine-arm64" "$(ROOT)/binaries/linux-arm64/webengine"
+	docker run --rm --user=$(id -u):$(id -g) \
+	  -v "$(ROOT)":/sources -w /sources \
+	  -e UC_BIN=/sources/binaries/linux-arm64/webengine \
+	  "$(WEBENGINE_TOOLCHAIN_IMAGE)" sh -ec ' \
+	    bash tools/lovelace-webengine/preflight.sh; \
+	    cd build/webengine-arm64; \
+	    qmake /sources/remote-ui.pro CONFIG+=release CONFIG+=lovelace_webengine; \
+	    make -j4; \
+	    test -f /sources/binaries/linux-arm64/webengine/remote-ui; \
+	    readelf -h /sources/binaries/linux-arm64/webengine/remote-ui | grep -q AArch64; \
+	    echo "ARM64 shared-Qt WebEngine UI build complete"; \
+	  '
 
 linux-x64: IMAGE = $(DESKTOP_IMAGE)
 linux-x64: OUT_DIR = $(ROOT)/binaries/linux-x64/release
@@ -217,4 +238,4 @@ define build
 	@echo "Run it with:  make run-$@   or:  . $(ENV_FILE) && \"$(subst $(ROOT)/,,$(OUT_DIR))/$(BIN)\""
 endef
 
-.PHONY: help linux linux-static macos macos-static linux-x64 windows-x64 ucr2 test run-linux run-linux-static run-macos run-macos-static run-linux-x64 clean clean-static clean-macos clean-macos-static clean-ucr2 clean-linux-x64 clean-windows-x64 clean-all translations-restore
+.PHONY: help linux linux-static macos macos-static linux-x64 windows-x64 ucr2 ucr2-webengine test run-linux run-linux-static run-macos run-macos-static run-linux-x64 clean clean-static clean-macos clean-macos-static clean-ucr2 clean-linux-x64 clean-windows-x64 clean-all translations-restore
