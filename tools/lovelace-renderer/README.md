@@ -89,3 +89,36 @@ curl -i -X POST \
 You should see `{"ok": true}` and an `Input click` log entry. If no
 input log appears when touching the remote, verify the Remote UI has the latest
 binary and the server firewall allows POST requests on port 8765.
+
+## Persistent JPEG surface and Home Assistant session recovery
+
+The updated Remote UI now paints incoming JPEGs onto a persistent C++
+`LovelaceFrame` surface instead of swapping QML `Image` objects. Rebuild and
+install the Remote UI after updating the repository; restarting the Python
+renderer alone will not resolve GPU texture flicker on the device.
+
+Both `login.py` and `server.py` now default to the stable
+`tools/lovelace-renderer/browser-profile/` directory regardless of their
+working directory. If your earlier Chromium profile lived elsewhere,
+you must log in again or set `LOVELACE_PROFILE=/absolute/path/to/old/profile`
+**in both processes**. Never run `login.py` while the server is running.
+
+```bash
+# Stop server.py first (Ctrl+C), and run from tools/lovelace-renderer.
+source .venv/bin/activate
+export HA_ORIGIN="http://10.1.1.51:8123"
+python login.py
+# Complete Home Assistant login, verify the dashboard in Chromium, press Enter.
+LOVELACE_HOST=0.0.0.0 python server.py
+curl http://127.0.0.1:8765/health
+```
+
+`/health` returns the actual profile directory and the browser URL **path**
+for each dashboard session. A `login_required` flag indicates that the
+Chromium session has been redirected to Home Assistant's authentication route.
+The frame endpoint will return HTTP 401 instead of silently showing the login
+screen. The Remote UI retains its last valid image and displays an error
+when it cannot fetch a new frame.
+
+The media frame is served at 480x746 when the viewer uses a 54px header on the
+480x800 content viewport; its dimensions depend on the actual visible area.
