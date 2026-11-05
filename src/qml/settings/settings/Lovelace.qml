@@ -15,7 +15,6 @@ Settings.Page {
     initialFocusItem: entries.length > 0 ? dashboardRow : newButton
 
     property int editingIndex: -1
-    property string selectedEngine: "remote"
     property string selectedPlacement: "overlay"
     property var pickerHandler: null
     readonly property var entries: Config.lovelaceDashboards
@@ -27,8 +26,6 @@ Settings.Page {
         const d = index < 0 ? {} : entries[index];
         nameInput.inputValue = d.name || "";
         urlInput.inputValue = d.url || "";
-        rendererInput.inputValue = d.renderer || "";
-        selectedEngine = d.engine === "local" ? "local" : "remote";
         selectedPlacement = d.placement === "page" ? "page" : "overlay";
         message.text = "";
     }
@@ -55,15 +52,6 @@ Settings.Page {
                                      value: String(i) });
             }
             pickerHandler = function(value) { loadEntry(Number(value)); };
-        } else if (kind === "engine") {
-            pickerModel.append({ name: qsTr("Remote Chromium renderer"), value: "remote" });
-            pickerModel.append({ name: qsTr("Local browser (requires unsupported firmware changes)"), value: "local" });
-            pickerHandler = function(value) {
-                selectedEngine = value;
-                message.text = value === "local"
-                    ? qsTr("Local Qt WebEngine is not included in the Remote 2/3 firmware. Select Remote to use the Chromium service.")
-                    : "";
-            };
         } else {
             pickerModel.append({ name: qsTr("Home screen overlay"), value: "overlay" });
             pickerModel.append({ name: qsTr("Additional dashboard page"), value: "page" });
@@ -71,7 +59,7 @@ Settings.Page {
         }
         pickerLoader.setSource("qrc:/components/PopupList.qml", {
             title: kind === "dashboard" ? qsTr("Select dashboard") :
-                   kind === "engine" ? qsTr("Rendering engine") : qsTr("Display location"),
+                   qsTr("Display location"),
             listModel: pickerModel, showSearch: false
         });
     }
@@ -83,19 +71,9 @@ Settings.Page {
 
     function saveEntry() {
         const url = urlInput.inputValue.trim();
-        const renderer = rendererInput.inputValue.trim();
         if (!validUrl(url)) {
             message.text = qsTr("Enter a valid HTTP(S) Home Assistant dashboard URL.");
             urlInput.showError(message.text);
-            return;
-        }
-        if (selectedEngine === "local") {
-            message.text = qsTr("Local rendering is unavailable in this firmware. Select Remote rendering.");
-            return;
-        }
-        if (selectedEngine === "remote" && !validUrl(renderer)) {
-            message.text = qsTr("Enter an HTTP(S) Chromium renderer address.");
-            rendererInput.showError(message.text);
             return;
         }
         if (editingIndex < 0 && entries.length >= 12) {
@@ -106,8 +84,8 @@ Settings.Page {
         const entry = {
             name: nameInput.inputValue.trim() || qsTr("Home Assistant"),
             url: url,
-            renderer: selectedEngine === "remote" ? renderer : "",
-            engine: selectedEngine,
+            renderer: "",
+            engine: "local",
             placement: selectedPlacement
         };
         if (editingIndex < 0) dashboards.push(entry);
@@ -249,7 +227,7 @@ Settings.Page {
                 moveInput: false
                 keyboardFollowsFocus: true
                 navUp: nameInput.inputField
-                navDown: engineRow
+                navDown: placementRow
             }
             Text {
                 Layout.fillWidth: true
@@ -262,53 +240,15 @@ Settings.Page {
                 font: fonts.caption()
             }
 
-            Components.MenuRow {
-                id: engineRow
-                text: qsTr("Rendering")
-                value: selectedEngine === "local" ? qsTr("Local") : qsTr("Remote")
-                chevron: true
-                keypadActivatable: true
-                selected: activeFocus && ui.keyNavigationActive
-                onClicked: settingsPage.openPicker("engine")
-                KeyNavigation.up: urlInput.inputField
-                KeyNavigation.down: selectedEngine === "remote" ? rendererInput.inputField : placementRow
-            }
-            Components.Divider {}
-
-            ColumnLayout {
+            Text {
                 Layout.fillWidth: true
-                visible: selectedEngine === "remote"
-                spacing: 0
-                Text {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 20
-                    Layout.rightMargin: 20
-                    Layout.topMargin: 14
-                    text: qsTr("Renderer address")
-                    color: colors.textSecondary
-                    font: fonts.help()
-                }
-                Components.InputField {
-                    id: rendererInput
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 20
-                    Layout.rightMargin: 20
-                    label: qsTr("Renderer URL")
-                    moveInput: false
-                    keyboardFollowsFocus: true
-                    navUp: engineRow
-                    navDown: placementRow
-                }
-                Text {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 20
-                    Layout.rightMargin: 20
-                    Layout.topMargin: 6
-                    wrapMode: Text.WordWrap
-                    color: colors.textSecondary
-                    font: fonts.caption()
-                    text: qsTr("Example: http://192.168.1.10:8765")
-                }
+                Layout.leftMargin: 20
+                Layout.rightMargin: 20
+                Layout.topMargin: 16
+                wrapMode: Text.WordWrap
+                text: qsTr("Rendering: on-device Chromium (Qt WebEngine). This requires a compatible shared-Qt browser build and runtime on the Remote 3.")
+                color: colors.textSecondary
+                font: fonts.help()
             }
 
             Components.MenuRow {
@@ -319,7 +259,7 @@ Settings.Page {
                 keypadActivatable: true
                 selected: activeFocus && ui.keyNavigationActive
                 onClicked: settingsPage.openPicker("placement")
-                KeyNavigation.up: selectedEngine === "remote" ? rendererInput.inputField : engineRow
+                KeyNavigation.up: urlInput.inputField
                 KeyNavigation.down: saveTopButton
             }
             Components.Divider {}
@@ -356,7 +296,7 @@ Settings.Page {
                 Layout.topMargin: 18
                 Layout.bottomMargin: 28
                 wrapMode: Text.WordWrap
-                text: qsTr("Local rendering requires an unsupported browser-enabled firmware build. Use Remote rendering with the Chromium service.")
+                text: qsTr("The dashboard opens directly on the remote. Authentication is stored by the embedded browser; no external renderer is used.")
                 color: colors.textSecondary
                 font: fonts.help()
             }
