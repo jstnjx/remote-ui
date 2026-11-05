@@ -4,6 +4,7 @@
 #include "config.h"
 
 #include <QtGlobal>
+#include <QUrl>
 
 #include <algorithm>
 
