@@ -319,6 +319,8 @@ class Sensor : public Base {
     Q_OBJECT
 
     Q_PROPERTY(QString value READ getValue NOTIFY valueChanged)
+    // Untranslated on/off values for automation triggers; value is localized.
+    Q_PROPERTY(QString rawValue READ getRawValue NOTIFY valueChanged)
     Q_PROPERTY(QString unit READ getUnit NOTIFY unitChanged)
 
     // options
@@ -336,14 +338,18 @@ class Sensor : public Base {
                     QVariantMap options, const QString &integrationId, QObject *parent);
     ~Sensor();
 
-    // The value as it is shown. A binary sensor's on/off is translated here, with the binary device class that is
-    // current, so a language change and a later unit (device class) change are reflected. A numeric value is
-    // formatted with the effective decimals, a text value is shown as reported. A timestamp, a date and a duration
-    // in d, h or min are formatted as date, time or time span; a value that is not in their format is shown as any
-    // other value.
-    QString getValue();
-    // The unit to show after the value: empty for a duration that is shown as a time span, which names its units.
-    QString getUnit() { return timeSpan().isEmpty() ? m_unit : QString(); }
+    // The value as the sensor reported it; a binary sensor's on/off is translated here, with the binary device
+    // class that is current, so a language change and a later unit (device class) change are reflected.
+    QString getValue() {
+        const QString value = m_value.toString();
+        // getTranslatedValue() reads everything but "on" as off: no value stays no value
+        if (m_sensorDeviceClass == SensorDeviceClass::Binary && !value.isEmpty()) {
+            return BinarySensorDeviceClass::getTranslatedValue(m_binarySensorDeviceClass, value);
+        }
+        return value;
+    }
+    QString getRawValue() { return m_value.toString(); }
+    QString getUnit() { return m_unit; }
 
     // options
     QString getCustomLabel() { return m_customLabel; }

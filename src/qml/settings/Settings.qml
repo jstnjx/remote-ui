@@ -70,6 +70,21 @@ Settings.Page {
                     icon: "uc:list"
                 },
                 {
+                    itemTitle: QT_TR_NOOP("Home screen"),
+                    page: "HomeScreen",
+                    icon: "uc:house"
+                },
+                {
+                    itemTitle: QT_TR_NOOP("Media player widgets"),
+                    page: "MediaWidgets",
+                    icon: "uc:music"
+                },
+                {
+                    itemTitle: QT_TR_NOOP("Keyboard input automation"),
+                    page: "KeyboardPrompt",
+                    icon: "uc:keyboard"
+                },
+                {
                     //: Settings page for the touch-sensitive strip on the side of the remote.
                     itemTitle: QT_TR_NOOP("Touch Slider"),
                     page: "TouchSlider",

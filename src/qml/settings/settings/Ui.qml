@@ -94,6 +94,25 @@ Settings.Page {
                     /** KEYBOARD NAVIGATION **/
                     highlight: activeFocus && ui.keyNavigationActive
                     KeyNavigation.up: batteryPercentSwitch
+                    KeyNavigation.down: integrationConnectionIconSwitch
+                }
+            }
+
+            /** INTEGRATION CONNECTION ICON **/
+            Components.SettingRow {
+                title: qsTr("Show reconnecting icons")
+                help: qsTr("Show the red disconnected icon next to entity widgets when their integration is offline. Turning this off does not affect reconnection.")
+
+                Components.Switch {
+                    id: integrationConnectionIconSwitch
+                    icon: "uc:check"
+                    checked: Config.showIntegrationConnectionIcon
+                    trigger: function() {
+                        Config.showIntegrationConnectionIcon = !Config.showIntegrationConnectionIcon;
+                    }
+
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: batteryEveryWhereSwitch
                     KeyNavigation.down: activityBarSwitch
                 }
             }
@@ -113,7 +132,7 @@ Settings.Page {
 
                     /** KEYBOARD NAVIGATION **/
                     highlight: activeFocus && ui.keyNavigationActive
-                    KeyNavigation.up: batteryEveryWhereSwitch
+                    KeyNavigation.up: integrationConnectionIconSwitch
                     KeyNavigation.down: apiActivitySwitch
                 }
             }
@@ -160,7 +179,6 @@ Settings.Page {
 
             /** MEDIA BROWSER COVERFLOW DEFAULT **/
             Components.SettingRow {
-                showDivider: false
                 title: qsTr("Coverflow in media browser")
                 help: qsTr("Use coverflow as the default view when opening the media browser.")
 
@@ -175,6 +193,95 @@ Settings.Page {
                     /** KEYBOARD NAVIGATION **/
                     highlight: activeFocus && ui.keyNavigationActive
                     KeyNavigation.up: mediaComponentSwitch
+                    KeyNavigation.down: rtspFrameRateSlider
+                }
+            }
+
+            /** RTSP STREAM FRAME RATE **/
+            Components.SettingRow {
+                title: qsTr("RTSP stream frame rate")
+                help: qsTr("Select the frame rate for RTSP video widgets. Higher rates use more CPU and battery.")
+                value: Config.rtspFrameRate + " FPS"
+                controlBelow: true
+                controlBottomSpace: 40
+
+                Components.Slider {
+                    id: rtspFrameRateSlider
+                    height: 60
+                    from: 5
+                    to: 30
+                    stepSize: 5
+                    value: Config.rtspFrameRate
+                    live: false
+                    showLiveValue: false
+                    lowValueText: qsTr("5 FPS")
+                    highValueText: qsTr("30 FPS")
+
+                    // Updating the preference notifies active widgets, which
+                    // restart their local FFmpeg process with the new fps.
+                    onMoved: {
+                        if (!pressed) {
+                            Config.rtspFrameRate = Math.round(value);
+                        }
+                    }
+                    onUserInteractionEnded: {
+                        Config.rtspFrameRate = Math.round(value);
+                    }
+
+                    /** KEYBOARD NAVIGATION **/
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: mediaCoverflowSwitch
+                    KeyNavigation.down: rtspResolutionSlider
+                }
+            }
+
+            Components.SettingRow {
+                title: qsTr("RTSP resolution")
+                value: ["320 × 180", "480 × 270", "640 × 360"][Config.rtspResolution]
+                help: qsTr("Higher resolution increases decoder and rendering CPU usage.")
+                controlBelow: true
+                controlBottomSpace: 40
+                Components.Slider {
+                    id: rtspResolutionSlider
+                    height: 60
+                    from: 0
+                    to: 2
+                    stepSize: 1
+                    value: Config.rtspResolution
+                    lowValueText: qsTr("320 × 180")
+                    highValueText: qsTr("640 × 360")
+                    onUserInteractionEnded: Config.rtspResolution = Math.round(value)
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: rtspFrameRateSlider
+                    KeyNavigation.down: rtspAutoQualitySwitch
+                }
+            }
+
+            Components.SettingRow {
+                title: qsTr("Automatically reduce RTSP quality")
+                help: qsTr("Step down the video resolution after sustained FFmpeg CPU load above 80%.")
+                Components.Switch {
+                    id: rtspAutoQualitySwitch
+                    icon: "uc:check"
+                    checked: Config.rtspAutoQuality
+                    trigger: function() { Config.rtspAutoQuality = !Config.rtspAutoQuality; }
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: rtspResolutionSlider
+                    KeyNavigation.down: rtspStatsSwitch
+                }
+            }
+
+            Components.SettingRow {
+                showDivider: false
+                title: qsTr("Show RTSP stream statistics")
+                help: qsTr("Display actual rendered FPS, FFmpeg CPU usage and effective resolution over video.")
+                Components.Switch {
+                    id: rtspStatsSwitch
+                    icon: "uc:check"
+                    checked: Config.rtspShowStats
+                    trigger: function() { Config.rtspShowStats = !Config.rtspShowStats; }
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: rtspAutoQualitySwitch
                 }
             }
         }

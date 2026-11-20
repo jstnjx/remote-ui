@@ -23,6 +23,7 @@
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.VirtualKeyboard 2.3
 
 import Haptic 1.0
 
@@ -52,6 +53,11 @@ Rectangle {
     // bring the on-screen keyboard up whenever the field gains the focus (a form walked with the
     // d-pad); Button / Switch / Checkbox hide it again when they take the focus
     property bool keyboardFollowsFocus: false
+    property bool sendOnEnter: false
+    // Allows activity KB to use the same EnterKeyAction.Search behavior
+    // as the working Media Browser Search field, without changing other inputs.
+    property int enterKeyAction: EnterKeyAction.None
+    property string enterKeyLabel: ""
 
     Component.onCompleted: {
         if (inputField.echoMode === TextInput.Password) {
@@ -136,6 +142,11 @@ Rectangle {
         }
 
         passwordCharacter: "•"
+        EnterKeyAction.actionId: inputFieldContainer.enterKeyAction !== EnterKeyAction.None
+                                 ? inputFieldContainer.enterKeyAction
+                                 : (inputFieldContainer.sendOnEnter
+                                    ? EnterKeyAction.Send : EnterKeyAction.None)
+        EnterKeyAction.label: inputFieldContainer.enterKeyLabel
 
         KeyNavigation.up: inputFieldContainer.navUp
         KeyNavigation.down: inputFieldContainer.navDown

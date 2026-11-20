@@ -130,63 +130,26 @@ Settings.Page {
 
                     /** KEYBOARD NAVIGATION **/
                     KeyNavigation.up: buttonBacklightSwitch
-                    KeyNavigation.down: selectionFillSlider
+                    KeyNavigation.down: digitalClockSwitch
                     highlight: activeFocus && ui.keyNavigationActive
                 }
             }
 
             Components.SettingRow {
-                //: Title of the setting for the background of the selected tile or menu row
-                title: qsTr("Selection background")
-                //: Help text of the "Selection background" setting
-                help: qsTr("Background of the selected tile or menu entry when using the buttons.")
-                controlBelow: true
                 showDivider: false
+                title: qsTr("Digital screensaver clock")
+                help: qsTr("Show a digital time and date instead of the analog clock on the charging screen.")
 
-                Column {
-                    width: parent.width
-                    // room for the ticks and the end label the slider draws under its track
-                    spacing: 50
-
-                    Components.Slider {
-                        id: selectionFillSlider
-                        height: 60
-                        from: 0
-                        to: colors.selectionFillMaxLevel
-                        stepSize: 1
-                        value: Config.selectionFillLevel
-                        live: true
-                        showLiveValue: false
-                        showTicks: true
-                        //: No background for the selected tile or menu row
-                        lowValueText: qsTr("Off")
-
-                        onMoved: {
-                            Config.selectionFillLevel = value;
-                        }
-
-                        /** KEYBOARD NAVIGATION **/
-                        KeyNavigation.up: buttonBrightnessSlider
-                        highlight: activeFocus && ui.keyNavigationActive
+                Components.Switch {
+                    id: digitalClockSwitch
+                    icon: "uc:check"
+                    checked: Config.digitalScreensaverClock
+                    trigger: function() {
+                        Config.digitalScreensaverClock = !Config.digitalScreensaverClock;
                     }
 
-                    // live preview: a menu row selected with the background the slider sets
-                    Rectangle {
-                        width: parent.width
-                        height: 80
-                        radius: ui.cornerRadiusSmall
-                        color: colors.selectionFillAt(selectionFillSlider.value)
-
-                        Text {
-                            anchors { left: parent.left; leftMargin: 12; right: parent.right; rightMargin: 12;
-                                verticalCenter: parent.verticalCenter }
-                            elide: Text.ElideRight
-                            color: colors.textPrimary
-                            //: Example text in the preview of the selection background
-                            text: qsTr("Selected entry")
-                            font: fonts.label()
-                        }
-                    }
+                    highlight: activeFocus && ui.keyNavigationActive
+                    KeyNavigation.up: buttonBrightnessSlider
                 }
             }
         }

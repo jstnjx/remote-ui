@@ -3,6 +3,8 @@
 
 #include "config.h"
 
+#include <QtGlobal>
+
 #include <algorithm>
 
 #include "../logging.h"
@@ -336,6 +338,18 @@ void Config::setSoundVolume(int volume) {
     }
 }
 
+bool Config::getDigitalScreensaverClock() {
+    return m_settings->value("ui/digitalScreensaverClock", false).toBool();
+}
+
+void Config::setDigitalScreensaverClock(bool enabled) {
+    if (getDigitalScreensaverClock() == enabled) {
+        return;
+    }
+    m_settings->setValue("ui/digitalScreensaverClock", enabled);
+    emit digitalScreensaverClockChanged();
+}
+
 void Config::setDisplayAutoBrightness(bool enabled) {
     if (m_displayAutoBrightness != enabled) {
         int id = m_core->setDisplayCfg(getDisplayBrightness(), enabled);
@@ -443,6 +457,16 @@ void Config::setShowBatteryEveryWhere(bool value) {
     emit showBatteryEveryWhereChanged();
 }
 
+bool Config::getShowIntegrationConnectionIcon() {
+    return m_settings->value("ui/showIntegrationConnectionIcon", true).toBool();
+}
+
+void Config::setShowIntegrationConnectionIcon(bool value) {
+    if (getShowIntegrationConnectionIcon() == value) return;
+    m_settings->setValue("ui/showIntegrationConnectionIcon", value);
+    emit integrationConnectionIconChanged();
+}
+
 bool Config::getEnableActivityBar() {
     return m_settings->value("ui/activityBar", true).toBool();
 }
@@ -479,13 +503,210 @@ void Config::setMediaCoverflowDefault(bool value) {
     emit mediaCoverflowDefaultChanged();
 }
 
-int Config::getSelectionFillLevel() {
-    return m_settings->value("ui/selectionFillLevel", ui::Colors::SELECTION_FILL_DEFAULT_LEVEL).toInt();
+bool Config::getHideMediaPlayerControls() {
+    return m_settings->value("ui/hideMediaPlayerControls", false).toBool();
 }
 
-void Config::setSelectionFillLevel(int value) {
-    m_settings->setValue("ui/selectionFillLevel", value);
-    emit selectionFillLevelChanged(value);
+void Config::setHideMediaPlayerControls(bool value) {
+    if (getHideMediaPlayerControls() == value) {
+        return;
+    }
+
+    m_settings->setValue("ui/hideMediaPlayerControls", value);
+    emit hideMediaPlayerControlsChanged();
+}
+
+bool Config::getRedesignedHomeEnabled() {
+    return m_settings->value("ui/redesignedHomeEnabled", false).toBool();
+}
+
+void Config::setRedesignedHomeEnabled(bool value) {
+    if (getRedesignedHomeEnabled() == value) return;
+    m_settings->setValue("ui/redesignedHomeEnabled", value);
+    emit homeSettingsChanged();
+}
+
+bool Config::getHomeShowActivityLabels() {
+    return m_settings->value("ui/homeShowActivityLabels", true).toBool();
+}
+
+void Config::setHomeShowActivityLabels(bool value) {
+    if (getHomeShowActivityLabels() == value) return;
+    m_settings->setValue("ui/homeShowActivityLabels", value);
+    emit homeSettingsChanged();
+}
+
+bool Config::getShowMediaShuffle() {
+    return m_settings->value("ui/showMediaShuffle", !getHideMediaPlayerControls()).toBool();
+}
+
+void Config::setShowMediaShuffle(bool value) {
+    if (getShowMediaShuffle() == value) return;
+    m_settings->setValue("ui/showMediaShuffle", value);
+    emit mediaControlsChanged();
+}
+
+bool Config::getShowMediaRepeat() {
+    return m_settings->value("ui/showMediaRepeat", !getHideMediaPlayerControls()).toBool();
+}
+
+void Config::setShowMediaRepeat(bool value) {
+    if (getShowMediaRepeat() == value) return;
+    m_settings->setValue("ui/showMediaRepeat", value);
+    emit mediaControlsChanged();
+}
+
+bool Config::getShowMediaBrowser() {
+    return m_settings->value("ui/showMediaBrowser", !getHideMediaPlayerControls()).toBool();
+}
+
+void Config::setShowMediaBrowser(bool value) {
+    if (getShowMediaBrowser() == value) return;
+    m_settings->setValue("ui/showMediaBrowser", value);
+    emit mediaControlsChanged();
+}
+
+bool Config::getShowMediaSource() {
+    return m_settings->value("ui/showMediaSource", !getHideMediaPlayerControls()).toBool();
+}
+
+void Config::setShowMediaSource(bool value) {
+    if (getShowMediaSource() == value) return;
+    m_settings->setValue("ui/showMediaSource", value);
+    emit mediaControlsChanged();
+}
+
+int Config::getMediaWidgetLayout() {
+    return qBound(0, m_settings->value("ui/mediaWidgetLayout", 0).toInt(), 3);
+}
+
+void Config::setMediaWidgetLayout(int value) {
+    const int bounded = qBound(0, value, 3);
+    if (getMediaWidgetLayout() == bounded) return;
+    m_settings->setValue("ui/mediaWidgetLayout", bounded);
+    emit mediaWidgetLayoutChanged();
+}
+
+QVariantMap Config::getActivityArtworkSources() {
+    return m_settings->value("ui/activityArtworkSources").toMap();
+}
+
+void Config::setActivityArtworkSources(const QVariantMap& value) {
+    if (getActivityArtworkSources() == value) return;
+    m_settings->setValue("ui/activityArtworkSources", value);
+    emit activityArtworkSourcesChanged();
+}
+
+int Config::getRtspFrameRate() {
+    return qBound(5, m_settings->value("ui/rtspFrameRate", 10).toInt(), 30);
+}
+
+void Config::setRtspFrameRate(int value) {
+    const int frameRate = qBound(5, value, 30);
+    if (getRtspFrameRate() == frameRate) {
+        return;
+    }
+
+    m_settings->setValue("ui/rtspFrameRate", frameRate);
+    emit rtspFrameRateChanged();
+}
+
+int Config::getRtspResolution() {
+    return qBound(0, m_settings->value("ui/rtspResolution", 0).toInt(), 2);
+}
+
+void Config::setRtspResolution(int value) {
+    const int bounded = qBound(0, value, 2);
+    if (getRtspResolution() == bounded) return;
+    m_settings->setValue("ui/rtspResolution", bounded);
+    emit rtspResolutionChanged();
+}
+
+bool Config::getRtspAutoQuality() {
+    return m_settings->value("ui/rtspAutoQuality", true).toBool();
+}
+
+void Config::setRtspAutoQuality(bool value) {
+    if (getRtspAutoQuality() == value) return;
+    m_settings->setValue("ui/rtspAutoQuality", value);
+    emit rtspAutoQualityChanged();
+}
+
+bool Config::getRtspShowStats() {
+    return m_settings->value("ui/rtspShowStats", false).toBool();
+}
+
+void Config::setRtspShowStats(bool value) {
+    if (getRtspShowStats() == value) return;
+    m_settings->setValue("ui/rtspShowStats", value);
+    emit rtspShowStatsChanged();
+}
+
+QString Config::getKeyboardActivityId() {
+    return m_settings->value("ui/keyboardActivityId").toString();
+}
+
+void Config::setKeyboardActivityId(const QString& value) {
+    if (getKeyboardActivityId() == value) {
+        return;
+    }
+    m_settings->setValue("ui/keyboardActivityId", value);
+    emit keyboardActivityIdChanged();
+    // A selected sensor must belong to the selected activity.
+    setKeyboardSensorId(QString());
+}
+
+QString Config::getKeyboardSensorId() {
+    return m_settings->value("ui/keyboardSensorId").toString();
+}
+
+void Config::setKeyboardSensorId(const QString& value) {
+    if (getKeyboardSensorId() == value) {
+        return;
+    }
+    m_settings->setValue("ui/keyboardSensorId", value);
+    emit keyboardSensorIdChanged();
+}
+
+QString Config::getKeyboardMediaPlayerId() {
+    return m_settings->value("ui/keyboardMediaPlayerId").toString();
+}
+
+void Config::setKeyboardMediaPlayerId(const QString& value) {
+    if (getKeyboardMediaPlayerId() == value) {
+        return;
+    }
+    m_settings->setValue("ui/keyboardMediaPlayerId", value);
+    emit keyboardMediaPlayerIdChanged();
+}
+
+QVariantList Config::getKeyboardRules() {
+    if (m_settings->contains("ui/keyboardRules")) {
+        return m_settings->value("ui/keyboardRules").toList();
+    }
+
+    // Migrate the original single-rule preferences without losing their values.
+    const QString activity = getKeyboardActivityId();
+    const QString sensor = getKeyboardSensorId();
+    const QString player = getKeyboardMediaPlayerId();
+    if (activity.isEmpty() || sensor.isEmpty() || player.isEmpty()) {
+        return QVariantList();
+    }
+    QVariantMap rule;
+    rule.insert("id", QStringLiteral("legacy"));
+    rule.insert("activityId", activity);
+    rule.insert("sensorIds", QStringList{sensor});
+    rule.insert("mediaPlayerIds", QStringList{player});
+    rule.insert("prompt", QStringLiteral("Enter text on the media player?"));
+    return QVariantList{rule};
+}
+
+void Config::setKeyboardRules(const QVariantList& rules) {
+    if (getKeyboardRules() == rules) {
+        return;
+    }
+    m_settings->setValue("ui/keyboardRules", rules);
+    emit keyboardRulesChanged();
 }
 
 int Config::getResumeTimeoutWindowSec() {

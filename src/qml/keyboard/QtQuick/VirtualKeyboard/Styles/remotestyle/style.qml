@@ -221,44 +221,37 @@ KeyboardStyle {
             color: colors.black
             anchors.fill: enterKeyPanel
             anchors.margins: keyBackgroundMargin
-            Image {
+            // The old style referenced relative SVG image paths which are
+            // not present in the bundled keyboard QRC. Use the native icon
+            // font instead so the Send/Return arrow always renders.
+            Components.Icon {
                 id: enterKeyIcon
-                visible: enterKeyText.text.length === 0
                 anchors.centerIn: parent
-                readonly property size enterKeyIconSize: {
+                visible: enterKeyText.text.length === 0
+                icon: {
+                    if (root.keyboardSendMode)
+                        return "uc:arrow-turn-down";
                     switch (control.actionId) {
                     case EnterKeyAction.Go:
                     case EnterKeyAction.Send:
                     case EnterKeyAction.Next:
                     case EnterKeyAction.Done:
-                        return Qt.size(170, 119)
+                        return "uc:check";
                     case EnterKeyAction.Search:
-                        return Qt.size(148, 148)
+                        return "uc:magnifying-glass";
                     default:
-                        return Qt.size(211, 80)
+                        return "uc:arrow-turn-down";
                     }
                 }
-                sourceSize.width: enterKeyIconSize.width * keyIconScale
-                sourceSize.height: enterKeyIconSize.height * keyIconScale
-                smooth: false
-                source: {
-                    switch (control.actionId) {
-                    case EnterKeyAction.Go:
-                    case EnterKeyAction.Send:
-                    case EnterKeyAction.Next:
-                    case EnterKeyAction.Done:
-                        return resourcePrefix + "images/check-868482.svg"
-                    case EnterKeyAction.Search:
-                        return resourcePrefix + "images/search-868482.svg"
-                    default:
-                        return resourcePrefix + "images/enter-868482.svg"
-                    }
-                }
+                color: colors.offwhite
+                // Match the other keyboard special keys (Backspace, Language).
+                // Components.Icon renders the glyph at half its 'size'.
+                size: 60
             }
             Text {
                 id: enterKeyText
                 visible: text.length !== 0
-                text: control.actionId !== EnterKeyAction.None ? control.displayText : ""
+                text: root.keyboardSendMode ? "" : (control.actionId !== EnterKeyAction.None ? control.displayText : "")
                 clip: true
                 fontSizeMode: Text.HorizontalFit
                 horizontalAlignment: Text.AlignHCenter

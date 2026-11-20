@@ -11,6 +11,8 @@ KeyboardLayout {
     KeyboardRow {
         SymbolModeKey { weight: 100 }
         BackspaceKey {}
+        // Send key next to Backspace while the activity keyboard is open.
+        EnterKey { visible: root.keyboardSendMode; weight: 100 }
     }
 
     KeyboardRow {

@@ -11,6 +11,8 @@
 #include <QRandomGenerator>
 #include <QSettings>
 #include <QTimeZone>
+#include <QVariantMap>
+#include <QVariantList>
 
 #include "../core/core.h"
 #include "../translation/translation.h"
@@ -52,6 +54,8 @@ class Config : public QObject {
     Q_PROPERTY(bool soundEnabled READ getSoundEnabled WRITE setSoundEnabled NOTIFY soundEnabledChanged)
     Q_PROPERTY(int soundVolume READ getSoundVolume WRITE setSoundVolume NOTIFY soundVolumeChanged)
 
+    Q_PROPERTY(bool digitalScreensaverClock READ getDigitalScreensaverClock WRITE setDigitalScreensaverClock NOTIFY
+                   digitalScreensaverClockChanged)
     Q_PROPERTY(bool displayAutoBrightness READ getDisplayAutoBrightness WRITE setDisplayAutoBrightness NOTIFY
                    displayAutoBrightnessChanged)
     Q_PROPERTY(
@@ -96,6 +100,8 @@ class Config : public QObject {
                    showBatteryPercentageChanged)
     Q_PROPERTY(bool showBatteryEveryWhere READ getShowBatteryEveryWhere WRITE setShowBatteryEveryWhere NOTIFY
                    showBatteryEveryWhereChanged)
+    Q_PROPERTY(bool showIntegrationConnectionIcon READ getShowIntegrationConnectionIcon WRITE
+                   setShowIntegrationConnectionIcon NOTIFY integrationConnectionIconChanged)
 
     Q_PROPERTY(
         bool enableActivityBar READ getEnableActivityBar WRITE setEnableActivityBar NOTIFY enableActivityBarChanged)
@@ -104,9 +110,25 @@ class Config : public QObject {
     Q_PROPERTY(bool fillMediaArtwork READ getFillMediaArtwork WRITE setFillMediaArtwork NOTIFY fillMediaArtworkChanged)
     Q_PROPERTY(bool mediaCoverflowDefault READ getMediaCoverflowDefault WRITE setMediaCoverflowDefault NOTIFY
                    mediaCoverflowDefaultChanged)
-    // stored by the UI only: the strength of the selection fill, from 0 (no fill) to Colors::SELECTION_FILL_MAX_LEVEL
-    Q_PROPERTY(
-        int selectionFillLevel READ getSelectionFillLevel WRITE setSelectionFillLevel NOTIFY selectionFillLevelChanged)
+    Q_PROPERTY(bool hideMediaPlayerControls READ getHideMediaPlayerControls WRITE setHideMediaPlayerControls NOTIFY
+                   hideMediaPlayerControlsChanged)
+    Q_PROPERTY(bool redesignedHomeEnabled READ getRedesignedHomeEnabled WRITE setRedesignedHomeEnabled NOTIFY homeSettingsChanged)
+    Q_PROPERTY(bool homeShowActivityLabels READ getHomeShowActivityLabels WRITE setHomeShowActivityLabels NOTIFY homeSettingsChanged)
+    Q_PROPERTY(bool showMediaShuffle READ getShowMediaShuffle WRITE setShowMediaShuffle NOTIFY mediaControlsChanged)
+    Q_PROPERTY(bool showMediaRepeat READ getShowMediaRepeat WRITE setShowMediaRepeat NOTIFY mediaControlsChanged)
+    Q_PROPERTY(bool showMediaBrowser READ getShowMediaBrowser WRITE setShowMediaBrowser NOTIFY mediaControlsChanged)
+    Q_PROPERTY(bool showMediaSource READ getShowMediaSource WRITE setShowMediaSource NOTIFY mediaControlsChanged)
+    Q_PROPERTY(int mediaWidgetLayout READ getMediaWidgetLayout WRITE setMediaWidgetLayout NOTIFY mediaWidgetLayoutChanged)
+    Q_PROPERTY(QVariantMap activityArtworkSources READ getActivityArtworkSources WRITE setActivityArtworkSources NOTIFY
+                   activityArtworkSourcesChanged)
+    Q_PROPERTY(int rtspFrameRate READ getRtspFrameRate WRITE setRtspFrameRate NOTIFY rtspFrameRateChanged)
+    Q_PROPERTY(int rtspResolution READ getRtspResolution WRITE setRtspResolution NOTIFY rtspResolutionChanged)
+    Q_PROPERTY(bool rtspAutoQuality READ getRtspAutoQuality WRITE setRtspAutoQuality NOTIFY rtspAutoQualityChanged)
+    Q_PROPERTY(bool rtspShowStats READ getRtspShowStats WRITE setRtspShowStats NOTIFY rtspShowStatsChanged)
+    Q_PROPERTY(QString keyboardActivityId READ getKeyboardActivityId WRITE setKeyboardActivityId NOTIFY keyboardActivityIdChanged)
+    Q_PROPERTY(QString keyboardSensorId READ getKeyboardSensorId WRITE setKeyboardSensorId NOTIFY keyboardSensorIdChanged)
+    Q_PROPERTY(QString keyboardMediaPlayerId READ getKeyboardMediaPlayerId WRITE setKeyboardMediaPlayerId NOTIFY keyboardMediaPlayerIdChanged)
+    Q_PROPERTY(QVariantList keyboardRules READ getKeyboardRules WRITE setKeyboardRules NOTIFY keyboardRulesChanged)
 
     Q_PROPERTY(int resumeTimeoutWindowSec READ getResumeTimeoutWindowSec WRITE setResumeTimeoutWindowSec NOTIFY
                    resumeTimeoutWindowSecChanged)
@@ -171,6 +193,9 @@ class Config : public QObject {
     int  getSoundVolume() { return m_soundVolume; }
     void setSoundVolume(int volume);
 
+    bool getDigitalScreensaverClock();
+    void setDigitalScreensaverClock(bool enabled);
+
     bool getDisplayAutoBrightness() { return m_displayAutoBrightness; }
     void setDisplayAutoBrightness(bool enabled);
     int  getDisplayBrightness() { return m_displayBrightness; }
@@ -189,6 +214,8 @@ class Config : public QObject {
 
     bool getShowBatteryEveryWhere();
     void setShowBatteryEveryWhere(bool value);
+    bool getShowIntegrationConnectionIcon();
+    void setShowIntegrationConnectionIcon(bool value);
 
     bool getEnableActivityBar();
     void setEnableActivityBar(bool value);
@@ -203,6 +230,44 @@ class Config : public QObject {
     void setMediaCoverflowDefault(bool value);
     int  getSelectionFillLevel();
     void setSelectionFillLevel(int value);
+
+    bool getHideMediaPlayerControls();
+    void setHideMediaPlayerControls(bool value);
+    bool getRedesignedHomeEnabled();
+    void setRedesignedHomeEnabled(bool enabled);
+    bool getHomeShowActivityLabels();
+    void setHomeShowActivityLabels(bool show);
+
+    bool getShowMediaShuffle();
+    void setShowMediaShuffle(bool value);
+    bool getShowMediaRepeat();
+    void setShowMediaRepeat(bool value);
+    bool getShowMediaBrowser();
+    void setShowMediaBrowser(bool value);
+    bool getShowMediaSource();
+    void setShowMediaSource(bool value);
+    int getMediaWidgetLayout();
+    void setMediaWidgetLayout(int value);
+    QVariantMap getActivityArtworkSources();
+    void setActivityArtworkSources(const QVariantMap& value);
+
+    int  getRtspFrameRate();
+    void setRtspFrameRate(int value);
+    int getRtspResolution();
+    void setRtspResolution(int value);
+    bool getRtspAutoQuality();
+    void setRtspAutoQuality(bool value);
+    bool getRtspShowStats();
+    void setRtspShowStats(bool value);
+
+    QString getKeyboardActivityId();
+    void setKeyboardActivityId(const QString& value);
+    QString getKeyboardSensorId();
+    void setKeyboardSensorId(const QString& value);
+    QString getKeyboardMediaPlayerId();
+    void setKeyboardMediaPlayerId(const QString& value);
+    QVariantList getKeyboardRules();
+    void setKeyboardRules(const QVariantList& rules);
 
     int  getResumeTimeoutWindowSec();
     void setResumeTimeoutWindowSec(int value);
@@ -339,6 +404,7 @@ class Config : public QObject {
     void soundEnabledChanged(bool value);
     void soundVolumeChanged(int volume);
 
+    void digitalScreensaverClockChanged();
     void displayAutoBrightnessChanged(bool value);
     void displayBrightnessChanged(int brightness);
 
@@ -371,11 +437,24 @@ class Config : public QObject {
     void entityButtonFuncInvertedChanged();
     void showBatteryPercentageChanged();
     void showBatteryEveryWhereChanged();
+    void integrationConnectionIconChanged();
     void enableActivityBarChanged();
     void openActivityOnApiStartChanged();
     void fillMediaArtworkChanged();
     void mediaCoverflowDefaultChanged();
-    void selectionFillLevelChanged(int value);
+    void hideMediaPlayerControlsChanged();
+    void mediaControlsChanged();
+    void homeSettingsChanged();
+    void mediaWidgetLayoutChanged();
+    void activityArtworkSourcesChanged();
+    void rtspFrameRateChanged();
+    void rtspResolutionChanged();
+    void rtspAutoQualityChanged();
+    void rtspShowStatsChanged();
+    void keyboardActivityIdChanged();
+    void keyboardSensorIdChanged();
+    void keyboardMediaPlayerIdChanged();
+    void keyboardRulesChanged();
     void resumeTimeoutWindowSecChanged(int value);
     void touchSliderEnabledChanged();
     void touchSliderGainVolumeChanged();

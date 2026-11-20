@@ -69,6 +69,12 @@
         <file alias="settings/settings/Color.qml">../../src/qml/settings/settings/Color.qml</file>
         <file alias="settings/settings/Display.qml">../../src/qml/settings/settings/Display.qml</file>
         <file alias="settings/settings/Ui.qml">../../src/qml/settings/settings/Ui.qml</file>
+        <file alias="settings/settings/HomeScreen.qml">../../src/qml/settings/settings/HomeScreen.qml</file>
+        <file alias="components/home/HomePage.qml">../../src/qml/components/home/HomePage.qml</file>
+        <file alias="components/home/ActivityTile.qml">../../src/qml/components/home/ActivityTile.qml</file>
+        <file alias="components/home/MediaCard.qml">../../src/qml/components/home/MediaCard.qml</file>
+        <file alias="settings/settings/MediaWidgets.qml">../../src/qml/settings/settings/MediaWidgets.qml</file>
+        <file alias="settings/settings/KeyboardPrompt.qml">../../src/qml/settings/settings/KeyboardPrompt.qml</file>
         <file alias="settings/settings/TouchSlider.qml">../../src/qml/settings/settings/TouchSlider.qml</file>
         <file alias="settings/settings/Sound.qml">../../src/qml/settings/settings/Sound.qml</file>
         <file alias="settings/settings/Voice.qml">../../src/qml/settings/settings/Voice.qml</file>
@@ -105,6 +111,14 @@
         <file alias="components/entities/activity/deviceclass/Activity.qml">../../src/qml/components/entities/activity/deviceclass/Activity.qml</file>
         <file alias="components/entities/activity/LoadingScreen.qml">../../src/qml/components/entities/activity/LoadingScreen.qml</file>
         <file alias="components/entities/activity/MediaComponent.qml">../../src/qml/components/entities/activity/MediaComponent.qml</file>
+        <file alias="components/entities/activity/VideoStream.qml">../../src/qml/components/entities/activity/VideoStream.qml</file>
+        <file alias="components/entities/activity/InlineMediaBrowser.qml">../../src/qml/components/entities/activity/InlineMediaBrowser.qml</file>
+        <file alias="components/entities/activity/InlineEntityCard.qml">../../src/qml/components/entities/activity/InlineEntityCard.qml</file>
+        <file alias="components/entities/activity/InlineClimateControls.qml">../../src/qml/components/entities/activity/InlineClimateControls.qml</file>
+        <file alias="components/entities/activity/InlineCoverControls.qml">../../src/qml/components/entities/activity/InlineCoverControls.qml</file>
+        <file alias="components/entities/activity/MediaArtworkWidget.qml">../../src/qml/components/entities/activity/MediaArtworkWidget.qml</file>
+        <file alias="components/entities/activity/KeyboardShortcutWidget.qml">../../src/qml/components/entities/activity/KeyboardShortcutWidget.qml</file>
+        <file alias="components/entities/activity/KeyboardTextPrompt.qml">../../src/qml/components/entities/activity/KeyboardTextPrompt.qml</file>
         <file alias="components/entities/button/deviceclass/Button.qml">../../src/qml/components/entities/button/deviceclass/Button.qml</file>
         <file alias="components/entities/climate/deviceclass/Climate.qml">../../src/qml/components/entities/climate/deviceclass/Climate.qml</file>
         <file alias="components/entities/light/deviceclass/Light.qml">../../src/qml/components/entities/light/deviceclass/Light.qml</file>

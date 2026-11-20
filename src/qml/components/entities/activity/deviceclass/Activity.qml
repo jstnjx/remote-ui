@@ -14,9 +14,19 @@ import Power.Modes 1.0
 
 import "qrc:/components" as Components
 import "qrc:/components/entities" as EntityComponents
+import "qrc:/components/entities/activity" as ActivityComponents
 
 EntityComponents.BaseDetail {
     id: activityBase
+
+    // Sensor-triggered text entry is scoped to the configured activity only.
+    // This component controls its own prompt and native virtual keyboard.
+    ActivityComponents.KeyboardTextPrompt {
+        id: keyboardTextPrompt
+        activityId: activityBase.entityId
+        activityActive: activityBase.state === "open" && activityBase.visible &&
+                        entityObj.state === ActivityStates.On
+    }
 
     property var pages: entityObj.ui.pages
     property QtObject mediaWidgetEntityObj
@@ -24,6 +34,20 @@ EntityComponents.BaseDetail {
     property bool powerOffPressed: false
     // open the menu on the "Fix states" page once the screen is up, set by the error popup of the activity tile
     property bool openFixStates: false
+
+    // A touch belongs either to an interactive widget or to the Activity
+    // PathView, never both. Count holds so multiple widgets can exist on a
+    // page; release/cancel/destruction always restores page navigation.
+    property int activeWidgetGestures: 0
+    function beginWidgetGesture() {
+        activeWidgetGestures++;
+    }
+    function endWidgetGesture() {
+        activeWidgetGestures = Math.max(0, activeWidgetGestures - 1);
+    }
+    onStateChanged: {
+        if (state !== "open") activeWidgetGestures = 0;
+    }
 
     // Keypad selection in the activity menu (button navigation driven, see docs/key-navigation.md idiom b):
     // 0 is the button at the top of the current menu page ("Fix states" / "Back"), 1..n the list items below it.
@@ -114,6 +138,74 @@ EntityComponents.BaseDetail {
         }
     }
 
+    // Treat a Text widget as a live media artwork widget only when its text
+    // identifies a media-player entity. This leaves ordinary Text widgets,
+    // keyboard shortcuts, RTSP widgets and MB coverflow markers untouched.
+    function mediaArtworkEntityId(widgetText) {
+        const selector = (widgetText || "").trim();
+        if (!selector || selector.indexOf(";") !== -1 ||
+                !/^[a-zA-Z0-9_.:-]+$/.test(selector))
+            return "";
+
+        // Include media players referenced by the activity even before their
+        // entities have finished loading into the controller's type index.
+        const ids = (EntityController.getIdsByType("media_player") || []).slice();
+        function addConfiguredId(id) {
+            if (typeof id === "string" &&
+                    (id.indexOf(".media_player.") >= 0 ||
+                     id.indexOf("media_player.") === 0) &&
+                    ids.indexOf(id) < 0)
+                ids.push(id);
+        }
+        const artworkSources = Config.activityArtworkSources;
+        if (artworkSources && entityObj)
+            addConfiguredId(artworkSources[entityObj.id]);
+        if (entityObj && entityObj.sliderConfig)
+            addConfiguredId(entityObj.sliderConfig.entityId);
+        const activityPages = entityObj && entityObj.ui ? entityObj.ui.pages || [] : [];
+        for (let i = 0; i < activityPages.length; ++i) {
+            const pageItems = activityPages[i].items || [];
+            for (let j = 0; j < pageItems.length; ++j) {
+                if (pageItems[j].type === "media_player")
+                    addConfiguredId(pageItems[j].media_player_id);
+            }
+        }
+        if (entityObj && entityObj.includedEntities) {
+            for (let k = 0; k < entityObj.includedEntities.length; ++k)
+                addConfiguredId(entityObj.includedEntities[k]);
+        }
+
+        const needle = selector.toLowerCase();
+        const exact = ids.filter(function(id) {
+            const full = id.toLowerCase();
+            const tail = full.substring(full.lastIndexOf(".") + 1);
+            return full === needle || tail === needle;
+        });
+        if (exact.length === 1) return exact[0];
+        if (exact.length > 1) return "";
+
+        // The stock text widget has a short label limit. Accept unique
+        // prefixes of the final entity-ID segment (e.g. "ps5") while keeping
+        // normal text unchanged if no known media player matches.
+        if (needle.length >= 3 && needle.indexOf(".") === -1) {
+            const prefixMatches = ids.filter(function(id) {
+                const full = id.toLowerCase();
+                const tail = full.substring(full.lastIndexOf(".") + 1);
+                return tail.indexOf(needle) === 0;
+            });
+            if (prefixMatches.length === 1) return prefixMatches[0];
+            if (prefixMatches.length > 1) return "";
+        }
+
+        // A full ID may arrive through a manually PATCHed page before the
+        // entity list is populated. It is safe to defer loading this explicit
+        // media-player path to the widget itself.
+        if (needle.indexOf(".media_player.") !== -1 ||
+                needle.indexOf("media_player.") === 0)
+            return selector;
+        return "";
+    }
+
     function parsePageItems(page, index, container) {
         const items = page.items
         const gridWidth = page.grid ? page.grid.width : 4;
@@ -122,8 +214,193 @@ EntityComponents.BaseDetail {
         const gridSizeH = uiPages.height / gridHeight
 
         items.forEach(function(item) {
-            switch (item.type) {
+            // Custom widgets are created dynamically from user-edited UI pages.
+            // A broken widget must not abort rendering of every subsequent item.
+            try {
+                switch (item.type) {
             case "text":
+                // Stock Text widgets limit text length. "KB" uses the target
+                // remote or media-player entity configured by a keyboard rule
+                // (or the Text button's optional command entity).
+                const widgetText = typeof item.text === "string" ? item.text.trim() : "";
+                const widgetParts = widgetText.split(";");
+                const widgetKind = widgetParts[0].trim().toUpperCase();
+                // Compact native Light / Climate / Cover cards. Mark a
+                // normal Text widget LIGHT[;id], CLIMATE[;id] or COVER[;id].
+                // Reuse the entity's native features, states and commands.
+                if (["LIGHT", "CLIMATE", "COVER"].indexOf(widgetKind) >= 0) {
+                    const cardComponent = Qt.createComponent(
+                        "qrc:/components/entities/activity/InlineEntityCard.qml");
+                    if (cardComponent.status === Component.Ready) {
+                        const card = cardComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "entityKind": widgetKind,
+                            "entitySelector": widgetParts.slice(1).join(";").trim(),
+                            "commandEntityId": item.command ? (item.command.entity_id || "") : "",
+                            "activityEntity": entityObj,
+                            "beginPageGesture": function() { activityBase.beginWidgetGesture(); },
+                            "endPageGesture": function() { activityBase.endWidgetGesture(); },
+                            "widgetActive": Qt.binding(function() {
+                                return activityBase.state === "open"
+                                    && activityBase.visible
+                                    && uiPages.currentIndex === index
+                                    && entityObj.state === ActivityStates.On
+                                    && Power.powerMode === PowerModes.Normal;
+                            })
+                        });
+                        if (!card)
+                            console.warn("Activity entity card creation failed:", cardComponent.errorString());
+                    } else {
+                        console.warn("Activity entity card failed:", cardComponent.errorString());
+                    }
+                    break;
+                }
+
+                // Inline media browser: create a real grid widget from the
+                // stock Text button marker MB;<media_player_entity_id>.
+                // No popup, overlay or Core-API schema changes.
+                if (widgetKind === "MB") {
+                    // The stock Text widget has a short character limit. MB alone
+                    // uses the activity's configured media player; MB;ps5 is a
+                    // short, uniquely matched suffix of a configured player ID.
+                    const browserSelector = widgetParts.slice(1).join(";").trim();
+                    const browserComponent = Qt.createComponent(
+                        "qrc:/components/entities/activity/InlineMediaBrowser.qml");
+                    if (browserComponent.status === Component.Ready) {
+                        const widget = browserComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "entitySelector": browserSelector,
+                            "commandEntityId": item.command ? (item.command.entity_id || "") : "",
+                            "activityEntity": entityObj,
+                            "browserActive": Qt.binding(function() {
+                                return activityBase.state === "open"
+                                    && activityBase.visible
+                                    && uiPages.currentIndex === index
+                                    && entityObj.state === ActivityStates.On
+                                    && Power.powerMode === PowerModes.Normal;
+                            })
+                        });
+                        if (!widget)
+                            console.warn("Inline media browser could not be created:",
+                                         browserComponent.errorString());
+                    } else {
+                        console.warn("Inline media browser failed:", browserComponent.errorString());
+                    }
+                    break;
+                }
+
+                if (["KB", "KEYBOARD", "KEYBOARD_SHORTCUT"].indexOf(widgetKind) >= 0) {
+                    const keyboardComponent = Qt.createComponent(
+                        "qrc:/components/entities/activity/KeyboardShortcutWidget.qml");
+                    if (keyboardComponent.status === Component.Ready) {
+                        keyboardComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "openKeyboard": function() {
+                                const rules = Config.keyboardRules;
+                                let ruleTarget = "";
+                                // Prefer the explicitly configured Remote entity
+                                // for Apple TV text. The Text button may still
+                                // have an old media-player command attached;
+                                // that must NOT override the keyboard settings.
+                                for (let i = 0; i < rules.length; ++i) {
+                                    const rule = rules[i];
+                                    if (rule.activityId !== activityBase.entityId) continue;
+                                    const targets = rule.mediaPlayerIds || [];
+                                    // Prefer the dedicated Apple TV Keyboard entity:
+                                    // its media-player Search action performs real
+                                    // pyatv.keyboard.text_set rather than HA's
+                                    // unsupported remote.send_command variant.
+                                    for (let j = 0; j < targets.length; ++j) {
+                                        const candidate = EntityController.get(targets[j]);
+                                        if (!candidate) continue;
+                                        const id = String(candidate.id || "").toLowerCase();
+                                        const name = String(candidate.name || "").toLowerCase();
+                                        if (id.indexOf("appletv_keyboard") >= 0 ||
+                                                name.indexOf("apple tv keyboard -") === 0) {
+                                            ruleTarget = targets[j];
+                                            break;
+                                        }
+                                    }
+                                    if (!ruleTarget && targets.length)
+                                        ruleTarget = targets[0];
+                                    if (ruleTarget) break;
+                                }
+                                const explicitId = widgetParts.length > 1 ?
+                                                   widgetParts.slice(1).join(";").trim() : "";
+                                const commandId = item.command ? item.command.entity_id || "" : "";
+                                const target = explicitId || ruleTarget || commandId ||
+                                               (activityBase.mediaWidgetEntityObj ?
+                                                activityBase.mediaWidgetEntityObj.id : "");
+                                if (!target) {
+                                    ui.createNotification(qsTr("Select an Apple TV Remote in Keyboard input automation"), true);
+                                    return;
+                                }
+                                keyboardTextPrompt.openManual(target);
+                            }
+                        });
+                    } else {
+                        console.warn("Keyboard shortcut widget failed:", keyboardComponent.errorString());
+                    }
+                    break;
+                }
+
+                // A stock Text widget containing an rtsp:// URL becomes a video
+                // widget. This keeps the Core-API UI schema unchanged.
+                if (typeof item.text === "string" && item.text.trim().toLowerCase().indexOf("rtsp://") === 0) {
+                    let streamComponent = Qt.createComponent("qrc:/components/entities/activity/VideoStream.qml");
+                    if (streamComponent.status === Component.Ready) {
+                        streamComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "streamUrl": item.text.trim(),
+                            "streamActive": Qt.binding(function() {
+                                return activityBase.state === "open"
+                                    && activityBase.visible
+                                    && uiPages.currentIndex === index
+                                    && entityObj.state !== ActivityStates.Off
+                                    && Power.powerMode === PowerModes.Normal;
+                            })
+                        });
+                    } else {
+                        console.warn("Unable to create RTSP video component");
+                    }
+                    break;
+                }
+                // A Text widget whose value is a media-player ID (or a
+                // unique shortened final ID segment) becomes live artwork.
+                // No extra marker and no command target are required.
+                const artworkPlayerId = activityBase.mediaArtworkEntityId(widgetText);
+                if (artworkPlayerId) {
+                    const artworkComponent = Qt.createComponent(
+                        "qrc:/components/entities/activity/MediaArtworkWidget.qml");
+                    if (artworkComponent.status === Component.Ready) {
+                        const artworkWidget = artworkComponent.createObject(container, {
+                            "x": gridSizeW * item.location.x,
+                            "y": gridSizeH * item.location.y,
+                            "width": gridSizeW * (item.size && item.size.width ? item.size.width : 1),
+                            "height": gridSizeH * (item.size && item.size.height ? item.size.height : 1),
+                            "entityId": artworkPlayerId
+                        });
+                        if (!artworkWidget)
+                            console.warn("Media artwork widget could not be created:",
+                                         artworkComponent.errorString());
+                    } else {
+                        console.warn("Media artwork widget failed:", artworkComponent.errorString());
+                    }
+                    break;
+                }
+                // Regular text widgets retain the original button renderer.
             case "icon":
                 let component = Qt.createComponent("qrc:/components/ButtonIcon.qml");
                 component.createObject(container, {
@@ -151,9 +428,14 @@ EntityComponents.BaseDetail {
                                                 "entityId": item.media_player_id,
                                                 "gridWidth": gridWidth,
                                                 "gridHeight": gridHeight,
-                                                "aspectFit": !Config.fillMediaArtwork
+                                                "aspectFit": !Config.fillMediaArtwork,
+                                                "artworkEntityId": Qt.binding(function() {
+                                                    const chosen = Config.activityArtworkSources[entityObj.id];
+                                                    return chosen || item.media_player_id;
+                                                })
                                             });
-                activityBase.mediaWidgetEntityObj = EntityController.get(item.media_player_id);
+                activityBase.mediaWidgetEntityObj =
+                    EntityController.get(Config.activityArtworkSources[entityObj.id] || item.media_player_id);
                 break;
             case "sensor":
                 let sensorComponent = Qt.createComponent("qrc:/components/SensorWidget.qml");
@@ -224,6 +506,9 @@ EntityComponents.BaseDetail {
             default:
                 console.log("Not implemented item type: " + item.type);
                 break;
+                }
+            } catch (error) {
+                console.warn("Activity widget failed:", item.type, String(error));
             }
         });
     }
@@ -549,7 +834,10 @@ EntityComponents.BaseDetail {
         width: parent.width
         height: parent.height - title.height
         anchors { horizontalCenter: parent.horizontalCenter; top: title.bottom }
-        interactive: uiPages.count > 1
+        // PathView must never steal a native Light/Climate/Cover control
+        // gesture. Interactive cards own their touches until release or
+        // cancellation; normal page swiping remains available elsewhere.
+        interactive: uiPages.count > 1 && activityBase.activeWidgetGestures === 0
 
         snapMode: PathView.SnapToItem
         highlightRangeMode: PathView.StrictlyEnforceRange

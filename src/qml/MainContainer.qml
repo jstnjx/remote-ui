@@ -33,7 +33,12 @@ Item {
     property alias statusBar: statusBar
     property alias pages: pages
     property alias currentPage: pages.currentItem
-    property QtObject currentEntity: pages.currentItem.currentItem
+    property QtObject currentEntity: pages.currentItem ? pages.currentItem.currentItem : null
+    // The native first page always remains loaded. A failed optional QML
+    // home component never blocks it or the hardware / Settings entry points.
+    readonly property bool redesignedHomeActive: redesignedHome.visible &&
+                                                 redesignedHome.status === Loader.Ready &&
+                                                 redesignedHome.item !== null
 
     property QtObject entityObjToEdit
     property QtObject groupObjToEdit
@@ -314,6 +319,8 @@ Item {
                         return;
                     }
 
+                    // This home has one vertical entity list. LEFT/RIGHT retain
+                    // the same page-switching meaning as the original home.
                     pages.incrementCurrentIndex();
                 }
             },
@@ -351,6 +358,12 @@ Item {
                         return;
                     }
 
+                    if (mainContainerRoot.redesignedHomeActive) {
+                        redesignedHome.item.moveSelection(1);
+                        return;
+                    }
+
+                    if (!currentEntity || !currentEntity.delegateItem) return;
                     if (!currentEntity.delegateItem.groupObj) {
                         pages.currentItem.incrementCurrentIndex();
                     } else if (currentEntity.delegateItem.groups.currentIndex === currentEntity.delegateItem.groups.count - 1 || currentEntity.delegateItem.state === "closed") {
@@ -372,6 +385,12 @@ Item {
                         return;
                     }
 
+                    if (mainContainerRoot.redesignedHomeActive) {
+                        redesignedHome.item.moveSelection(-1);
+                        return;
+                    }
+
+                    if (!currentEntity || !currentEntity.delegateItem) return;
                     if (!currentEntity.delegateItem.groupObj) {
                         pages.currentItem.decrementCurrentIndex();
                     }  else if (currentEntity.delegateItem.groups.currentIndex === 0 || currentEntity.delegateItem.state === "closed") {
@@ -393,6 +412,12 @@ Item {
                         return;
                     }
 
+                    if (mainContainerRoot.redesignedHomeActive) {
+                        redesignedHome.item.activateSelected(false);
+                        return;
+                    }
+
+                    if (!currentEntity || !currentEntity.delegateItem) return;
                     if (!currentEntity.delegateItem.groupObj) {
                         if (Config.entityButtonFuncInverted) {
                             currentEntity.delegateItem.open();
@@ -427,6 +452,12 @@ Item {
                         return;
                     }
 
+                    if (mainContainerRoot.redesignedHomeActive) {
+                        redesignedHome.item.activateSelected(true);
+                        return;
+                    }
+
+                    if (!currentEntity || !currentEntity.delegateItem) return;
                     if (!currentEntity.delegateItem.groupObj) {
                         if (Config.entityButtonFuncInverted) {
                             currentEntity.delegateItem.control();
@@ -461,6 +492,8 @@ Item {
                         return;
                     }
 
+                    if (mainContainerRoot.redesignedHomeActive) return;
+                    if (!currentEntity || !currentEntity.delegateItem) return;
                     if (currentEntity.delegateItem.groupObj) {
                         if (currentEntity.delegateItem.state === "open") {
                             currentEntity.delegateItem.close();
@@ -479,6 +512,8 @@ Item {
                         return;
                     }
 
+                    if (mainContainerRoot.redesignedHomeActive) return;
+                    if (!currentEntity || !currentEntity.delegateItem) return;
                     if (currentEntity.delegateItem.groupObj) {
                         if (currentEntity.delegateItem.state === "closed") {
                             currentEntity.delegateItem.open();
@@ -497,6 +532,11 @@ Item {
 
                     if (ui.editMode) {
                         ui.editMode = false;
+                    }
+                    if (mainContainerRoot.redesignedHomeActive) {
+                        redesignedHome.item.selectedIndex = 0;
+                        redesignedHome.item.scrollToBeginning();
+                        return;
                     }
                     pages.currentItem.currentIndex = 0;
                     pages.currentItem.positionViewAtBeginning();
@@ -706,8 +746,30 @@ Item {
         }
     }
 
-    // bottom gradient
+    // Optional redesigned surface on home page (index 0 only).
+    // This is an overlay, NOT a replacement for the stock Page delegate.
+    // A loader failure automatically reveals the intact original view.
+    Loader {
+        id: redesignedHome
+        anchors.fill: pages
+        // Keep the global overlays; the redesigned header replaces the stock status bar.
+        z: 0
+        asynchronous: true
+        active: Config.redesignedHomeEnabled && !ui.profile.restricted &&
+                pages.count > 0 && pages.currentIndex === 0 && !ui.editMode &&
+                !mainContainerBlockingMouseArea.enabled
+        visible: active && status === Loader.Ready && item !== null
+        source: "qrc:/components/home/HomePage.qml"
+        onStatusChanged: {
+            if (status === Loader.Error) {
+                console.warn("Redesigned home could not load; original page remains available:", source);
+            }
+        }
+    }
+
+    // Native bottom gradient is unnecessary on the redesigned home.
     Item {
+        visible: !mainContainerRoot.redesignedHomeActive
         width: parent.width; height: 60
         anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
         opacity: pages.currentItem && pages.currentItem.atYEnd ? 0 : 1
@@ -727,6 +789,8 @@ Item {
 
     Components.StatusBar {
         id: statusBar
+        // The redesigned home renders the clock, battery and settings itself.
+        visible: !mainContainerRoot.redesignedHomeActive
         anchors { top: parent.top; horizontalCenter: parent.horizontalCenter }
     }
 

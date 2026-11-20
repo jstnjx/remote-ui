@@ -437,6 +437,17 @@ int EntityController::checkSequenceReadiness(const QString& entityId, const QStr
     return id;
 }
 
+QStringList EntityController::getIdsByType(const QString& type) {
+    QStringList result;
+    for (entity::Base* obj : qAsConst(m_entities)) {
+        if (obj && obj->getTypeAsString().compare(type, Qt::CaseInsensitive) == 0) {
+            result.append(obj->getId());
+        }
+    }
+    result.sort(Qt::CaseInsensitive);
+    return result;
+}
+
 QStringList EntityController::getIdsByIntegration(const QString& integrationId) {
     QStringList list;
 
@@ -1083,11 +1094,10 @@ void EntityController::retrySendAttempt(const QString& commandId) {
             }
 
             qCDebug(lcEntityController()) << "Command executed successfully" << commandId << "attempt" << attemptCount;
-            const pendingCommand executed = current.value();
+            const QString entityId = current.value().entityId;
+            const QString command = current.value().command;
             removePendingCommand(commandId);
-            if (entity::Base* e = m_entities.value(executed.entityId)) {
-                e->commandFinished(executed.command, executed.params, true);
-            }
+            emit entityCommandResult(entityId, command, true, 0, QString());
         },
         // failure
         [this, commandId, id](int code, QString message) { handleCommandFailure(commandId, id, code, message); });
@@ -1150,6 +1160,11 @@ void EntityController::handleCommandFailure(const QString& commandId, int reques
         removePendingCommand(commandId);
         return;
     }
+
+    // This request is now definitively failed (retries and repeating
+    // commands are handled above). Notify interested QML editors before the
+    // generic notification removes the pending command.
+    emit entityCommandResult(live.entityId, live.command, false, code, message);
 
     // get entity name
     QString       entityName = tr("The device");

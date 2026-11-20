@@ -34,6 +34,7 @@ KeyboardLayoutLoader {
                     onClicked: secondPage = !secondPage
                 }
                 BackspaceKey {}
+                EnterKey { visible: root.keyboardSendMode; weight: 100 }
             }
             KeyboardRow {
                 Key {
@@ -179,6 +180,7 @@ KeyboardLayoutLoader {
                     onClicked: secondPage = !secondPage
                 }
                 BackspaceKey {}
+                EnterKey { visible: root.keyboardSendMode; weight: 100 }
             }
             KeyboardRow {
                 Key {

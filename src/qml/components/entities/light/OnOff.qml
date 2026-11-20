@@ -12,6 +12,7 @@ Item {
     anchors.fill: parent
 
     property QtObject entityObj
+    property bool compact: false
 
     Text {
         //: Light device state
@@ -20,16 +21,17 @@ Item {
         elide: Text.ElideRight
         maximumLineCount: 2
         color: colors.offwhite
-        anchors { left: parent.left; leftMargin: 30; right: parent.right; rightMargin: 30; bottom: onOffButtonContainer.top }
-        font: fonts.primaryFont(180,  "Light")
+        anchors { left: parent.left; leftMargin: onOffFeature.compact ? 6 : 30; right: parent.right; rightMargin: onOffFeature.compact ? 6 : 30; bottom: onOffButtonContainer.top }
+        font: fonts.primaryFont(onOffFeature.compact ? 44 : 180, "Light")
     }
 
     Rectangle {
         id: onOffButtonContainer
-        width: parent.width - 60; height: width
+        width: Math.max(40, parent.width - (onOffFeature.compact ? 12 : 60))
+        height: onOffFeature.compact ? Math.min(width, parent.height * .64) : width
         radius: ui.cornerRadiusSmall
         color: colors.medium
-        anchors { bottom: parent.bottom; bottomMargin: 30; horizontalCenter: parent.horizontalCenter }
+        anchors { bottom: parent.bottom; bottomMargin: onOffFeature.compact ? 4 : 30; horizontalCenter: parent.horizontalCenter }
 
         states: State {
             name: "pressed"
@@ -49,7 +51,8 @@ Item {
 
         Rectangle {
             id: onOffButton
-            width: parent.width - 60; height: width
+            width: parent.width - (onOffFeature.compact ? 12 : 60)
+            height: onOffFeature.compact ? Math.min(width, parent.height - 12) : width
             radius: ui.cornerRadiusSmall
             color: entityObj.state === LightStates.On ? colors.offwhite : colors.dark
             anchors.centerIn: parent
