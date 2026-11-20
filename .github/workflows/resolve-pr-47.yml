@@ -25,6 +25,9 @@ jobs:
           git fetch origin sync-upstream-2026-11-20
           echo "Merge base: $(git merge-base HEAD origin/sync-upstream-2026-11-20)"
           git merge --no-commit --no-ff -X theirs origin/sync-upstream-2026-11-20
+          # Workflow changes are applied separately through the GitHub integration,
+          # because the Actions token is not authorized to push workflow edits.
+          git restore --source=HEAD --staged --worktree -- .github/workflows/build.yml .github/workflows/code_guidelines.yml
           git diff --cached --check
           if git ls-files -u | grep -q .; then
             echo "Unresolved index conflicts remain"
