@@ -69,6 +69,39 @@ jobs:
           python tools/design-check.py --self-test
           python tools/design-check.py
 
+      # The home page binds MediaComponent.isComponentHorizontal explicitly. Turning
+      # that public QML property readonly prevents MainContainer from loading,
+      # leaving only the charging/power screens visible on the device.
+      - name: Verify home-page media widget property contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          page = Path("src/qml/components/Page.qml").read_text(encoding="utf-8")
+          component = Path("src/qml/components/entities/activity/MediaComponent.qml").read_text(encoding="utf-8")
+          if re.search(r'\bisComponentHorizontal\s*:', page):
+              if not re.search(r'(?m)^\s*property bool isComponentHorizontal\s*:', component):
+                  raise SystemExit("Page.qml assigns MediaComponent.isComponentHorizontal, which must remain a writable QML property")
+          PY
+
+      # Guard the 480x800 Remote 3 layout against old overlapping / overflow
+      # geometry and textual SEND keys without needing a device on CI.
+      - name: Verify home layout geometry and native send icon
+        run: python test/ui/home_layout_sanity.py
+
+      - name: Verify Apple TV keyboard text and Send icon
+        run: python test/ui/keyboard_delivery_sanity.py
+
+      - name: Verify inline activity media browser
+        run: python test/ui/inline_media_browser_sanity.py
+
+      - name: Verify Light Climate Cover activity cards
+        run: python test/ui/activity_entity_cards_sanity.py
+
+      - name: Verify inline media artwork Text widgets
+        run: python test/ui/media_artwork_widget_sanity.py
+
       - name: cpplint
         shell: python
         run: |
