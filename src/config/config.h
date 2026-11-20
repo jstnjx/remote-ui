@@ -16,6 +16,7 @@
 
 #include "../core/core.h"
 #include "../translation/translation.h"
+#include "../ui/colors.h"
 #include "../ui/entity/voiceAssistant.h"
 #include "../ui/notification.h"
 #include "../util.h"
@@ -227,6 +228,8 @@ class Config : public QObject {
 
     bool getMediaCoverflowDefault();
     void setMediaCoverflowDefault(bool value);
+    int  getSelectionFillLevel();
+    void setSelectionFillLevel(int value);
 
     bool getHideMediaPlayerControls();
     void setHideMediaPlayerControls(bool value);

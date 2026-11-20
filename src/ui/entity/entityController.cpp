@@ -192,6 +192,14 @@ EntityController::EntityController(core::Api* core, const QString& language, con
     qmlRegisterUncreatableType<entity::SelectDeviceClass>("Entity.Select", 1, 0, "SelectDeviceClasses",
                                                           "Enum is not a type");
 
+    // number enums
+    qRegisterMetaType<entity::NumberFeatures::Enum>("Number Features");
+    qRegisterMetaType<entity::NumberStates::Enum>("Number States");
+    qmlRegisterUncreatableType<entity::NumberFeatures>("Entity.Number", 1, 0, "NumberFeatures", "Enum is not a type");
+    qmlRegisterUncreatableType<entity::NumberStates>("Entity.Number", 1, 0, "NumberStates", "Enum is not a type");
+    qmlRegisterUncreatableType<entity::NumberDeviceClass>("Entity.Number", 1, 0, "NumberDeviceClasses",
+                                                          "Enum is not a type");
+
     QObject::connect(m_core, &core::Api::connected, this, &EntityController::onCoreConnected);
     QObject::connect(m_core, &core::Api::disconnected, this, &EntityController::onCoreDisconnected);
 
@@ -270,6 +278,9 @@ entity::Base* EntityController::createEntityObject(const QString& type, const QS
         case entity::Base::Type::Select:
             return new entity::Select(id, name, m_language, icon, area, deviceClass, enabled, attributes, integrationId,
                                       parent);
+        case entity::Base::Type::Number:
+            return new entity::Number(id, name, m_language, icon, area, deviceClass, enabled, attributes, options,
+                                      integrationId, parent);
         default:
             return new entity::Base(id, name, m_language, icon, area, entity::Base::Type::Unsupported, true,
                                     QVariantMap(), integrationId, false, parent);
@@ -677,6 +688,17 @@ void EntityController::connectLazySignals(entity::Base* obj) {
             climate->onUnitSystemChanged(m_unitSystem);
         }
     }
+
+    // Sensor: format of a timestamp and a date — connect then sync to the current settings
+    if (obj->getType() == entity::Base::Type::Sensor) {
+        auto sensor = qobject_cast<entity::Sensor*>(obj);
+
+        if (sensor) {
+            QObject::connect(this, &EntityController::dateTimeFormatChanged, sensor,
+                             &entity::Sensor::onDateTimeFormatChanged);
+            sensor->onDateTimeFormatChanged(m_language, m_timezone, m_clock24h);
+        }
+    }
 }
 
 void EntityController::setAllEntitiesAvailable(bool value) {
@@ -774,6 +796,9 @@ void EntityController::onEntityChanged(const QString& entityId, core::Entity ent
             case entity::Base::Type::Voice_assistant:
                 entityObj->updateFeatures<entity::VoiceAssistantFeatures::Enum>(entity.features);
                 break;
+            case entity::Base::Type::Number:
+                entityObj->updateFeatures<entity::NumberFeatures::Enum>(entity.features);
+                break;
 
             case entity::Base::Type::Sensor:
             case entity::Base::Type::Select:
@@ -785,7 +810,8 @@ void EntityController::onEntityChanged(const QString& entityId, core::Entity ent
         }
     }
 
-    if (entity.options.size() > 0) {
+    // empty options of a change event still count: removing the last user override leaves no options
+    if (entity.optionsProvided || entity.options.size() > 0) {
         entityObj->updateOptions(entity.options);
     }
 }
@@ -1116,6 +1142,11 @@ void EntityController::handleCommandFailure(const QString& commandId, int reques
         return;
     }
 
+    // the command failed for good: the entity stops showing what it expected the command to do
+    if (entity::Base* failed = m_entities.value(live.entityId)) {
+        failed->commandFinished(live.command, live.params, false);
+    }
+
     // we ignore voice commands as they have their own error handling
     if (live.command == "voice_start") {
         emit voiceAssistantCommandError(live.entityId, code);
@@ -1203,6 +1234,13 @@ void EntityController::handleCommandFailure(const QString& commandId, int reques
 void EntityController::onLanguageChanged(QString language) {
     m_language = language;
     emit languageChanged(m_language);
+    emit dateTimeFormatChanged(m_language, m_timezone, m_clock24h);
+}
+
+void EntityController::onTimeFormatChanged(const QString& timezone, bool clock24h) {
+    m_timezone = timezone;
+    m_clock24h = clock24h;
+    emit dateTimeFormatChanged(m_language, m_timezone, m_clock24h);
 }
 
 void EntityController::onUnitSystemChanged(Config::UnitSystems unitSystem) {

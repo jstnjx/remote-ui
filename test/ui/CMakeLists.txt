@@ -42,6 +42,72 @@ target_link_libraries(testCoverEntity
     Qt5::Test
     )
 
+add_executable (testSensorEntity
+    "test_sensor_entity.cpp"
+    "../../src/ui/entity/sensor.cpp"
+    "../../src/ui/entity/valueFormat.cpp"
+    "../../src/ui/entity/entityScreens.cpp"
+    "../../src/ui/entity/entity.cpp"
+    "../../src/util.cpp"
+    "../../src/logging.cpp"
+    "../../3rd-party/QR-Code-generator/cpp/qrcodegen.cpp"
+    )
+
+add_test(NAME testSensorEntity
+         COMMAND testSensorEntity)
+
+target_link_libraries(testSensorEntity
+    PUBLIC
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Qml
+    Qt5::Test
+    )
+
+add_executable (testNumberEntity
+    "test_number_entity.cpp"
+    "../../src/ui/entity/number.cpp"
+    "../../src/ui/entity/valueFormat.cpp"
+    "../../src/ui/entity/entityScreens.cpp"
+    "../../src/ui/entity/entity.cpp"
+    "../../src/util.cpp"
+    "../../src/logging.cpp"
+    "../../3rd-party/QR-Code-generator/cpp/qrcodegen.cpp"
+    )
+
+add_test(NAME testNumberEntity
+         COMMAND testNumberEntity)
+
+target_link_libraries(testNumberEntity
+    PUBLIC
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Qml
+    Qt5::Test
+    )
+
+add_executable (testSliderStyle
+    "test_slider_style.cpp"
+    "../../src/ui/entity/sliderStyle.cpp"
+    "../../src/ui/entity/valueFormat.cpp"
+    "../../src/ui/entity/entityScreens.cpp"
+    "../../src/ui/entity/entity.cpp"
+    "../../src/util.cpp"
+    "../../src/logging.cpp"
+    "../../3rd-party/QR-Code-generator/cpp/qrcodegen.cpp"
+    )
+
+add_test(NAME testSliderStyle
+         COMMAND testSliderStyle)
+
+target_link_libraries(testSliderStyle
+    PUBLIC
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Qml
+    Qt5::Test
+    )
+
 add_executable (testSwitchEntity
     "test_switch_entity.cpp"
     "../../src/ui/entity/switch.cpp"
@@ -91,6 +157,7 @@ add_executable (testIconFont
     "test_icon_font.cpp"
     "../../src/ui/iconFont.cpp"
     "../../src/ui/resources.cpp"
+    "../../src/ui/imageDecoder.cpp"
     "../../src/util.cpp"
     "../../src/logging.cpp"
     # util.cpp generates QR codes
@@ -135,6 +202,28 @@ target_link_libraries(testCommandRetryPolicy
 # the entity classes are QML items: uc::ui::entity::Light derives from QQuickPaintedItem
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Quick REQUIRED)
 
+add_executable (testLightEntity
+    "test_light_entity.cpp"
+    "../../src/ui/entity/light.cpp"
+    "../../src/ui/entity/entityScreens.cpp"
+    "../../src/ui/entity/entity.cpp"
+    "../../src/util.cpp"
+    "../../src/logging.cpp"
+    "../../3rd-party/QR-Code-generator/cpp/qrcodegen.cpp"
+    )
+
+add_test(NAME testLightEntity
+         COMMAND testLightEntity)
+
+target_link_libraries(testLightEntity
+    PUBLIC
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Qml
+    Qt5::Quick
+    Qt5::Test
+    )
+
 add_executable (testEntityController
     "test_entity_controller.cpp"
     "../../src/ui/entity/entityController.cpp"
@@ -149,11 +238,13 @@ add_executable (testEntityController
     "../../src/ui/entity/light.cpp"
     "../../src/ui/entity/macro.cpp"
     "../../src/ui/entity/mediaPlayer.cpp"
+    "../../src/ui/entity/number.cpp"
     "../../src/ui/entity/remote.cpp"
     "../../src/ui/entity/select.cpp"
     "../../src/ui/entity/sensor.cpp"
     "../../src/ui/entity/sequenceReadinessReport.cpp"
     "../../src/ui/entity/switch.cpp"
+    "../../src/ui/entity/valueFormat.cpp"
     "../../src/ui/entity/voiceAssistant.cpp"
     "../../src/ui/entity/voiceSession.cpp"
     "../../src/ui/entity/entities.cpp"
@@ -162,6 +253,7 @@ add_executable (testEntityController
     "../../src/ui/entity/entityScreens.cpp"
     # header only: contains the Q_GADGET class moc has to process
     "../../src/ui/entity/sequenceStep.h"
+    "../../src/ui/imageDecoder.cpp"
     "../../src/ui/mediaImageProvider.cpp"
     "../../src/ui/notification.cpp"
     "../../src/config/config.cpp"
@@ -277,14 +369,17 @@ add_executable (testEntityScreens
     "../../src/ui/entity/light.cpp"
     "../../src/ui/entity/macro.cpp"
     "../../src/ui/entity/mediaPlayer.cpp"
+    "../../src/ui/entity/number.cpp"
     "../../src/ui/entity/remote.cpp"
     "../../src/ui/entity/select.cpp"
     "../../src/ui/entity/sensor.cpp"
     "../../src/ui/entity/switch.cpp"
+    "../../src/ui/entity/valueFormat.cpp"
     "../../src/ui/entity/voiceAssistant.cpp"
     "../../src/ui/entity/voiceSession.cpp"
     # header only: contains the Q_OBJECT class moc has to process
     "../../src/ui/entity/sequenceStep.h"
+    "../../src/ui/imageDecoder.cpp"
     "../../src/ui/mediaImageProvider.cpp"
     "../../src/util.cpp"
     "../../src/logging.cpp"
@@ -339,6 +434,7 @@ add_executable (testResources
     "test_resources.cpp"
     "../../src/ui/iconFont.cpp"
     "../../src/ui/resources.cpp"
+    "../../src/ui/imageDecoder.cpp"
     "../../src/util.cpp"
     "../../src/logging.cpp"
     # util.cpp generates QR codes
@@ -423,6 +519,38 @@ target_link_libraries(testInputController
     Qt5::Test
     )
 
+# The screen stack of the real main.qml: its containers with the real main screen, profile page, settings, an entity
+# screen and the charging screen, with the real InputController (offscreen platform)
+add_executable (testScreenStack
+    "test_screen_stack.cpp"
+    "../../resources/qrc/main.qrc"
+    # the spinners of the status bar and the entity screen title (loader_small.png)
+    "../../resources/qrc/images.qrc"
+    "../../src/ui/inputController.cpp"
+    "../../src/ui/colors.cpp"
+    "../../src/ui/entity/entity.cpp"
+    "../../src/ui/entity/button.cpp"
+    # header only: contains the Q_OBJECT / Q_GADGET classes moc has to process
+    "../../src/ui/fonts.h"
+    "../../src/core/enums.h"
+    "../../src/hardware/hardwareModel.h"
+    "../../src/util.cpp"
+    "../../src/logging.cpp"
+    "../../3rd-party/QR-Code-generator/cpp/qrcodegen.cpp"
+    )
+
+add_test(NAME testScreenStack
+         COMMAND testScreenStack)
+
+target_link_libraries(testScreenStack
+    PUBLIC
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Qml
+    Qt5::Quick
+    Qt5::Test
+    )
+
 # The colour tokens of the design system: values, the old names as aliases and the contrast pairs.
 add_executable (testDesignTokens
     "test_design_tokens.cpp"
@@ -453,5 +581,46 @@ target_link_libraries(testTypeRoles
     PUBLIC
     Qt5::Core
     Qt5::Gui
+    Qt5::Test
+    )
+
+# Bounded decoding of media artwork and driver images. The SVG cases need the Qt SVG image format
+# plugin of the Qt installation and are skipped without it.
+add_executable (testImageDecoder
+    "test_image_decoder.cpp"
+    "../../src/ui/imageDecoder.cpp"
+    )
+
+add_test(NAME testImageDecoder
+         COMMAND testImageDecoder)
+
+target_link_libraries(testImageDecoder
+    PUBLIC
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Test
+    )
+
+# Custom and TV channel icon files: the resource lookup and the custom icon list. Compiles the
+# icon resources in for the placeholder glyph.
+add_executable (testIconFiles
+    "test_icon_files.cpp"
+    "../../src/ui/resources.cpp"
+    "../../src/ui/imageDecoder.cpp"
+    "../../src/util.cpp"
+    "../../src/logging.cpp"
+    # util.cpp generates QR codes
+    "../../3rd-party/QR-Code-generator/cpp/qrcodegen.cpp"
+    "../../resources/qrc/icons.qrc"
+    )
+
+add_test(NAME testIconFiles
+         COMMAND testIconFiles)
+
+target_link_libraries(testIconFiles
+    PUBLIC
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Qml
     Qt5::Test
     )

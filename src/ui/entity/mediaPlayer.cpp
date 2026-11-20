@@ -6,10 +6,10 @@
 #include <QCoreApplication>
 #include <QSslConfiguration>
 #include <functional>
-#include <utility>
 
 #include "../../logging.h"
 #include "../../util.h"
+#include "../imageDecoder.h"
 #include "../mediaImageProvider.h"
 
 namespace uc {
@@ -28,18 +28,17 @@ struct ProcessedMediaImage {
     bool    cancelled = false;
 };
 
-QImage normalizeMediaImage(QImage image) {
+/// Decodes artwork with the longer side at most MAX_MEDIA_IMAGE_DIMENSION, or a null image with the reason logged.
+QImage decodeMediaImage(const QByteArray &imageData) {
+    QString      error;
+    const QImage image = ImageDecoder::decode(imageData, MAX_MEDIA_IMAGE_DIMENSION, &error);
+
     if (image.isNull()) {
-        return image;
+        // the URL is not logged: it may carry an access token
+        qCWarning(lcMediaPlayer()) << "Cannot decode media image:" << error;
     }
 
-    const int maxDimension = qMax(image.width(), image.height());
-    if (maxDimension <= MAX_MEDIA_IMAGE_DIMENSION) {
-        return image;
-    }
-
-    return image.scaled(MAX_MEDIA_IMAGE_DIMENSION, MAX_MEDIA_IMAGE_DIMENSION, Qt::KeepAspectRatio,
-                        Qt::SmoothTransformation);
+    return image;
 }
 
 QColor computeAverageImageColorForImage(const QImage &image,
@@ -88,12 +87,10 @@ ProcessedMediaImage processDownloadedMediaImage(const QByteArray &imageData,
                                                 const std::function<bool()> &isRequestCurrent) {
     ProcessedMediaImage result;
 
-    QImage image;
-    if (!image.loadFromData(imageData)) {
+    const QImage image = decodeMediaImage(imageData);
+    if (image.isNull()) {
         return result;
     }
-
-    image = normalizeMediaImage(std::move(image));
 
     if (isRequestCurrent && !isRequestCurrent()) {
         result.cancelled = true;
@@ -124,12 +121,10 @@ ProcessedMediaImage processEmbeddedMediaImage(const QString &dataUrl, const QCol
     const QString base64Data = dataUrl.section(",", 1);
     const QByteArray imageData = QByteArray::fromBase64(base64Data.toLatin1());
 
-    QImage image;
-    if (!image.loadFromData(imageData)) {
+    const QImage image = decodeMediaImage(imageData);
+    if (image.isNull()) {
         return result;
     }
-
-    image = normalizeMediaImage(std::move(image));
 
     if (isRequestCurrent && !isRequestCurrent()) {
         result.cancelled = true;
@@ -190,14 +185,7 @@ MediaPlayer::MediaPlayer(const QString &id, QVariantMap nameI18n, const QString 
         m_deviceClass = QVariant::fromValue(MediaPlayerDeviceClass::Speaker).toString();
     }
 
-            // options
-    if (options.contains("volume_steps")) {
-        m_volumeSteps = options.value("volume_steps").toInt();
-    }
-
-    if (options.contains("simple_commands")) {
-        m_simpleCommands = options.value("simple_commands").toStringList();
-    }
+    applyOptions(options);
 
             // setup position timer
     m_positionTimer.setInterval(1000);
@@ -229,6 +217,22 @@ MediaPlayer::MediaPlayer(const QString &id, QVariantMap nameI18n, const QString 
 
     QObject::connect(&m_nam, QOverload<QNetworkReply *, const QList<QSslError> &>::of(&QNetworkAccessManager::sslErrors),
             this, &MediaPlayer::onSslErrors);
+}
+
+bool MediaPlayer::updateOptions(QVariant data) {
+    applyOptions(data.toMap());
+    return true;
+}
+
+void MediaPlayer::applyOptions(const QVariantMap& options) {
+    // the core delivers the complete options: a missing option has its default value
+    const int volumeSteps = options.contains("volume_steps") ? options.value("volume_steps").toInt() : 100;
+    if (m_volumeSteps != volumeSteps) {
+        m_volumeSteps = volumeSteps;
+        emit volumeStepsChanged();
+    }
+
+    m_simpleCommands = options.value("simple_commands").toStringList();
 }
 
 MediaPlayer::~MediaPlayer() {

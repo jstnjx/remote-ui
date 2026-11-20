@@ -10,11 +10,14 @@ namespace uc {
 namespace ui {
 namespace entity {
 
+// range of the color_temperature attribute and command parameter
+static constexpr int COLOR_TEMP_MAX = 100;
+
 Light::Light(const QString &id, QVariantMap nameI18n, const QString &language, const QString &icon, const QString &area,
              const QString &deviceClass, const QStringList &features, bool enabled, QVariantMap attributes,
              QVariantMap options, const QString &integrationId, QObject *parent)
     : Base(id, nameI18n, language, icon, area, Type::Light, enabled, attributes, integrationId, false, parent),
-      m_colorTempSteps(100) {
+      m_colorTempPositionMax(COLOR_TEMP_MAX) {
     qCDebug(lcLight()) << "Light entity constructor";
 
     updateFeatures<LightFeatures::Enum>(features);
@@ -40,15 +43,33 @@ Light::Light(const QString &id, QVariantMap nameI18n, const QString &language, c
         m_deviceClass = QVariant::fromValue(LightDeviceClass::Light).toString();
     }
 
-    // options
-    if (options.contains("color_temperature_steps")) {
-        m_colorTempSteps = options.value("color_temperature_steps").toInt();
-    }
+    applyOptions(options);
 
     // Registered once: a type registration is never released, and every light entity ran this line.
     // It stays here so that the type is registered before the first light screen can be loaded, as before.
     static const int colorWheelTypeId = qmlRegisterType<LightColorWheel>("Entity.Light", 1, 0, "ColorWheel");
     Q_UNUSED(colorWheelTypeId)
+}
+
+bool Light::updateOptions(QVariant data) {
+    applyOptions(data.toMap());
+    return true;
+}
+
+void Light::applyOptions(const QVariantMap& options) {
+    // The core delivers the complete options: a missing option has its default value.
+    // n steps are n positions, e.g. 3 steps: 0, 50, 100. Without the option, or with more positions than whole
+    // numbers in the range, every value of 0..100 is a position. A single position is no range.
+    const int colorTempSteps = options.value("color_temperature_steps").toInt();
+    const int positionMax =
+        colorTempSteps >= 2 && colorTempSteps <= COLOR_TEMP_MAX ? colorTempSteps - 1 : COLOR_TEMP_MAX;
+
+    if (m_colorTempPositionMax != positionMax) {
+        m_colorTempPositionMax = positionMax;
+        emit colorTempPositionMaxChanged();
+        // the position of the same colour temperature changed with the positions
+        emit colorTempChanged();
+    }
 }
 
 Light::~Light() {
@@ -87,6 +108,19 @@ void Light::setColor(QColor color) {
     params.insert("hue", hue == -1 ? 0 : hue);
     params.insert("saturation", color.hsvSaturation());
     sendCommand(LightCommands::On, params);
+}
+
+int Light::colorTempToPosition(int colorTemp) {
+    return qRound(qBound(0, colorTemp, COLOR_TEMP_MAX) * static_cast<double>(m_colorTempPositionMax) / COLOR_TEMP_MAX);
+}
+
+int Light::colorTempFromPosition(int position) {
+    return qRound(qBound(0, position, m_colorTempPositionMax) * static_cast<double>(COLOR_TEMP_MAX) /
+                  m_colorTempPositionMax);
+}
+
+double Light::colorTempPositionsPerSweep(double gain) {
+    return qMax(MIN_TOUCH_POSITIONS_PER_SWEEP, gain * m_colorTempPositionMax);
 }
 
 void Light::setColorTemperature(int colorTemp) {
@@ -135,20 +169,25 @@ bool Light::updateAttribute(const QString &attribute, QVariant data) {
             break;
         }
         case LightAttributes::Hue: {
-            int newHue = data.toInt();
+            int        newHue = data.toInt();
+            const bool known = !data.isNull();
 
-            if (m_hue != newHue) {
+            // a first report of 0 changes no value, but makes the colour known
+            if (m_hue != newHue || m_hueKnown != known) {
                 m_hue = newHue;
+                m_hueKnown = known;
                 ok = true;
                 calculateQColor();
             }
             break;
         }
         case LightAttributes::Saturation: {
-            int newSaturation = data.toInt();
+            int        newSaturation = data.toInt();
+            const bool known = !data.isNull();
 
-            if (m_saturation != newSaturation) {
+            if (m_saturation != newSaturation || m_saturationKnown != known) {
                 m_saturation = newSaturation;
+                m_saturationKnown = known;
                 ok = true;
                 calculateQColor();
             }
@@ -199,9 +238,11 @@ void Light::onLanguageChangedTypeSpecific()
 void Light::calculateQColor() {
     QColor color;
     color.setHsv(m_hue, m_saturation, 255);
+    const bool known = m_hueKnown && m_saturationKnown;
 
-    if (m_color != color) {
+    if (m_color != color || m_colorKnown != known) {
         m_color = color;
+        m_colorKnown = known;
         emit colorChanged();
     }
 }

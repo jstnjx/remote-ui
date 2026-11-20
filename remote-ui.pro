@@ -125,13 +125,16 @@ HEADERS += \
     src/ui/entity/light.h \
     src/ui/entity/macro.h \
     src/ui/entity/mediaPlayer.h \
+    src/ui/entity/number.h \
     src/ui/entity/remote.h \
     src/ui/entity/select.h \
     src/ui/entity/sensor.h \
     src/ui/entity/sequenceReadinessReport.h \
     src/ui/entity/sequenceStep.h \
+    src/ui/entity/sliderStyle.h \
     src/ui/entity/switch.h \
     src/ui/entity/entityController.h \
+    src/ui/entity/valueFormat.h \
     src/ui/entity/voiceAssistant.h \
     src/ui/entity/voiceSession.h \
     src/ui/fonts.h \
@@ -139,6 +142,7 @@ HEADERS += \
     src/ui/group/group.h \
     src/ui/group/groupController.h \
     src/ui/group/groupItem.h \
+    src/ui/imageDecoder.h \
     src/ui/inputController.h \
     src/ui/mediaImageProvider.h \
     src/ui/notification.h \
@@ -195,17 +199,21 @@ SOURCES += \
         src/ui/entity/light.cpp \
         src/ui/entity/macro.cpp \
         src/ui/entity/mediaPlayer.cpp \
+        src/ui/entity/number.cpp \
         src/ui/entity/remote.cpp \
         src/ui/entity/select.cpp \
         src/ui/entity/sensor.cpp \
         src/ui/entity/sequenceReadinessReport.cpp \
+        src/ui/entity/sliderStyle.cpp \
         src/ui/entity/switch.cpp \
         src/ui/entity/entityController.cpp \
+        src/ui/entity/valueFormat.cpp \
         src/ui/entity/voiceAssistant.cpp \
         src/ui/entity/voiceSession.cpp \
         src/ui/group/group.cpp \
         src/ui/group/groupController.cpp \
         src/ui/group/groupItem.cpp \
+        src/ui/imageDecoder.cpp \
         src/ui/iconFont.cpp \
         src/ui/inputController.cpp \
         src/ui/mediaImageProvider.cpp \

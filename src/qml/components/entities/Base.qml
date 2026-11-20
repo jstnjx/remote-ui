@@ -411,6 +411,10 @@ Rectangle {
             }
             button.checked = false;
             break;
+        case EntityTypes.Number:
+            entityBaseContainer.iconOn = true;
+            button.checked = false;
+            break;
         }
     }
 

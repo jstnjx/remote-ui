@@ -91,14 +91,14 @@ jobs:
 
       # Attention shared Qt installation cache: use the same configuration as for the desktop build below!
       - name: Install Qt
-        uses: jurplel/install-qt-action@a9c63c7c123f3069cff414e7e482d95dfa9d8125 # v4.4.1
+        uses: jurplel/install-qt-action@b344308e4483fc892e0d27b3cd1b173ebdd95f06 # v4.5.0
         with:
           version: ${{ env.QT_VERSION }}
           # modules & archives: https://ddalcino.github.io/aqt-list-server/
           modules: 'qtvirtualkeyboard'
           # qtbase: qmake
           # qttools: lrelease & lupdate
-          archives: 'qtbase qtdeclarative qtmultimedia qtquickcontrols2 qtsvg qttools qtwebsockets'
+          archives: 'qtbase qtdeclarative qtgraphicaleffects qtmultimedia qtquickcontrols2 qtsvg qttools qtwebsockets'
           cache: true
           cache-key-prefix: ${{ env.QT_VERSION }}-${{ matrix.config.artifact }}
 
@@ -130,15 +130,15 @@ jobs:
           cmake -D CMAKE_PREFIX_PATH="$QT_ROOT_DIR" ..
           cmake --build .
 
+      # Runs every test registered with add_test() in test/**/CMakeLists.txt: a new test target is picked up without
+      # touching the workflow. The runner has no display.
       - name: Unit tests
         shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
         run: |
           cd ${{ env.PROJECT_NAME }}/test/build
-          common/testCommon
-          core/testCore
-          hardware/testHardware
-          ui/testUiModels
-          hardware/testBattery
+          ctest --output-on-failure
 
   # The static builds run in Docker toolchain images. The Linux x64 desktop simulator is only built for release
   # builds (push to main and version tags), not for pull requests, so the matrix is computed here.

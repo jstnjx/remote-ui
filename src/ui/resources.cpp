@@ -4,15 +4,62 @@
 #include "resources.h"
 
 #include <QFileInfo>
+#include <QImageReader>
 #include <QRegularExpression>
 #include <QTextStream>
 #include <QUrl>
+#include <QXmlStreamReader>
 
 #include "../logging.h"
 #include "../util.h"
+#include "imageDecoder.h"
 
 namespace uc {
 namespace ui {
+
+namespace {
+
+/// The size of the root `viewBox` of an SVG file, or an empty size when the root element has none or an invalid one.
+QSizeF svgViewBoxSize(const QString& path) {
+    QFile file(path);
+
+    if (!file.open(QIODevice::ReadOnly)) {
+        return QSizeF();
+    }
+
+    QXmlStreamReader xml(&file);
+
+    // only the root element is read
+    while (!xml.atEnd() && !xml.isStartElement()) {
+        xml.readNext();
+    }
+
+    if (!xml.isStartElement() || xml.name() != QLatin1String("svg")) {
+        return QSizeF();
+    }
+
+    // "min-x min-y width height", separated by white space and / or a comma
+    const QStringList values = xml.attributes()
+                                   .value(QLatin1String("viewBox"))
+                                   .toString()
+                                   .split(QRegularExpression("[\\s,]+"), Qt::SkipEmptyParts);
+
+    if (values.size() != 4) {
+        return QSizeF();
+    }
+
+    bool         widthOk = false;
+    bool         heightOk = false;
+    const QSizeF size(values[2].toDouble(&widthOk), values[3].toDouble(&heightOk));
+
+    if (!widthOk || !heightOk || !qIsFinite(size.width()) || !qIsFinite(size.height())) {
+        return QSizeF();
+    }
+
+    return size.isEmpty() ? QSizeF() : size;
+}
+
+}  // namespace
 
 Resources::Resources(const QString& resourcePath, const QString& legalPath, QObject* parent)
     : QObject(parent), m_resourcePath(resourcePath), m_legalPath(legalPath) {
@@ -101,52 +148,64 @@ QString Resources::getIconGlyph(const QString& name) {
     return canRenderGlyph(placeholderGlyph) ? placeholderGlyph : QString();
 }
 
+QString Resources::getIconPlaceholder() {
+    return getIconGlyph(m_iconPlaceholder);
+}
+
 QString Resources::getIcon(const QString& id, const QString& suffix) {
-    QString _id;
-    QString ext;
+    // State variants of an icon (e.g. "-on" / "-off") are not supported yet.
+    Q_UNUSED(suffix)
 
     if (id.isEmpty()) {
         qCWarning(lcResources()) << "Empty ID passed to getIcon()";
         return QString();
     }
 
-    if (id.endsWith(".png") || id.endsWith(".jpg")) {
-        if (id.length() >= 4) {
-            _id = id.chopped(4);
-            ext = id.right(4);
-        } else {
-            qCWarning(lcResources()) << "ID too short for .png/.jpg extension:" << id;
-            return QString();  // Or handle it gracefully
+    // The file name is used as is: whatever image format the image loader can decode is accepted.
+    return getResource(id.contains("ctv:") ? TvChannelIcon : Icon, id);
+}
+
+QSize Resources::getIconSize(const QString& id, int boxWidth, int boxHeight) {
+    // the same file getIcon() resolves
+    const QStringList parts = id.split(":");
+
+    if (boxWidth <= 0 || boxHeight <= 0 || parts.size() < 2) {
+        return QSize();
+    }
+
+    const QString& prefix = parts[0];
+    const QString& name = parts[1];
+
+    if ((prefix != "custom" && prefix != "ctv") || !ImageDecoder::isSvgFileName(name)) {
+        return QSize();
+    }
+
+    const QString path = m_resourcePaths.value(prefix == "ctv" ? TvChannelIcon : Icon) + name;
+
+    if (!ImageDecoder::checkSvgFile(path)) {
+        return QSize();
+    }
+
+    const QFileInfo info(path);
+    SvgIconSize     cached = m_svgIconSizes.value(path);
+
+    if (cached.modified != info.lastModified() || cached.fileSize != info.size()) {
+        QSizeF size = svgViewBoxSize(path);
+
+        if (size.isEmpty()) {
+            // Parses the whole document: once per file and change.
+            size = QImageReader(path).size();
         }
-    } else if (id.endsWith(".jpeg")) {
-        if (id.length() >= 5) {
-            _id = id.chopped(5);
-            ext = id.right(5);
-        } else {
-            qCWarning(lcResources()) << "ID too short for .jpeg extension:" << id;
-            return QString();
+
+        cached = {info.lastModified(), info.size(), size};
+        m_svgIconSizes.insert(path, cached);
+
+        if (!cached.size.isValid() || cached.size.isEmpty()) {
+            qCWarning(lcResources()) << "Cannot read the size of icon" << id;
         }
-    } else {
-        _id = id;
     }
 
-    QString icon;
-    ResourceType resourceType = Icon;
-
-            // suffix not supported yet
-    //    if (!suffix.isEmpty()) {
-    //        icon = getResource(Icon, _id + "-" + suffix.toLower() + ext);
-    //    }
-
-    if (_id.contains("ctv:")) {
-        resourceType = TvChannelIcon;
-    }
-
-    if (icon.isEmpty()) {
-        icon = getResource(resourceType, _id + ext);
-    }
-
-    return icon;
+    return ImageDecoder::fitSize(cached.size, QSizeF(boxWidth, boxHeight));
 }
 
 void Resources::getAboutInfo(int type) {
@@ -445,7 +504,7 @@ QString Resources::licenseBlockWithSelection(const QString& block, int index, co
 QStringList Resources::getIconList() {
     QStringList list;
 
-    foreach(const QString& key, m_iconList.keys()) {
+    foreach (const QString& key, m_iconList.keys()) {
         // Don't offer icons the embedded font cannot draw: they would all look like the
         // placeholder in the icon selection.
         if (canRenderGlyph(m_iconList.value(key).toString())) {
@@ -460,14 +519,42 @@ QStringList Resources::getCustomIconList() {
     QDir        dir(m_resourcePaths.value(Icon));
     QStringList files = dir.entryList(QStringList() << "*.png"
                                                     << "*.jpg"
-                                                    << "*.jpeg",
+                                                    << "*.jpeg"
+                                                    << "*.svg",
                                       QDir::Files | QDir::NoDot | QDir::NoDotAndDotDot);
+    QStringList icons;
 
-    for (QString& file : files) {
-        file.prepend("custom:");
+    for (const QString& file : files) {
+        QString error;
+
+        // Don't offer an SVG the checks reject: it would only show as the placeholder.
+        if (ImageDecoder::isSvgFileName(file) && !ImageDecoder::checkSvgFile(dir.filePath(file), &error)) {
+            qCWarning(lcResources()) << "Not offering custom icon" << file << ":" << error;
+            continue;
+        }
+
+        icons.append("custom:" + file);
     }
 
-    return files;
+    return icons;
+}
+
+QString Resources::getIconFile(ResourceType type, const QString& id, const QString& name) {
+    const QString path = m_resourcePaths.value(type) + name;
+
+    if (!QFile::exists(path)) {
+        qCDebug(lcResources()) << "Cannot find icon:" << id;
+        return QString();
+    }
+
+    QString error;
+
+    if (ImageDecoder::isSvgFileName(name) && !ImageDecoder::checkSvgFile(path, &error)) {
+        qCWarning(lcResources()) << "Cannot use icon" << id << ":" << error;
+        return getIconPlaceholder();
+    }
+
+    return QString("file:" + path);
 }
 
 QString Resources::getResource(ResourceType type, const QString& id) {
@@ -491,24 +578,13 @@ QString Resources::getResource(ResourceType type, const QString& id) {
             if (prefix.contains("uc")) {
                 return getIconGlyph(resourceName);
             } else if (prefix.contains("custom")) {
-                // Custom icon
-                if (QFile::exists(m_resourcePaths.value(type) + resourceName)) {
-                    return QString("file:" + m_resourcePaths.value(type) + resourceName);
-                }
-
-                qCDebug(lcResources()) << "Cannot find custom icon:" << id;
-                return QString();
+                return getIconFile(type, id, resourceName);
             } else {
                 return QString();
             }
         }
         case TvChannelIcon: {
-            if (QFile::exists(m_resourcePaths.value(type) + resourceName)) {
-                return QString("file:" + m_resourcePaths.value(type) + resourceName);
-            }
-
-            qCDebug(lcResources()) << "Cannot find TV channel icon:" << id;
-            return QString();
+            return getIconFile(type, id, resourceName);
         }
         case BackgroundImage:
         case Sound: {

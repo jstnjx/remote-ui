@@ -33,15 +33,20 @@ Item {
     property QtObject entityObj
     property bool showName: false
 
+    // the unavailable look of every page widget: the red mark, a dimmed label, and "—" with the chevron dimmed
+    // (docs/design-system.md)
+    readonly property bool unavailable: entityObj !== null && !entityObj.enabled
+
     function ensureEntityLoaded() {
         entityObj = EntityController.get(entityId);
         evaluateSelect();
     }
 
     function evaluateSelect() {
+        // a missing entity shows the item's text and "—"
         if (!entityObj) {
-            selectNameText.text = qsTranslate("Abbreviation for not available", "N/A");
-            selectOptionText.text = qsTranslate("Abbreviation for not available", "N/A");
+            selectNameText.text = selectWidget.customText;
+            selectOptionText.text = "\u2014";
             return;
         }
 
@@ -51,7 +56,9 @@ Item {
             selectNameText.text = selectWidget.customText;
         }
 
-        if (entityObj.currentOption == "") {
+        if (!entityObj.enabled) {
+            selectOptionText.text = "\u2014";
+        } else if (entityObj.currentOption == "") {
             selectOptionText.text = qsTranslate("Abbreviation for nothing is selected", "None");
         } else {
             selectOptionText.text = entityObj.currentOption;
@@ -93,11 +100,11 @@ Item {
                 Components.Icon {
                     color: colors.red
                     icon: "uc:link-slash"
-                    size: 40
-                    visible: entityObj && !entityObj.enabled
+                    size: ui.unavailableMarkSize
+                    visible: selectWidget.unavailable
                 }
 
-                Item { Layout.preferredWidth: (entityObj && !entityObj.enabled) ? 2 : 0 }
+                Item { Layout.preferredWidth: selectWidget.unavailable ? 2 : 0 }
 
                 Text {
                     id: selectNameText
@@ -106,6 +113,7 @@ Item {
                     maximumLineCount: 1
                     elide: Text.ElideRight
                     color: colors.light
+                    opacity: selectWidget.unavailable ? ui.unavailableLabelOpacity : 1
                     verticalAlignment: Text.AlignVCenter
                     font: fonts.primaryFont(24)
                 }
@@ -123,7 +131,7 @@ Item {
                 maximumLineCount: 2
                 elide: Text.ElideRight
                 color: colors.offwhite
-                opacity: entityObj.currentOption == "" ? 0.3 : 1
+                opacity: selectWidget.unavailable ? ui.unavailableOpacity : (entityObj.currentOption == "" ? 0.3 : 1)
                 verticalAlignment: Text.AlignVCenter
                 font: fonts.primaryFont(36)
             }
@@ -133,6 +141,7 @@ Item {
             color: colors.offwhite
             icon: "uc:chevron-down"
             size: 60
+            opacity: selectWidget.unavailable ? ui.unavailableOpacity : 1
             Layout.leftMargin: 10
         }
     }
@@ -163,6 +172,10 @@ Item {
         }
 
         function onOptionsChanged() {
+            selectWidget.evaluateSelect();
+        }
+
+        function onEntityEnabledChanged() {
             selectWidget.evaluateSelect();
         }
     }

@@ -6,13 +6,13 @@
         <message>
             <location filename="../../src/qml/components/SelectWidget.qml" line="43"/>
             <source>N/A</source>
-            <translation>–</translation>
+            <translation type="vanished">–</translation>
         </message>
     </context>
     <context>
         <name>Abbreviation for nothing is selected</name>
         <message>
-            <location filename="../../src/qml/components/SelectWidget.qml" line="55"/>
+            <location filename="../../src/qml/components/SelectWidget.qml" line="56"/>
             <source>None</source>
             <translation>Ei mitään</translation>
         </message>
@@ -91,112 +91,112 @@
     <context>
         <name>Activity</name>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="473"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="509"/>
             <source>Tap to close</source>
             <extracomment>Tap to close menu, tap to see more or, after a failed run, tap to fix the state</extracomment>
             <translatorcomment>Tap to close menu, tap to see more or, after a failed run, tap to fix the state</translatorcomment>
             <translation>Kosketa sulkeaksesi</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="473"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="509"/>
             <source>Tap for more</source>
             <translation>Kosketa nähdäksesi lisää</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="473"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="509"/>
             <source>Tap to fix</source>
             <translation>Kosketa korjataksesi</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="587"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="623"/>
             <source>Fix states</source>
             <extracomment>Title referring to fixing device states that might out of sync</extracomment>
             <translatorcomment>Title referring to fixing device states that might out of sync</translatorcomment>
             <translation>Korjaa tilat</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="608"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="644"/>
             <source>Quickly access entities included in this activity:</source>
             <translation>Pääset nopeasti tämän toiminnon entiteetteihin:</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="655"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="691"/>
             <source>Back</source>
             <extracomment>Caption to go back</extracomment>
             <translatorcomment>Caption to go back</translatorcomment>
             <translation>Takaisin</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="681"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="717"/>
             <source>None of the entities in this activity has an On/Off state that could be fixed</source>
             <extracomment>Shown in the "Fix states" list if none of the activity's entities has an on/off state</extracomment>
             <translatorcomment>Shown in the "Fix states" list if none of the activity's entities has an on/off state</translatorcomment>
             <translation>Yhdelläkään tämän toiminnon entiteetillä ei ole päällä/pois-tilaa, jonka voisi korjata</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="709"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="745"/>
             <source>Empty page</source>
             <translation>Tyhjä sivu</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="721"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="757"/>
             <source>You can add UI elements via the Web Configurator</source>
             <translation>Voit lisätä käyttöliittymäelementtejä Web-konfiguraattorilla</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="801"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="837"/>
             <source>%1 is unavailable, its state cannot be changed</source>
             <translation>%1 ei ole saatavilla, sen tilaa ei voi muuttaa</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="806"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="842"/>
             <source>%1 is running, its state cannot be changed</source>
             <translation>%1 on käynnissä, sen tilaa ei voi muuttaa</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="850"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="886"/>
             <source>State: %1</source>
             <extracomment>Device state</extracomment>
             <translatorcomment>Device state</translatorcomment>
             <translation>Tila: %1</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="886"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="922"/>
             <source>Set the state of %1. No command is sent to the devices.</source>
             <extracomment>Popup title when fixing the state of an activity. %1 is the activity name</extracomment>
             <translatorcomment>Popup title when fixing the state of an activity. %1 is the activity name</translatorcomment>
             <translation>Aseta kohteen %1 tila. Laitteille ei lähetetä komentoa.</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="888"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="924"/>
             <source>Set the state of %1. No command is sent to the device.</source>
             <extracomment>Popup title when fixing the state of an entity. %1 is the entity name</extracomment>
             <translatorcomment>Popup title when fixing the state of an entity. %1 is the entity name</translatorcomment>
             <translation>Aseta kohteen %1 tila. Laitteelle ei lähetetä komentoa.</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="894"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="930"/>
             <source>Activity is on</source>
             <extracomment>Button. Mark the activity as running without sending any command</extracomment>
             <translatorcomment>Button. Mark the activity as running without sending any command</translatorcomment>
             <translation>Toiminto on päällä</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="896"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="932"/>
             <source>Device is on</source>
             <extracomment>Button. Mark the device as switched on without sending a command</extracomment>
             <translatorcomment>Button. Mark the device as switched on without sending a command</translatorcomment>
             <translation>Laite on päällä</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="903"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="939"/>
             <source>Activity is off</source>
             <extracomment>Button. Mark the activity as stopped without sending any command</extracomment>
             <translatorcomment>Button. Mark the activity as stopped without sending any command</translatorcomment>
             <translation>Toiminto on pois päältä</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="905"/>
+            <location filename="../../src/qml/components/entities/activity/deviceclass/Activity.qml" line="941"/>
             <source>Device is off</source>
             <extracomment>Button. Mark the device as switched off without sending a command</extracomment>
             <translatorcomment>Button. Mark the device as switched off without sending a command</translatorcomment>
@@ -358,7 +358,7 @@
             <translation>%1 ei ole saatavilla</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/Base.qml" line="450"/>
+            <location filename="../../src/qml/components/entities/Base.qml" line="454"/>
             <source>Profile is restricted</source>
             <translation>Profiili on rajoitettu</translation>
         </message>
@@ -399,14 +399,14 @@
     <context>
         <name>Binary sensor state battery</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="143"/>
+            <location filename="../../src/ui/entity/sensor.h" line="159"/>
             <source>Normal</source>
             <extracomment>Battery sensor state: battery is normal.</extracomment>
             <translatorcomment>Battery sensor state: battery is normal.</translatorcomment>
             <translation>Normaali</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="222"/>
+            <location filename="../../src/ui/entity/sensor.h" line="238"/>
             <source>Low</source>
             <extracomment>Battery sensor state: battery is low.</extracomment>
             <translatorcomment>Battery sensor state: battery is low.</translatorcomment>
@@ -416,12 +416,12 @@
     <context>
         <name>Binary sensor state battery_charging</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="145"/>
+            <location filename="../../src/ui/entity/sensor.h" line="161"/>
             <source>Charging</source>
             <translation>Ladataan</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="224"/>
+            <location filename="../../src/ui/entity/sensor.h" line="240"/>
             <source>Not charging</source>
             <translation>Ei lataudu</translation>
         </message>
@@ -429,14 +429,14 @@
     <context>
         <name>Binary sensor state cold</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="148"/>
+            <location filename="../../src/ui/entity/sensor.h" line="164"/>
             <source>Cold</source>
             <extracomment>Temperature sensor state: too cold.</extracomment>
             <translatorcomment>Temperature sensor state: too cold.</translatorcomment>
             <translation>Kylmä</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="227"/>
+            <location filename="../../src/ui/entity/sensor.h" line="243"/>
             <source>Normal</source>
             <extracomment>Temperature sensor state: normal temperature.</extracomment>
             <translatorcomment>Temperature sensor state: normal temperature.</translatorcomment>
@@ -446,12 +446,12 @@
     <context>
         <name>Binary sensor state connectivity</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="150"/>
+            <location filename="../../src/ui/entity/sensor.h" line="166"/>
             <source>Connected</source>
             <translation>Yhdistetty</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="229"/>
+            <location filename="../../src/ui/entity/sensor.h" line="245"/>
             <source>Disconnected</source>
             <translation>Yhteys katkaistu</translation>
         </message>
@@ -459,14 +459,14 @@
     <context>
         <name>Binary sensor state door</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="154"/>
+            <location filename="../../src/ui/entity/sensor.h" line="170"/>
             <source>Opened</source>
             <extracomment>Door sensor state: the door is open. An adjective, not the action.</extracomment>
             <translatorcomment>Door sensor state: the door is open. An adjective, not the action.</translatorcomment>
             <translation>Avattu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="233"/>
+            <location filename="../../src/ui/entity/sensor.h" line="249"/>
             <source>Closed</source>
             <extracomment>Door sensor state: the door is closed.</extracomment>
             <translatorcomment>Door sensor state: the door is closed.</translatorcomment>
@@ -476,14 +476,14 @@
     <context>
         <name>Binary sensor state gas</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="158"/>
+            <location filename="../../src/ui/entity/sensor.h" line="174"/>
             <source>Detected</source>
             <extracomment>Sensor state: the sensor has detected something. Pairs with "Clear".</extracomment>
             <translatorcomment>Sensor state: the sensor has detected something. Pairs with "Clear".</translatorcomment>
             <translation>Kaasua havaittu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="237"/>
+            <location filename="../../src/ui/entity/sensor.h" line="253"/>
             <source>Clear</source>
             <extracomment>Gas sensor state: no gas detected. Not the verb "to clear".</extracomment>
             <translatorcomment>Gas sensor state: no gas detected. Not the verb "to clear".</translatorcomment>
@@ -493,14 +493,14 @@
     <context>
         <name>Binary sensor state heat</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="161"/>
+            <location filename="../../src/ui/entity/sensor.h" line="177"/>
             <source>Hot</source>
             <extracomment>Temperature sensor state: too hot. Not "popular" or "trending".</extracomment>
             <translatorcomment>Temperature sensor state: too hot. Not "popular" or "trending".</translatorcomment>
             <translation>Kuuma</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="240"/>
+            <location filename="../../src/ui/entity/sensor.h" line="256"/>
             <source>Normal</source>
             <extracomment>Temperature sensor state: normal temperature.</extracomment>
             <translatorcomment>Temperature sensor state: normal temperature.</translatorcomment>
@@ -510,12 +510,12 @@
     <context>
         <name>Binary sensor state light</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="163"/>
+            <location filename="../../src/ui/entity/sensor.h" line="179"/>
             <source>Light detected</source>
             <translation>Valoa havaittu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="242"/>
+            <location filename="../../src/ui/entity/sensor.h" line="258"/>
             <source>No light</source>
             <translation>Ei valoa</translation>
         </message>
@@ -523,14 +523,14 @@
     <context>
         <name>Binary sensor state lock</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="166"/>
+            <location filename="../../src/ui/entity/sensor.h" line="182"/>
             <source>Unlocked</source>
             <extracomment>Lock sensor state: the lock is unlocked.</extracomment>
             <translatorcomment>Lock sensor state: the lock is unlocked.</translatorcomment>
             <translation>Avattu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="245"/>
+            <location filename="../../src/ui/entity/sensor.h" line="261"/>
             <source>Locked</source>
             <extracomment>Lock sensor state: the lock is locked.</extracomment>
             <translatorcomment>Lock sensor state: the lock is locked.</translatorcomment>
@@ -540,12 +540,12 @@
     <context>
         <name>Binary sensor state moisture</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="168"/>
+            <location filename="../../src/ui/entity/sensor.h" line="184"/>
             <source>Wet</source>
             <translation>Märkä</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="247"/>
+            <location filename="../../src/ui/entity/sensor.h" line="263"/>
             <source>Dry</source>
             <translation>Kuiva</translation>
         </message>
@@ -553,14 +553,14 @@
     <context>
         <name>Binary sensor state motion</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="171"/>
+            <location filename="../../src/ui/entity/sensor.h" line="187"/>
             <source>Detected</source>
             <extracomment>Sensor state: the sensor has detected something. Pairs with "Clear".</extracomment>
             <translatorcomment>Sensor state: the sensor has detected something. Pairs with "Clear".</translatorcomment>
             <translation>Liikettä havaittu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="250"/>
+            <location filename="../../src/ui/entity/sensor.h" line="266"/>
             <source>Clear</source>
             <extracomment>Motion sensor state: no motion detected. Not the verb "to clear".</extracomment>
             <translatorcomment>Motion sensor state: no motion detected. Not the verb "to clear".</translatorcomment>
@@ -570,14 +570,14 @@
     <context>
         <name>Binary sensor state moving</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="174"/>
+            <location filename="../../src/ui/entity/sensor.h" line="190"/>
             <source>Moving</source>
             <extracomment>Sensor state: the object is in motion. Not "relocating" or "moving house".</extracomment>
             <translatorcomment>Sensor state: the object is in motion. Not "relocating" or "moving house".</translatorcomment>
             <translation>Liikkuu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="253"/>
+            <location filename="../../src/ui/entity/sensor.h" line="269"/>
             <source>Not moving</source>
             <extracomment>Sensor state: the object is stationary.</extracomment>
             <translatorcomment>Sensor state: the object is stationary.</translatorcomment>
@@ -587,14 +587,14 @@
     <context>
         <name>Binary sensor state occupancy</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="177"/>
+            <location filename="../../src/ui/entity/sensor.h" line="193"/>
             <source>Detected</source>
             <extracomment>Sensor state: the sensor has detected something. Pairs with "Clear".</extracomment>
             <translatorcomment>Sensor state: the sensor has detected something. Pairs with "Clear".</translatorcomment>
             <translation>Varattu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="256"/>
+            <location filename="../../src/ui/entity/sensor.h" line="272"/>
             <source>Clear</source>
             <extracomment>Occupancy sensor state: the room is unoccupied. Not the verb "to clear".</extracomment>
             <translatorcomment>Occupancy sensor state: the room is unoccupied. Not the verb "to clear".</translatorcomment>
@@ -604,14 +604,14 @@
     <context>
         <name>Binary sensor state opening</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="180"/>
+            <location filename="../../src/ui/entity/sensor.h" line="196"/>
             <source>Open</source>
             <extracomment>State: the cover, window or door is open. An adjective, not the action "to open".</extracomment>
             <translatorcomment>State: the cover, window or door is open. An adjective, not the action "to open".</translatorcomment>
             <translation>Avoin</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="259"/>
+            <location filename="../../src/ui/entity/sensor.h" line="275"/>
             <source>Closed</source>
             <extracomment>State: the cover, window or door is closed.</extracomment>
             <translatorcomment>State: the cover, window or door is closed.</translatorcomment>
@@ -621,14 +621,14 @@
     <context>
         <name>Binary sensor state plug</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="183"/>
+            <location filename="../../src/ui/entity/sensor.h" line="199"/>
             <source>Plugged in</source>
             <extracomment>Plug sensor state: connected to mains power.</extracomment>
             <translatorcomment>Plug sensor state: connected to mains power.</translatorcomment>
             <translation>Kytketty</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="262"/>
+            <location filename="../../src/ui/entity/sensor.h" line="278"/>
             <source>Unplugged</source>
             <extracomment>Plug sensor state: disconnected from mains power.</extracomment>
             <translatorcomment>Plug sensor state: disconnected from mains power.</translatorcomment>
@@ -638,14 +638,14 @@
     <context>
         <name>Binary sensor state power</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="186"/>
+            <location filename="../../src/ui/entity/sensor.h" line="202"/>
             <source>On</source>
             <extracomment>Device state: switched on. Not the preposition "on".</extracomment>
             <translatorcomment>Device state: switched on. Not the preposition "on".</translatorcomment>
             <translation>Päällä</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="265"/>
+            <location filename="../../src/ui/entity/sensor.h" line="281"/>
             <source>Off</source>
             <extracomment>Device state: switched off.</extracomment>
             <translatorcomment>Device state: switched off.</translatorcomment>
@@ -655,14 +655,14 @@
     <context>
         <name>Binary sensor state presence</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="189"/>
+            <location filename="../../src/ui/entity/sensor.h" line="205"/>
             <source>Home</source>
             <extracomment>Presence sensor state: the person is at home. Not the Home screen or a home page.</extracomment>
             <translatorcomment>Presence sensor state: the person is at home. Not the Home screen or a home page.</translatorcomment>
             <translation>Kotona</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="268"/>
+            <location filename="../../src/ui/entity/sensor.h" line="284"/>
             <source>Not home</source>
             <extracomment>Presence sensor state: the person is away.</extracomment>
             <translatorcomment>Presence sensor state: the person is away.</translatorcomment>
@@ -672,12 +672,12 @@
     <context>
         <name>Binary sensor state problem</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="191"/>
+            <location filename="../../src/ui/entity/sensor.h" line="207"/>
             <source>Problem</source>
             <translation>Ongelma</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="270"/>
+            <location filename="../../src/ui/entity/sensor.h" line="286"/>
             <source>Ok</source>
             <translation>OK</translation>
         </message>
@@ -685,14 +685,14 @@
     <context>
         <name>Binary sensor state running</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="194"/>
+            <location filename="../../src/ui/entity/sensor.h" line="210"/>
             <source>Running</source>
             <extracomment>Sensor state: the machine is in operation. Not the sport.</extracomment>
             <translatorcomment>Sensor state: the machine is in operation. Not the sport.</translatorcomment>
             <translation>Käynnissä</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="273"/>
+            <location filename="../../src/ui/entity/sensor.h" line="289"/>
             <source>Not running</source>
             <extracomment>Sensor state: the machine is not in operation.</extracomment>
             <translatorcomment>Sensor state: the machine is not in operation.</translatorcomment>
@@ -702,14 +702,14 @@
     <context>
         <name>Binary sensor state safety</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="197"/>
+            <location filename="../../src/ui/entity/sensor.h" line="213"/>
             <source>Unsafe</source>
             <extracomment>Safety sensor state: a hazard is present.</extracomment>
             <translatorcomment>Safety sensor state: a hazard is present.</translatorcomment>
             <translation>Vaarallinen</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="276"/>
+            <location filename="../../src/ui/entity/sensor.h" line="292"/>
             <source>Safe</source>
             <extracomment>Safety sensor state: no hazard.</extracomment>
             <translatorcomment>Safety sensor state: no hazard.</translatorcomment>
@@ -719,14 +719,14 @@
     <context>
         <name>Binary sensor state smoke</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="200"/>
+            <location filename="../../src/ui/entity/sensor.h" line="216"/>
             <source>Detected</source>
             <extracomment>Sensor state: the sensor has detected something. Pairs with "Clear".</extracomment>
             <translatorcomment>Sensor state: the sensor has detected something. Pairs with "Clear".</translatorcomment>
             <translation>Savua havaittu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="279"/>
+            <location filename="../../src/ui/entity/sensor.h" line="295"/>
             <source>Clear</source>
             <extracomment>Smoke sensor state: no smoke detected. Not the verb "to clear".</extracomment>
             <translatorcomment>Smoke sensor state: no smoke detected. Not the verb "to clear".</translatorcomment>
@@ -736,14 +736,14 @@
     <context>
         <name>Binary sensor state sound</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="203"/>
+            <location filename="../../src/ui/entity/sensor.h" line="219"/>
             <source>Detected</source>
             <extracomment>Sensor state: the sensor has detected something. Pairs with "Clear".</extracomment>
             <translatorcomment>Sensor state: the sensor has detected something. Pairs with "Clear".</translatorcomment>
             <translation>Ääni havaittu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="282"/>
+            <location filename="../../src/ui/entity/sensor.h" line="298"/>
             <source>Clear</source>
             <extracomment>Sound sensor state: no sound detected. Not the verb "to clear".</extracomment>
             <translatorcomment>Sound sensor state: no sound detected. Not the verb "to clear".</translatorcomment>
@@ -753,12 +753,12 @@
     <context>
         <name>Binary sensor state tamper</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="205"/>
+            <location filename="../../src/ui/entity/sensor.h" line="221"/>
             <source>Tampering detected</source>
             <translation>Kajoaminen havaittu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="285"/>
+            <location filename="../../src/ui/entity/sensor.h" line="301"/>
             <source>Clear</source>
             <extracomment>Tamper sensor state: no tampering detected. Not the verb "to clear".</extracomment>
             <translatorcomment>Tamper sensor state: no tampering detected. Not the verb "to clear".</translatorcomment>
@@ -768,12 +768,12 @@
     <context>
         <name>Binary sensor state update</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="207"/>
+            <location filename="../../src/ui/entity/sensor.h" line="223"/>
             <source>Update detected</source>
             <translation>Päivitys saatavilla</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="287"/>
+            <location filename="../../src/ui/entity/sensor.h" line="303"/>
             <source>Up-to-date</source>
             <translation>Ajan tasalla</translation>
         </message>
@@ -781,14 +781,14 @@
     <context>
         <name>Binary sensor state vibration</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="210"/>
+            <location filename="../../src/ui/entity/sensor.h" line="226"/>
             <source>Detected</source>
             <extracomment>Sensor state: the sensor has detected something. Pairs with "Clear".</extracomment>
             <translatorcomment>Sensor state: the sensor has detected something. Pairs with "Clear".</translatorcomment>
             <translation>Tärinää havaittu</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="290"/>
+            <location filename="../../src/ui/entity/sensor.h" line="306"/>
             <source>Clear</source>
             <extracomment>Vibration sensor state: no vibration detected. Not the verb "to clear".</extracomment>
             <translatorcomment>Vibration sensor state: no vibration detected. Not the verb "to clear".</translatorcomment>
@@ -798,14 +798,14 @@
     <context>
         <name>Binary sensor state window</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="213"/>
+            <location filename="../../src/ui/entity/sensor.h" line="229"/>
             <source>Open</source>
             <extracomment>State: the cover, window or door is open. An adjective, not the action "to open".</extracomment>
             <translatorcomment>State: the cover, window or door is open. An adjective, not the action "to open".</translatorcomment>
             <translation>Avoin</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="293"/>
+            <location filename="../../src/ui/entity/sensor.h" line="309"/>
             <source>Closed</source>
             <extracomment>State: the cover, window or door is closed.</extracomment>
             <translatorcomment>State: the cover, window or door is closed.</translatorcomment>
@@ -815,14 +815,14 @@
     <context>
         <name>Binary sensor state without device class</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="216"/>
+            <location filename="../../src/ui/entity/sensor.h" line="232"/>
             <source>On</source>
             <extracomment>Device state: switched on. Not the preposition "on".</extracomment>
             <translatorcomment>Device state: switched on. Not the preposition "on".</translatorcomment>
             <translation>Päällä</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="296"/>
+            <location filename="../../src/ui/entity/sensor.h" line="312"/>
             <source>Off</source>
             <extracomment>Device state: switched off.</extracomment>
             <translatorcomment>Device state: switched off.</translatorcomment>
@@ -832,7 +832,7 @@
     <context>
         <name>Blind</name>
         <message>
-            <location filename="../../src/qml/components/entities/cover/deviceclass/Blind.qml" line="312"/>
+            <location filename="../../src/qml/components/entities/cover/deviceclass/Blind.qml" line="313"/>
             <source>Stop</source>
             <extracomment>Button caption to stop window blinds motion</extracomment>
             <translatorcomment>Button caption to stop window blinds motion</translatorcomment>
@@ -1161,7 +1161,7 @@ Climate fan</translatorcomment>
     <context>
         <name>Curtain</name>
         <message>
-            <location filename="../../src/qml/components/entities/cover/deviceclass/Curtain.qml" line="388"/>
+            <location filename="../../src/qml/components/entities/cover/deviceclass/Curtain.qml" line="389"/>
             <source>Stop</source>
             <extracomment>Button caption to stop window blinds motion</extracomment>
             <translatorcomment>Button caption to stop window blinds motion</translatorcomment>
@@ -1256,6 +1256,30 @@ Climate fan</translatorcomment>
             <location filename="../../src/qml/settings/settings/Display.qml" line="110"/>
             <source>Button backlight brightness</source>
             <translation>Painikkeiden taustavalon kirkkaus</translation>
+        </message>
+        <message>
+            <location filename="../../src/qml/settings/settings/Display.qml" line="140"/>
+            <source>Selection background</source>
+            <extracomment>Title of the setting for the background of the selected tile or menu row</extracomment>
+            <translation>Valinnan tausta</translation>
+        </message>
+        <message>
+            <location filename="../../src/qml/settings/settings/Display.qml" line="142"/>
+            <source>Background of the selected tile or menu entry when using the buttons.</source>
+            <extracomment>Help text of the "Selection background" setting</extracomment>
+            <translation>Valitun ruudun tai valikkokohteen tausta painikkeita käytettäessä.</translation>
+        </message>
+        <message>
+            <location filename="../../src/qml/settings/settings/Display.qml" line="162"/>
+            <source>Off</source>
+            <extracomment>No background for the selected tile or menu row</extracomment>
+            <translation>Pois</translation>
+        </message>
+        <message>
+            <location filename="../../src/qml/settings/settings/Display.qml" line="186"/>
+            <source>Selected entry</source>
+            <extracomment>Example text in the preview of the selection background</extracomment>
+            <translation>Valittu kohde</translation>
         </message>
     </context>
     <context>
@@ -1357,7 +1381,7 @@ Climate fan</translatorcomment>
             <translation>Lisää</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/EntityList.qml" line="814"/>
+            <location filename="../../src/qml/components/entities/EntityList.qml" line="828"/>
             <source>Select all</source>
             <translation>Valitse kaikki</translation>
         </message>
@@ -1411,24 +1435,36 @@ Climate fan</translatorcomment>
             <translation>Mediasoitin</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/EntityList.qml" line="601"/>
+            <location filename="../../src/qml/components/entities/EntityList.qml" line="602"/>
+            <source>Number</source>
+            <extracomment>Entity type: a numeric value with a range, for example a fan speed. Not a phone number.</extracomment>
+            <translation>Numero</translation>
+        </message>
+        <message>
+            <location filename="../../src/qml/components/entities/EntityList.qml" line="609"/>
+            <source>Select</source>
+            <extracomment>Entity type: a choice of one option from a list, for example an input source. A noun, not the verb.</extracomment>
+            <translation>Valinta</translation>
+        </message>
+        <message>
+            <location filename="../../src/qml/components/entities/EntityList.qml" line="615"/>
             <source>Sensor</source>
             <translation>Anturi</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/EntityList.qml" line="607"/>
+            <location filename="../../src/qml/components/entities/EntityList.qml" line="621"/>
             <source>Switch</source>
             <translation>Kytkin</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/EntityList.qml" line="741"/>
+            <location filename="../../src/qml/components/entities/EntityList.qml" line="755"/>
             <source>No entities</source>
             <extracomment>No entities are in this list</extracomment>
             <translatorcomment>No entities are in this list</translatorcomment>
             <translation>Ei entiteettejä</translation>
         </message>
         <message>
-            <location filename="../../src/qml/components/entities/EntityList.qml" line="878"/>
+            <location filename="../../src/qml/components/entities/EntityList.qml" line="892"/>
             <source>Loading</source>
             <extracomment>The application is loading</extracomment>
             <translatorcomment>The application is loading</translatorcomment>
@@ -1541,7 +1577,7 @@ Climate fan</translatorcomment>
     <context>
         <name>Garage</name>
         <message>
-            <location filename="../../src/qml/components/entities/cover/deviceclass/Garage.qml" line="302"/>
+            <location filename="../../src/qml/components/entities/cover/deviceclass/Garage.qml" line="303"/>
             <source>Stop</source>
             <extracomment>Button caption to stop window blinds motion</extracomment>
             <translatorcomment>Button caption to stop window blinds motion</translatorcomment>
@@ -2643,6 +2679,34 @@ Climate fan</translatorcomment>
         </message>
     </context>
     <context>
+        <name>Number state</name>
+        <message>
+            <location filename="../../src/ui/entity/number.h" line="41"/>
+            <source>Unavailable</source>
+            <translation>Ei saatavilla</translation>
+        </message>
+        <message>
+            <location filename="../../src/ui/entity/number.h" line="43"/>
+            <source>Unknown</source>
+            <translation>Tuntematon</translation>
+        </message>
+        <message>
+            <location filename="../../src/ui/entity/number.h" line="46"/>
+            <source>On</source>
+            <extracomment>Device state: switched on. Not the preposition "on".</extracomment>
+            <translation>Päällä</translation>
+        </message>
+    </context>
+    <context>
+        <name>NumberWidget</name>
+        <message>
+            <location filename="../../src/qml/components/NumberWidget.qml" line="70"/>
+            <source>%1 is unavailable</source>
+            <extracomment>Notification when a number was changed but the command was not sent because the device is unavailable. %1 is the entity name</extracomment>
+            <translation>%1 ei ole saatavilla</translation>
+        </message>
+    </context>
+    <context>
         <name>OnOff</name>
         <message>
             <location filename="../../src/qml/components/entities/light/OnOff.qml" line="18"/>
@@ -3518,7 +3582,7 @@ enää ole</translation>
     <context>
         <name>SelectWidget</name>
         <message>
-            <location filename="../../src/qml/components/SelectWidget.qml" line="295"/>
+            <location filename="../../src/qml/components/SelectWidget.qml" line="296"/>
             <source>Select an option</source>
             <translation>Valitse vaihtoehto</translation>
         </message>
@@ -3526,17 +3590,17 @@ enää ole</translation>
     <context>
         <name>Sensor state</name>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="42"/>
+            <location filename="../../src/ui/entity/sensor.h" line="45"/>
             <source>Unavailable</source>
             <translation>Ei saatavilla</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="44"/>
+            <location filename="../../src/ui/entity/sensor.h" line="47"/>
             <source>Unknown</source>
             <translation>Tuntematon</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/sensor.h" line="47"/>
+            <location filename="../../src/ui/entity/sensor.h" line="50"/>
             <source>On</source>
             <extracomment>Device state: switched on. Not the preposition "on".</extracomment>
             <translatorcomment>Device state: switched on. Not the preposition "on".</translatorcomment>
@@ -3689,6 +3753,15 @@ Web-konfiguraattorin</translation>
             <location filename="../../src/qml/components/docks/Setup.qml" line="46"/>
             <source>Dock setup</source>
             <translation>Dockin määritys</translation>
+        </message>
+    </context>
+    <context>
+        <name>SliderWidget</name>
+        <message>
+            <location filename="../../src/qml/components/SliderWidget.qml" line="144"/>
+            <source>%1 is unavailable</source>
+            <extracomment>Notification when a slider was moved but the command was not sent because the device is unavailable. %1 is the entity name</extracomment>
+            <translation>%1 ei ole saatavilla</translation>
         </message>
     </context>
     <context>
@@ -3994,6 +4067,33 @@ Kosketa QR-koodia näyttääksesi sen näytöllä.</translation>
         </message>
     </context>
     <context>
+        <name>Time span</name>
+        <message>
+            <location filename="../../src/ui/entity/valueFormat.cpp" line="80"/>
+            <source>%1d</source>
+            <extracomment>Time span of a sensor: number of days with a short unit label. %1 is the number. Example: 3d</extracomment>
+            <translation>%1d</translation>
+        </message>
+        <message>
+            <location filename="../../src/ui/entity/valueFormat.cpp" line="83"/>
+            <source>%1h</source>
+            <extracomment>Time span of a sensor: number of hours with a short unit label. %1 is the number. Example: 21h</extracomment>
+            <translation>%1t</translation>
+        </message>
+        <message>
+            <location filename="../../src/ui/entity/valueFormat.cpp" line="86"/>
+            <source>%1m</source>
+            <extracomment>Time span of a sensor: number of minutes with a short unit label. %1 is the number. Example: 30m</extracomment>
+            <translation>%1m</translation>
+        </message>
+        <message>
+            <location filename="../../src/ui/entity/valueFormat.cpp" line="89"/>
+            <source>%1s</source>
+            <extracomment>Time span of a sensor: number of seconds with a short unit label. %1 is the number. Example: 15s</extracomment>
+            <translation>%1s</translation>
+        </message>
+    </context>
+    <context>
         <name>Timezone</name>
         <message>
             <location filename="../../src/qml/onboarding/Timezone.qml" line="69"/>
@@ -4091,6 +4191,36 @@ Kosketa QR-koodia näyttääksesi sen näytöllä.</translation>
         <message>
             <location filename="../../src/qml/components/TouchSliderBrightness.qml" line="61"/>
             <source>%1 is not available. Please check your configuration.</source>
+            <translation>%1 ei ole saatavilla. Tarkista määritykset.</translation>
+        </message>
+    </context>
+    <context>
+        <name>TouchSliderColorTemperature</name>
+        <message>
+            <location filename="../../src/qml/components/TouchSliderColorTemperature.qml" line="81"/>
+            <source>Touch slider is not available.</source>
+            <extracomment>Notification title when the Remote 3 touch slider controls a light that is unavailable</extracomment>
+            <translation>Kosketusliuku ei ole saatavilla.</translation>
+        </message>
+        <message>
+            <location filename="../../src/qml/components/TouchSliderColorTemperature.qml" line="83"/>
+            <source>%1 is not available. Please check your configuration.</source>
+            <extracomment>Notification text when the touch slider's light is unavailable. %1 is the entity name</extracomment>
+            <translation>%1 ei ole saatavilla. Tarkista määritykset.</translation>
+        </message>
+    </context>
+    <context>
+        <name>TouchSliderNumber</name>
+        <message>
+            <location filename="../../src/qml/components/TouchSliderNumber.qml" line="86"/>
+            <source>Touch slider is not available.</source>
+            <extracomment>Notification title when the Remote 3 touch slider controls a number entity that is unavailable</extracomment>
+            <translation>Kosketusliuku ei ole saatavilla.</translation>
+        </message>
+        <message>
+            <location filename="../../src/qml/components/TouchSliderNumber.qml" line="88"/>
+            <source>%1 is not available. Please check your configuration.</source>
+            <extracomment>Notification text when the touch slider's number entity is unavailable. %1 is the entity name</extracomment>
             <translation>%1 ei ole saatavilla. Tarkista määritykset.</translation>
         </message>
     </context>
@@ -4627,12 +4757,12 @@ Kosketa QR-koodia näyttääksesi sen näytöllä.</translation>
             <translation>Muut verkot</translation>
         </message>
         <message>
-            <location filename="../../src/qml/settings/settings/WifiNetworkList.qml" line="392"/>
+            <location filename="../../src/qml/settings/settings/WifiNetworkList.qml" line="394"/>
             <source>No networks found</source>
             <translation>Verkkoja ei löytynyt</translation>
         </message>
         <message>
-            <location filename="../../src/qml/settings/settings/WifiNetworkList.qml" line="404"/>
+            <location filename="../../src/qml/settings/settings/WifiNetworkList.qml" line="406"/>
             <source>Join other</source>
             <extracomment>Join other wifi network</extracomment>
             <translatorcomment>Join other wifi network</translatorcomment>
@@ -4680,13 +4810,13 @@ Kosketa QR-koodia näyttääksesi sen näytöllä.</translation>
             <translation>Poista</translation>
         </message>
         <message>
-            <location filename="../../src/qml/settings/settings/WifiNetworkList.qml" line="454"/>
+            <location filename="../../src/qml/settings/settings/WifiNetworkList.qml" line="456"/>
             <source>Enabled</source>
             <extracomment>State of a saved WiFi network: the remote connects to it</extracomment>
             <translation>Käytössä</translation>
         </message>
         <message>
-            <location filename="../../src/qml/settings/settings/WifiNetworkList.qml" line="456"/>
+            <location filename="../../src/qml/settings/settings/WifiNetworkList.qml" line="458"/>
             <source>Disabled</source>
             <extracomment>State of a saved WiFi network: the remote does not connect to it</extracomment>
             <translation>Pois käytöstä</translation>
@@ -4804,7 +4934,7 @@ Kosketa QR-koodia näyttääksesi sen näytöllä.</translation>
     <context>
         <name>Window</name>
         <message>
-            <location filename="../../src/qml/components/entities/cover/deviceclass/Window.qml" line="290"/>
+            <location filename="../../src/qml/components/entities/cover/deviceclass/Window.qml" line="291"/>
             <source>Stop</source>
             <extracomment>Button caption to stop window blinds motion</extracomment>
             <translatorcomment>Button caption to stop window blinds motion</translatorcomment>
@@ -4906,91 +5036,91 @@ Kosketa QR-koodia näyttääksesi sen näytöllä.</translation>
             <translation>Virhe painikkeiden taustavalon asetuksessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="551"/>
+            <location filename="../../src/config/config.cpp" line="560"/>
             <source>Error setting wakeup sensitivity: %1</source>
             <extracomment>Notification: the wakeup sensitivity could not be changed. %1 is the core's error message</extracomment>
             <translation>Virhe herätysherkkyyden asetuksessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="571"/>
+            <location filename="../../src/config/config.cpp" line="580"/>
             <source>Error setting sleep timeout: %1</source>
             <extracomment>Notification: the sleep timeout could not be changed. %1 is the core's error message</extracomment>
             <translation>Virhe lepotilan viiveen asetuksessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="591"/>
+            <location filename="../../src/config/config.cpp" line="600"/>
             <source>Error setting display sleep timeout: %1</source>
             <extracomment>Notification: the display timeout could not be changed. %1 is the core's error message</extracomment>
             <translation>Virhe näytön aikakatkaisun asetuksessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="611"/>
+            <location filename="../../src/config/config.cpp" line="620"/>
             <source>Error setting update config: %1</source>
             <extracomment>Notification: a software update setting could not be changed. %1 is the core's error message</extracomment>
             <translation>Virhe päivitysasetusten määrittämisessä: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="651"/>
+            <location filename="../../src/config/config.cpp" line="660"/>
             <source>Error setting Bluetooth: %1</source>
             <extracomment>Notification: Bluetooth could not be switched on or off. %1 is the core's error message</extracomment>
             <translation>Virhe Bluetoothin asetuksessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="671"/>
+            <location filename="../../src/config/config.cpp" line="680"/>
             <source>Error setting WiFi: %1</source>
             <extracomment>Notification: WiFi could not be switched on or off. %1 is the core's error message</extracomment>
             <translation>Virhe Wi-Fin asetuksessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="691"/>
+            <location filename="../../src/config/config.cpp" line="700"/>
             <source>Error setting WiFi in standby: %1</source>
             <extracomment>Notification: "Keep WiFi connected in standby" could not be changed. %1 is the core's error message</extracomment>
             <translation>Virhe valmiustilan Wi-Fin asetuksessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="710"/>
+            <location filename="../../src/config/config.cpp" line="719"/>
             <source>Error setting WiFi band: %1</source>
             <extracomment>Notification: the WiFi band could not be changed. %1 is the core's error message</extracomment>
             <translation>Virhe Wi-Fi-taajuusalueen asetuksessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="729"/>
+            <location filename="../../src/config/config.cpp" line="738"/>
             <source>Error setting WiFi scan interval: %1</source>
             <extracomment>Notification: the WiFi scan interval could not be changed. %1 is the core's error message</extracomment>
             <translation>Virhe Wi-Fi-skannausvälin asetuksessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="766"/>
+            <location filename="../../src/config/config.cpp" line="775"/>
             <source>Error getting country list: %1</source>
             <extracomment>Notification: the list of countries could not be loaded. %1 is the core's error message</extracomment>
             <translation>Virhe maaluettelon hakemisessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="783"/>
+            <location filename="../../src/config/config.cpp" line="792"/>
             <source>Error getting timezones: %1</source>
             <extracomment>Notification: the list of time zones could not be loaded. %1 is the core's error message</extracomment>
             <translation>Virhe aikavyöhykkeiden hakemisessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="826"/>
+            <location filename="../../src/config/config.cpp" line="835"/>
             <source>Could not set the admin PIN: %1</source>
             <extracomment>Notification: the administrator PIN could not be set. %1 is the core's error message</extracomment>
             <translation>Järjestelmänvalvojan PIN-koodia ei voitu asettaa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="846"/>
+            <location filename="../../src/config/config.cpp" line="855"/>
             <source>Error enabling the web configurator</source>
             <extracomment>Notification: the state of the web configurator could not be read</extracomment>
             <translation>Virhe Web-konfiguraattorin käyttöönotossa</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="894"/>
+            <location filename="../../src/config/config.cpp" line="903"/>
             <source>Error enabling the web configurator: %1</source>
             <extracomment>Notification: the web configurator could not be switched on or off. %1 is the core's error message</extracomment>
             <translation>Virhe Web-konfiguraattorin käyttöönotossa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/config/config.cpp" line="972"/>
+            <location filename="../../src/config/config.cpp" line="981"/>
             <source>Error while loading configuration. Trying again.</source>
             <translation>Virhe määritysten lataamisessa. Yritetään uudelleen.</translation>
         </message>
@@ -5326,74 +5456,74 @@ Kosketa QR-koodia näyttääksesi sen näytöllä.</translation>
     <context>
         <name>uc::ui::Controller</name>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="297"/>
+            <location filename="../../src/ui/uiController.cpp" line="310"/>
             <source>Error adding profile: %1</source>
             <extracomment>Notification: a profile could not be created. %1 is the core's error message</extracomment>
             <translation>Virhe profiilin lisäämisessä: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="316"/>
+            <location filename="../../src/ui/uiController.cpp" line="329"/>
             <source>Error</source>
             <translation>Virhe</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="317"/>
+            <location filename="../../src/ui/uiController.cpp" line="330"/>
             <source>Deleting a current profile is not permitted. Please switch to another profile and try again.</source>
             <translation>Käytössä olevaa profiilia ei voi poistaa. Vaihda toiseen profiiliin ja yritä uudelleen.</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="334"/>
+            <location filename="../../src/ui/uiController.cpp" line="347"/>
             <source>Error deleting profile: %1</source>
             <extracomment>Notification: a profile could not be deleted. %1 is the core's error message</extracomment>
             <translation>Virhe profiilin poistamisessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="354"/>
+            <location filename="../../src/ui/uiController.cpp" line="367"/>
             <source>Error adding page: %1</source>
             <extracomment>Notification: a page could not be created. %1 is the core's error message</extracomment>
             <translation>Virhe sivun lisäämisessä: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="377"/>
+            <location filename="../../src/ui/uiController.cpp" line="390"/>
             <source>Error renaming page: %1</source>
             <extracomment>Notification: a page could not be renamed. %1 is the core's error message</extracomment>
             <translation>Virhe sivun nimeämisessä: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="396"/>
+            <location filename="../../src/ui/uiController.cpp" line="409"/>
             <source>Error deleting page: %1</source>
             <extracomment>Notification: a page could not be deleted. %1 is the core's error message</extracomment>
             <translation>Virhe sivun poistamisessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="495"/>
+            <location filename="../../src/ui/uiController.cpp" line="508"/>
             <source>Error during factory reset: %1</source>
             <extracomment>Notification: the factory reset failed. %1 is the core's error message</extracomment>
             <translation>Virhe tehdasasetusten palautuksessa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="639"/>
+            <location filename="../../src/ui/uiController.cpp" line="652"/>
             <source>Profile update error</source>
             <translation>Profiilin päivitysvirhe</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="700"/>
+            <location filename="../../src/ui/uiController.cpp" line="713"/>
             <source>Error updating page: %1</source>
             <extracomment>Notification: a change to a page could not be saved. %1 is the core's error message</extracomment>
             <translation>Virhe sivun päivittämisessä: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="766"/>
+            <location filename="../../src/ui/uiController.cpp" line="779"/>
             <source>%1 error</source>
             <translation>Virhe: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.cpp" line="766"/>
+            <location filename="../../src/ui/uiController.cpp" line="779"/>
             <source>Error while connecting to %1, with id %2</source>
             <translation>Virhe yhdistettäessä kohteeseen %1, tunnus %2</translation>
         </message>
         <message>
-            <location filename="../../src/ui/uiController.h" line="255"/>
+            <location filename="../../src/ui/uiController.h" line="288"/>
             <source>The factory reset could not be started. Please try again.</source>
             <translation>Tehdasasetusten palautusta ei voitu aloittaa. Yritä uudelleen.</translation>
         </message>
@@ -5401,95 +5531,95 @@ Kosketa QR-koodia näyttääksesi sen näytöllä.</translation>
     <context>
         <name>uc::ui::EntityController</name>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="292"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="303"/>
             <source>Could not configure the entity: %1</source>
             <extracomment>Error while configuring an entity. %1 is an error message from the remote</extracomment>
             <translation>Entiteetin määrittäminen epäonnistui: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="317"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="328"/>
             <source>Could not rename the entity: %1</source>
             <extracomment>Error while renaming an entity. %1 is an error message from the remote</extracomment>
             <translation>Entiteetin nimeäminen epäonnistui: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="326"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="337"/>
             <source>Could not change the entity state: not connected</source>
             <translation>Entiteetin tilaa ei voitu muuttaa: ei yhteyttä</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="346"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="357"/>
             <source>The state cannot be changed while the entity is unavailable or the activity is running</source>
             <extracomment>Error while fixing an entity state</extracomment>
             <translatorcomment>Error while fixing an entity state</translatorcomment>
             <translation>Tilaa ei voi muuttaa, kun entiteetti ei ole saatavilla tai toiminto on käynnissä</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="350"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="361"/>
             <source>The state of this entity type cannot be changed</source>
             <extracomment>Error while fixing an entity state</extracomment>
             <translatorcomment>Error while fixing an entity state</translatorcomment>
             <translation>Tämän entiteettityypin tilaa ei voi muuttaa</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="354"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="365"/>
             <source>Not allowed to change the entity state</source>
             <extracomment>Error while fixing an entity state</extracomment>
             <translatorcomment>Error while fixing an entity state</translatorcomment>
             <translation>Entiteetin tilan muuttaminen ei ole sallittua</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="358"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="369"/>
             <source>Could not change the entity state: %1</source>
             <extracomment>Error while fixing an entity state. %1 is an error message from the remote</extracomment>
             <translatorcomment>Error while fixing an entity state. %1 is an error message from the remote</translatorcomment>
             <translation>Entiteetin tilaa ei voitu muuttaa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="377"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="388"/>
             <source>Could not change the entity icon: %1</source>
             <extracomment>Error while changing the icon of an entity. %1 is an error message from the remote</extracomment>
             <translation>Entiteetin kuvaketta ei voitu vaihtaa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="454"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="465"/>
             <source>Could not delete the entities: %1</source>
             <extracomment>Error while deleting entities. %1 is an error message from the remote</extracomment>
             <translation>Entiteettejä ei voitu poistaa: %1</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="926"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="952"/>
             <source>%1 is unavailable</source>
             <extracomment>Notification when a command was not sent because the device is unavailable. %1 is the entity name</extracomment>
             <translation>%1 ei ole saatavilla</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="1120"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="1146"/>
             <source>The device</source>
             <translation>Laite</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="1140"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="1166"/>
             <source>%1 is not responding</source>
             <translation>%1 ei vastaa</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="1141"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="1167"/>
             <source>The command did not reach the device. Would you like to try again?</source>
             <translation>Komento ei tavoittanut laitetta. Haluatko yrittää uudelleen?</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="1172"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="1198"/>
             <source>Try again</source>
             <translation>Yritä uudelleen</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="1178"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="1204"/>
             <source>%1 is not responding. Error code: %2</source>
             <translation>%1 ei vastaa. Virhekoodi: %2</translation>
         </message>
         <message>
-            <location filename="../../src/ui/entity/entityController.cpp" line="1178"/>
+            <location filename="../../src/ui/entity/entityController.cpp" line="1204"/>
             <source>Error sending the command</source>
             <translation>Virhe komennon lähettämisessä</translation>
         </message>

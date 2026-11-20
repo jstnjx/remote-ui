@@ -39,8 +39,8 @@ so a screen that fills the mockup height has 50 px less on the Remote 3.
    or row gets a lighter fill. On setting screens with switches, sliders or fields the selected row
    or control gets a 3 px ring. Never both on one element, and never a fill dark enough to vanish on
    the LCD.
-4. **Emphasis by token, never by opacity.** Opacity is for disabled controls (0.4) and dim layers
-   (0.85) only.
+4. **Emphasis by token, never by opacity.** Opacity is for disabled controls (0.4), dim layers
+   (0.85) and an unavailable entity (section 7) only.
 5. **Sans for reading, mono for data.** Poppins for titles, labels, prose, help and buttons. Space
    Mono only for values: versions, addresses, times, codes, units.
 
@@ -55,12 +55,18 @@ so a screen that fills the mockup height has 50 px less on the Remote 3.
 | `textOnButton`    | #FFFFFF | 6.9:1 on primary | offwhite label        | Primary and destructive button labels                      |
 | `surface`         | #1E1E1E | 1.26:1   | `dark` #161616, `secondaryButton` | Cards, fields, secondary buttons                       |
 | `surfaceRaised`   | #2C2C2C | 1.5:1    | `medium` #232323              | Popup cards over a dim, switch and slider tracks           |
-| `surfaceSelected` | #595959 | 3.0:1    | new                           | Fill of the selected tile or row in menu-like lists (section 6). Never with a ring. Decided for now, see Q-3 |
+| `surfaceSelected` | #595959 | 3.0:1    | new                           | The strongest selection fill; the fill behind the selected link of a license document and the selected alternate key of the on-screen keyboard. Decided for now, see Q-3 |
+| `selectionFill`   | user setting | -   | new                           | Fill of the selected tile or row in menu-like lists (section 6). Never with a ring. One of five levels the user sets in Display & Brightness (section 6, "Fill strength") |
 | `divider`         | #3A3A3A | 1.85:1   | `medium`                      | 2 px separators, secondary button outline, sheet edge      |
 | `focusRing`       | #D0D0D0 | 13.6:1   | `highlight` #C8C8C8           | 3 px ring on the selected settings row or control, and on buttons |
 | `buttonPrimary`   | #5A5A5A | -        | `primaryButton`               | Primary button fill                                        |
 | `redPressed`      | #FF0D2A | -        | new                           | Pressed destructive button; white label at 3.9:1 (large text) |
 | `red`, `green`, `orange`, `yellow` | unchanged | ≥ 6:1 | same                 | Status and destructive. `blue` is not for text             |
+| `sliderGradientCool` | #D5F7FF | - | new                      | Cool end of the colour temperature and the target temperature gradients of a slider item (section 7) |
+| `sliderGradientWarm` | #F3AA67 | - | new                      | Warm end of the colour temperature gradient of a slider item |
+| `sliderGradientHeat` | #C33030 | - | new                      | Heat end of the target temperature gradient of a slider item |
+| `sliderOnFill`    | #000000 | -        | new                           | Text and icons over a light slider fill                    |
+| `sliderGrip`      | #595959 | -        | new                           | Grip on the cursor band of a slider item                   |
 
 Rules:
 
@@ -143,7 +149,7 @@ switches, sliders or fields, take the ring (ADR 0020).
 
 | Style | Looks like | Used on |
 | ----- | ---------- | ------- |
-| **Fill** | `surfaceSelected` fill on the whole tile or row, no ring, no border | Menu-like lists: entity and group tiles on a page, popup menu rows (page menu and every other `PopupMenu`), page selector rows, profile switcher rows; the menus whose rows open a page with a chevron: the profile page, Settings and About; the picker lists (`PopupList`: language, country, timezone, Wi-Fi country and band, integration dropdowns), in settings and in onboarding |
+| **Fill** | `selectionFill` on the whole tile or row, no ring, no border | Menu-like lists: entity and group tiles on a page, popup menu rows (page menu and every other `PopupMenu`), page selector rows, profile switcher rows; the menus whose rows open a page with a chevron: the profile page, Settings and About; the picker lists (`PopupList`: language, country, timezone, Wi-Fi country and band, integration dropdowns), in settings and in onboarding |
 | **Ring** | 3 px `focusRing` around the selected element, no fill | Setting screens and set-up steps with switches, sliders or fields: settings rows and controls (for example Localization and Display), dock and integration lists, onboarding steps; buttons everywhere |
 
 The mapping is decided (section 11, Q-1). Which style a screen takes is the designer's choice: a
@@ -157,6 +163,13 @@ not ADR 0020.
   readable on it: 3.0:1 against black on the OLED and about 2.4:1 on the LCD estimate. The
   designer's revision used #333333 (1.66:1 and about 1.5:1). #595959 is decided for now (section 11,
   Q-3); the device checks may still adjust it, here and in `Colors` only.
+- **Fill strength** (ADR 0021). The user sets the strength of `selectionFill` with a five-step slider
+  in Display & Brightness, under which a preview row shows the chosen fill. The levels are no fill,
+  #161616, #2D2D2D, #434343 and #595959 (`surfaceSelected`): equal grey steps from black. The default
+  is #434343, the second highest level. The UI stores the level on the remote, not in the core. At
+  the lowest level a fill-style selection is not drawn. Everything on the fill stays `textPrimary`;
+  it keeps at least 4.5:1 on every level. The link of a license document and the alternate keys of
+  the on-screen keyboard keep `surfaceSelected`, so they never lose their selection.
 - **Held while reordering** (page tiles, group rows, page selector rows): the ring marks the held
   element and the fill marks the selection, so a held element shows both while it moves. This is
   the one exception to "never both" (decided 2026-10-07, Q-5 of the change).
@@ -210,6 +223,56 @@ Use these; do not re-implement their look inline.
 | `Components.ScrollIndicator`  | `ScrollBar` and the "more below" arrows: the one indicator of a scrolling page or list      |
 | `Components.Prose`            | The scrolling bodies of ReleaseNotes and AboutPage. LicensePage and the UserAction body keep their own containers and use the prose role |
 
+### Slider items
+
+The slider item of an activity page (`SliderWidget.qml`) comes in three styles: `default`, a thin track with the label
+and value above it; `bar`, where the whole item is the track with label, value and icons inside; and `buttons`, a
+minus and a plus button around the value. The slider design is not final: its values are set here, in `Colors` and in
+the `ui` constants only, so a change is a one-place edit. The slider tokens are provisional.
+
+| Token | Value | Use |
+| ----- | ----- | --- |
+| `ui.sliderTrackThin`, `ui.sliderTrackThinPressed` | 14, 28 | Thickness of the default track at rest and while pressed; it is a pill |
+| `ui.sliderAnimationDuration` | 200 ms | The default track growing while pressed |
+| `ui.sliderBarRadius` | 16 | Corner radius of a bar, and the inner padding of its contents |
+| `ui.sliderCursorWidth` | 22 | The cursor band, with the radius `ui.cornerRadiusSmall` |
+| `ui.sliderGripSize` | 4 x 24 | The grip on the cursor band, in `sliderGrip` |
+| `ui.sliderTickSize` | 2 x 10 | Tick marks of a discrete default slider; its width is also the width of the separators of a discrete bar and of the zero line |
+| `ui.sliderButtonSize` | 60 | The round minus and plus buttons |
+| `ui.sliderIconSize` | 40 | The item's minimum and maximum icons and the button glyphs |
+| `ui.disabledOpacity` | 0.4 | A slider item whose feature is not supported |
+
+- **Track and fill.** The default track is `surfaceRaised`, a bar `surface`. The fill is `textPrimary` (colour
+  `neutral`), the light's colour (`entity`) or the feature gradient (`gradient`), from the start, from zero (`center`,
+  with a 2 px `textSecondary` zero line) or as a cursor band. A cursor on a gradient is `textPrimary` over the
+  gradient track. Which colour and fill a feature takes without a setting is the table in `SliderStyle`
+  (`src/ui/entity/sliderStyle.cpp`), not a rule of this document.
+- **Text over the fill.** Label, value and icons inside a bar switch to `sliderOnFill` or `textPrimary` where they lie
+  over the fill, whichever has the higher contrast on it.
+- **Discrete.** A range of at most 10 positions shows a separator in `bg` between the positions of a bar and a tick
+  mark in `textSecondary` at each position of a default slider.
+- **Buttons** are `surfaceRaised` circles; pressed, they invert like every pressed element (section 6).
+- **Unavailable entity and unsupported feature** follow "No value and unavailable" below.
+
+### No value and unavailable
+
+One placeholder stands for every value that is not known: "—" (em dash, U+2014), without a unit. "N/A" and "--" are
+not used. Poppins and Space Mono both have the glyph.
+
+1. **No value** (never reported, null, unknown): the value reads "—".
+2. **Unavailable entity**: the unavailable look below with the value "—". A detail screen covers its controls with
+   the "Entity unavailable" overlay.
+3. **Missing entity or unsupported feature** (a configuration error): the red mark and "—"; the log names the reason.
+   An entity that is not loaded reads "—" without the mark as long as a failed load is not reported to the UI, since
+   it cannot be told from one that is still loading.
+
+| Token | Value | Use |
+| ----- | ----- | --- |
+| `ui.unavailableMarkSize` | 30 | The red link-slash mark (`uc:link-slash` in `red`) before the label |
+| `ui.unavailableOpacity`, `ui.unavailableLabelOpacity` | 0.15, 0.5 | Track, value, icons and buttons, and the label, of an unavailable entity |
+
+The sensor, select, slider and number items use these tokens.
+
 ## 8. Checklist for a new screen
 
 1. Title bar from `Components.TitleBar`, 20 px gutter, 2 px dividers.
@@ -257,6 +320,6 @@ Close row instead of a secondary button. The page menu sheet is black with a div
 | --- | -------- | --------------- |
 | Q-1 | Which screens beyond the mockups use the fill style and which the ring style? | Decided 2026-10-12 by the maintainer, as implemented: the fill in menu-like lists, the ring on setting screens with switches, sliders or fields and on buttons (section 6). Moving a screen between the styles is the designer's choice and changes section 6 only |
 | Q-2 | Focus ring colour: the revised screens use #D0D0D0, once at 92 % opacity; the token sheet still shows #C8C8C8 | Decided 2026-10-12 by the maintainer: opaque #D0D0D0, the same value as `textPrimary` |
-| Q-3 | Is the provisional #595959 fill right on the devices? It replaces the designer's #333333 so the selection is easy to judge on a Remote 3 in a lit room | Decided 2026-10-12 by the maintainer: #595959 for now. The device checks may still adjust it, towards #333333 if it looks too heavy; the value is set in this document and `Colors` only, not in an ADR |
+| Q-3 | Is the provisional #595959 fill right on the devices? It replaces the designer's #333333 so the selection is easy to judge on a Remote 3 in a lit room | Decided 2026-10-12 by the maintainer: #595959 for now. The device checks may still adjust it, towards #333333 if it looks too heavy; the value is set in this document and `Colors` only, not in an ADR. Amended 2026-11-12 by the maintainer: users disagree on it, so #595959 is the strongest of five levels the user chooses from, and the default is the second highest (section 6, "Fill strength", ADR 0021) |
 | Q-4 | Do all bottom sheets become black with a divider edge, or only popup menus on the main UI? | Decided 2026-10-07 by the designer: all bottom sheets, one rule: WifiInfo, WifiJoin, DropDownMenu and the delete drawers too |
 | Q-8 | The mockups draw tile and list subtitles in Poppins 24 and the release-notes date in Space Mono 22; the type table has no such sizes | Decided 2026-10-12 by the maintainer, as implemented: subtitles and states use the help role (Poppins 26) on every screen, timestamps the caption role (Poppins 22); the release-notes date is part of the release notes text, in the prose role |

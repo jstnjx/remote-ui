@@ -110,7 +110,6 @@ Settings.Page {
                 title: qsTr("Button backlight brightness")
                 value: Math.round(buttonBrightnessSlider.value) + "%"
                 controlBelow: true
-                showDivider: false
 
                 Components.Slider {
                     id: buttonBrightnessSlider

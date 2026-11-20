@@ -7,6 +7,9 @@
  * @see https://github.com/unfoldedcircle/core-api/blob/main/doc/entities/entity_sensor.md
  */
 
+#include <QLocale>
+#include <QTimeZone>
+
 #include "entity.h"
 
 namespace uc {
@@ -63,7 +66,20 @@ class SensorDeviceClass : public QObject {
  public:
     // Supported sensor device classes.
     // WARNING: changing device classes requires QML screen support! The screen is registered in entityScreens.cpp
-    enum Enum { Custom, Battery, Current, Energy, Humidity, Power, Temperature, Voltage, Binary };
+    enum Enum {
+        Custom,
+        Battery,
+        Current,
+        Energy,
+        Humidity,
+        Power,
+        Temperature,
+        Voltage,
+        Binary,
+        Date,
+        Duration,
+        Timestamp
+    };
     Q_ENUM(Enum)
 
     /**
@@ -308,12 +324,13 @@ class Sensor : public Base {
     Q_PROPERTY(QString unit READ getUnit NOTIFY unitChanged)
 
     // options
-    Q_PROPERTY(QString customLabel READ getCustomLabel CONSTANT)
-    Q_PROPERTY(QString customUnit READ getCustomUnit CONSTANT)
-    Q_PROPERTY(QString nativeUnit READ getNativeUnit CONSTANT)
-    Q_PROPERTY(int decimals READ getDecimals CONSTANT)
-    Q_PROPERTY(int minValue READ getMinValue CONSTANT)
-    Q_PROPERTY(int maxValue READ getMaxValue CONSTANT)
+    Q_PROPERTY(QString customLabel READ getCustomLabel NOTIFY optionsChanged)
+    Q_PROPERTY(QString customUnit READ getCustomUnit NOTIFY optionsChanged)
+    Q_PROPERTY(QString nativeUnit READ getNativeUnit NOTIFY optionsChanged)
+    // effective number of decimal places of a numeric value, -1 for the automatic format
+    Q_PROPERTY(int decimals READ getDecimals NOTIFY valueChanged)
+    Q_PROPERTY(int minValue READ getMinValue NOTIFY optionsChanged)
+    Q_PROPERTY(int maxValue READ getMaxValue NOTIFY optionsChanged)
 
  public:
     explicit Sensor(const QString &id, QVariantMap nameI18n, const QString &language, const QString &icon,
@@ -338,38 +355,56 @@ class Sensor : public Base {
     QString getCustomLabel() { return m_customLabel; }
     QString getCustomUnit() { return m_customUnit; }
     QString getNativeUnit() { return m_nativeUnit; }
-    int     getDecimals() { return m_decimals; }
+    int     getDecimals() { return m_userDecimals >= 0 ? m_userDecimals : m_decimals; }
     int     getMinValue() { return m_minValue; }
     int     getMaxValue() { return m_maxValue; }
 
     bool updateAttribute(const QString &attribute, QVariant data) override;
+    bool updateOptions(QVariant data) override;
 
     QString getStateInfo() override {
         if (m_sensorDeviceClass == SensorDeviceClass::Binary) {
             return getValue();
         } else {
-            return m_value.toString() + " " + m_unit;
+            return getValue() + " " + getUnit();
         }
     }
 
     void onLanguageChangedTypeSpecific() override;
 
+ public slots:
+    // Language, time zone and 12 / 24 hour format of the Remote: the format of a timestamp and a date.
+    void onDateTimeFormatChanged(const QString& language, const QString& timezone, bool clock24h);
+
  signals:
     void valueChanged();
     void unitChanged();
+    void optionsChanged();
 
  private:
+    // The duration as time span, empty if the sensor is not a duration or the value is not shown as a time span.
+    QString timeSpan() const;
+
     QVariant m_value;
     QString  m_unit;
+
+    // format of a timestamp and a date
+    QLocale   m_locale;
+    QTimeZone m_timeZone;
+    bool      m_clock24h = true;
 
     SensorDeviceClass::Enum       m_sensorDeviceClass;
     BinarySensorDeviceClass::Enum m_binarySensorDeviceClass;
 
     // options
+    void applyOptions(const QVariantMap& options);
+
     QString m_customLabel;
     QString m_customUnit;
     QString m_nativeUnit;
+    // decimals option of the driver and the user override in options.user, -1 if not set
     int     m_decimals;
+    int     m_userDecimals = -1;
     int     m_minValue = 0;
     int     m_maxValue = 0;
 };

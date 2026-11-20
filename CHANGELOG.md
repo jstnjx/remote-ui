@@ -9,6 +9,122 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+- The remote no longer ends up on a black screen that no button and no touch leaves. Closing an entity screen that
+  was opened on top of another screen, such as an entity from an activity's list, could leave the main screen hidden,
+  for example when the activity had been turned off with POWER in the meantime. HOME, and returning from the charging
+  screen, now always show the main screen.
+- An activity started outside of the remote, with "Open activities started with the API" on, no longer opens out of
+  view, as a black screen until BACK, when an entity from another activity's list was open. The screens opened after
+  it are no longer out of view either.
+
+---
+
+## v0.85.3 - 2026-11-16
+### Added
+- Sensors with the new device classes `timestamp`, `date` and `duration` show a readable value instead of the raw one.
+  A timestamp is shown as date and time in the time zone and time format of the Remote, e.g. "15.11.26 05:23" instead
+  of "2026-11-15T04:23:31+00:00". A duration in days, hours or minutes is shown as a time span, e.g. "1h 30m" instead
+  of "1.5 h", and so is a duration of 120 seconds or more, e.g. "7d 19h" instead of "673492 s". Requires an integration that provides these device classes, like the Home Assistant integration.
+### Fixed
+- The "Filters" sheet of the entity lists offers the Number and Select types, so number and select entities can be
+  filtered when adding entities to a page or group and in an integration's entity lists
+  ([#65](https://github.com/unfoldedcircle/remote-ui/issues/65)).
+- Number entity ([#67](https://github.com/unfoldedcircle/remote-ui/issues/67)):
+  - The d-pad and volume buttons no longer send a step when the value is already at its minimum or maximum, like the
+    minus and plus buttons of the screen. The minus and plus buttons of a number widget, and of a slider widget with
+    buttons for a number, are dimmed and inactive at the limit as well.
+  - A value that the device refused is no longer shown for three seconds next to the error message. The value of the
+    device is shown again at once.
+  - A number whose device does not report its value changes by one step for every step the device carried out, no
+    longer for every button press. Quick presses and a held button moved the shown value further than the device.
+  - The slider of the number screen stops at the same values as a slider widget for the same number: counted from
+    the minimum, with the maximum as the last stop. With a range that is not a whole number of steps the minimum
+    could not be reached by dragging.
+- Slider widget ([#67](https://github.com/unfoldedcircle/remote-ui/issues/67)):
+  - A slider for a feature the device no longer has, for example the position of a cover that lost it, is shown as
+    unsupported with the red mark and "—" instead of as a working slider that sends commands the device refuses.
+  - A slider that follows the colour of a light uses that colour only once the light has reported it. Until then it
+    is filled in the neutral colour instead of black.
+  - A bar whose value lies outside its range, such as a volume bar limited to 60 while the volume is 80, is moved
+    from the end it is shown at. Dragging it towards that end no longer changes the value, and dragging it away
+    moves the value at once.
+  - Slider and number widgets are horizontal unless they are taller than wide in grid cells. On a page grid with
+    more columns than rows a square widget was drawn vertical.
+- A sensor or select widget of a device that is unavailable is dimmed like a slider or number widget, with the same
+  red mark, and a select widget reads "—" instead of its last option. On the same page an unavailable device looked
+  different depending on the widget ([#67](https://github.com/unfoldedcircle/remote-ui/issues/67)).
+- An activity whose readiness check option is not set is started and stopped with the readiness check. An option
+  that was sent without a value turned the check off ([#67](https://github.com/unfoldedcircle/remote-ui/issues/67)).
+- Options an integration changes for a device are applied right away for every device type, not only for numbers:
+  the temperature unit, range, step and fan modes of a climate device, the colour temperature steps of a light, the
+  volume steps and simple commands of a media player, and the label, units and range of a sensor. The Remote kept the
+  options it had read when the device was loaded until the device was removed or the user interface restarted
+  ([#67](https://github.com/unfoldedcircle/remote-ui/issues/67)).
+
+## v0.85.2 - 2026-11-12
+### Added
+- Display & Brightness has a "Selection background" setting: five steps from no background to the strong background
+  of the selected tile or menu entry introduced with the design system. A preview under the slider shows the chosen
+  background. The default is one step weaker than the background of v0.84.0 to v0.85.1
+  ([#62](https://github.com/unfoldedcircle/remote-ui/pull/62)).
+
+## v0.85.1 - 2026-11-11
+### Changed
+- SVG icons that are wider or taller than their box are rendered at the size they are shown: sharper and lighter on
+  memory. A wide SVG icon on an activity or remote page button uses the whole button, and a square one stays square
+  and centred. An SVG icon keeps the aspect ratio of its `viewBox`, also when its `width` and `height` declare
+  another one, so it is no longer drawn squashed ([#52](https://github.com/unfoldedcircle/remote-ui/pull/52)).
+- Updated translations ([#61](https://github.com/unfoldedcircle/remote-ui/pull/61)).
+- Updated GitHub Actions.
+
+### Fixed
+- The hide key of the on-screen keyboard closes the keyboard in the WiFi password dialog again. The keyboard came
+  straight back up ([#55](https://github.com/unfoldedcircle/remote-ui/issues/55)).
+- The "Join other" button at the end of the WiFi network list is fully shown again. With a few networks in the list it
+  was cut off and could not be scrolled into view ([#55](https://github.com/unfoldedcircle/remote-ui/issues/55)).
+
+## v0.85.0 - 2026-11-06
+### Added
+- Number entity: a numeric value with a range, step and unit provided by an integration, for example an amplifier's
+  bass level or a fan speed. Its screen shows a slider or a value with minus and plus buttons, as the integration or
+  the user in the web configurator chooses, and the d-pad and volume buttons step the value. The value set is shown
+  at once and returns to the device's value if the device does not confirm it within 3 seconds. A number entity can
+  be the target of the Remote 3 touch slider.
+- Slider and number widgets on activity pages. A slider widget is a horizontal or vertical slider for a number
+  entity, light brightness or colour temperature, media player volume, cover position or climate target temperature,
+  with a label, the current value, optional icons at both ends and an optional narrower range. A number widget shows
+  a number entity as a slider or with minus and plus buttons. A widget of a device that is unavailable refuses the
+  change with a message, like a tile does. A value that is not known shows "—", here and on the number screen.
+  A number widget can be set to a slider or to minus and plus buttons whatever the device's setting, and its buttons
+  can change the value by a step of their own.
+- Slider widget styles: a thin slider, a bar that fills the whole widget and is moved by the distance you drag, or
+  minus and plus buttons around the value. The fill can follow the light's colour or show a gradient, such as cold to
+  warm for a colour temperature, start in the middle for a range around zero, or be a marker only. Each setting has a
+  default that suits the device; a slider with only a few positions shows them and snaps to the nearest one.
+- The Remote 3 touch slider can change a light's colour temperature, when the activity's touch slider is set to it.
+  A light that offers only a few colour temperatures moves to the next one about every third of the slider length.
+- Custom icons and TV channel icons can be SVG files, next to the PNG and JPG files supported so far. An SVG icon is
+  drawn at the size it is shown in, so it stays sharp everywhere. An icon file that exists but cannot be used, a
+  compressed `.svgz`, an SVG above 256 KB or a file that fails to decode, shows the placeholder icon and is logged
+  instead of leaving an empty space. Uploading SVG icons needs a core release that accepts them.
+
+### Changed
+- Sensor values are rounded for display: with the number of decimal places the integration sets, or the user sets in
+  the web configurator, otherwise with at most 2 decimal places and without trailing zeros. A value such as
+  `1.499999999999997` is shown as `1.5`. Text values are shown as they are.
+- A value that is not known shows "—" without a unit, instead of "N/A" or "--": a sensor without a value or that is
+  unavailable, a cover that has not reported its position, a climate device's current temperature, a select widget
+  of a missing entity, the dock details and the system version before the first update check.
+- Media artwork is decoded within fixed limits: an SVG is drawn at the display size, never at the size it declares,
+  and compressed SVG data, SVG documents above 256 KB and images above 32 megapixels are rejected and logged instead
+  of using up the memory of the remote.
+
+### Fixed
+- The Remote 3 touch slider for a light's brightness shows a brightness change made elsewhere again, for example in an
+  app or by a wall switch. The bar moved, but the value stayed at the old brightness.
+- The colour temperature slider of a light that offers a limited number of colour temperatures now has exactly these
+  positions and sends their value between 0 and 100. It used to send the position number instead, for example 1
+  instead of 50 for the middle one of three.
 - The icons `0` to `9`, `hashtag` and `asterisk` are drawn again. Removing the emoji from the icon font also removed
   them, because they share their code points with the keycap emoji such as 1️⃣.
 - The icon `music-magnifying-glass`, which only the Pro edition of the icon font has, now falls back to `music` with the

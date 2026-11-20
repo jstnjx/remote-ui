@@ -33,7 +33,22 @@ class Base : public QObject {
     Q_PROPERTY(bool commandInProgress READ getCommandInProgress NOTIFY commandInProgressChanged)
 
  public:
-    enum Type { Unsupported, Button, Switch, Climate, Cover, Light, Media_player, Remote, Sensor, Activity, Macro, Voice_assistant, Select };
+    enum Type {
+        Unsupported,
+        Button,
+        Switch,
+        Climate,
+        Cover,
+        Light,
+        Media_player,
+        Remote,
+        Sensor,
+        Activity,
+        Macro,
+        Voice_assistant,
+        Select,
+        Number
+    };
     Q_ENUM(Type)
 
     enum CommonAttributes { Name, Icon, Area };
@@ -118,6 +133,17 @@ class Base : public QObject {
     virtual bool updateOptions(QVariant data) {
         Q_UNUSED(data)
         return false;
+    }
+
+    /**
+     * @brief A command of this entity has been answered: executed, or failed for good, after the last attempt.
+     * A command that was never sent, such as a duplicate of a command still being executed, is not reported.
+     * @param command the command as sent, with the entity type prefix, e.g. `number.set_value`
+     */
+    virtual void commandFinished(const QString& command, const QVariantMap& params, bool success) {
+        Q_UNUSED(command)
+        Q_UNUSED(params)
+        Q_UNUSED(success)
     }
 
     QString getIntegration() { return m_integration; }

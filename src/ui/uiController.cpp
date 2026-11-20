@@ -7,6 +7,7 @@
 #include <QPalette>
 
 #include "../logging.h"
+#include "entity/sliderStyle.h"
 #include "iconFont.h"
 #include "mediaImageProvider.h"
 
@@ -76,6 +77,8 @@ Controller::Controller(HardwareModel::Enum model, int width, int height, QQmlApp
 
     // make fonts, colors and resources globally available for qml
     m_engine->rootContext()->setContextProperty("fonts", &m_fonts);
+    m_colors.setSelectionFillLevel(m_config->getSelectionFillLevel());
+    QObject::connect(m_config, &Config::selectionFillLevelChanged, &m_colors, &Colors::setSelectionFillLevel);
     m_engine->rootContext()->setContextProperty("colors", &m_colors);
     // Markdown text takes the colour of its links from the application palette, not from Text.linkColor
     QPalette palette = QGuiApplication::palette();
@@ -94,6 +97,10 @@ Controller::Controller(HardwareModel::Enum model, int width, int height, QQmlApp
     m_entityController = new EntityController(m_core, m_config->getLanguage(), m_config->getUnitSystemEnum(), m_config->getResumeTimeoutWindowSec(), this);
     qmlRegisterSingletonType<EntityController>("Entity.Controller", 1, 0, "EntityController",
                                                &EntityController::qmlInstance);
+
+    qmlRegisterSingletonType<entity::SliderStyle>(
+        "SliderStyle", 1, 0, "SliderStyle",
+        [](QQmlEngine *, QJSEngine *) -> QObject * { return new entity::SliderStyle(); });
 
     m_groupController = new GroupController(m_core, this);
     qmlRegisterSingletonType<GroupController>("Group.Controller", 1, 0, "GroupController",
@@ -121,6 +128,12 @@ Controller::Controller(HardwareModel::Enum model, int width, int height, QQmlApp
     QObject::connect(m_entityController, &EntityController::allEntitiesLoaded, this, &Controller::getProfilesFromCore);
     QObject::connect(m_config, &Config::languageChanged, m_entityController, &EntityController::onLanguageChanged);
     QObject::connect(m_config, &Config::unitSystemChanged, m_entityController, &EntityController::onUnitSystemChanged);
+    const auto onTimeFormatChanged = [this] {
+        m_entityController->onTimeFormatChanged(m_config->getTimezone(), m_config->getClock24h());
+    };
+    onTimeFormatChanged();
+    QObject::connect(m_config, &Config::timezoneChanged, m_entityController, onTimeFormatChanged);
+    QObject::connect(m_config, &Config::clock24hChanged, m_entityController, onTimeFormatChanged);
     QObject::connect(m_core, &core::Api::powerModeChanged, m_entityController, &EntityController::onPowerModeChanged);
     QObject::connect(m_config, &Config::resumeTimeoutWindowSecChanged, m_entityController, &EntityController::onResumeTimeoutWindowSecChanged);
 

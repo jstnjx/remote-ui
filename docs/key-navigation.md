@@ -280,11 +280,11 @@ Components.Selectable {
 
 The style follows the kind of screen (`docs/design-system.md` section 6, ADR 0020):
 
-- **Fill** (`surfaceSelected`) on the main UI: entity and group tiles, popup menu rows, page selector
-  and profile switcher rows, the activity menu; in settings the menus of the profile page, Settings
-  and About (`MenuRow` with `selectionStyle: "fill"`); the picker lists (`PopupList`) in settings
-  and onboarding. Everything on the fill is drawn in `textPrimary`; bind secondary text to
-  `selection.shown ? colors.textPrimary : …`.
+- **Fill** (`selectionFill`, whose strength the user sets) on the main UI: entity and group tiles,
+  popup menu rows, page selector and profile switcher rows, the activity menu; in settings the menus
+  of the profile page, Settings and About (`MenuRow` with `selectionStyle: "fill"`); the picker lists
+  (`PopupList`) in settings and onboarding. Everything on the fill is drawn in `textPrimary`; bind
+  secondary text to `selection.shown ? colors.textPrimary : …`.
 - **Ring** (3 px `focusRing`) in settings and set-up flows and on buttons everywhere: around a row
   that OK activates as a whole, on the control of a setting with a switch, slider or field. The
   shared controls (`Button`, `Switch`, `Checkbox`, `Slider`, `InputField`, `SearchField`, the
@@ -346,7 +346,21 @@ up in front; `LEFT`/`RIGHT` page, `OK`/`BACK`/`HOME` close. Tips are QML (`Tip.q
   object tree. Keep such hooks out of commits.
 - Watch the QML log for `Unable to assign a function`, `Binding loop detected`,
   `ReferenceError`; each of these hid a real breakage during this work. `uc.ui.input` at info
-  level logs every owner change (`ACTIVE CONTROL -> …`), at debug level every key with its owner.
+  level logs every owner change (`ACTIVE CONTROL -> <item> <its QML file>`; a popup's content item
+  is named by the file of its first QML child) and every BACK and HOME press with its owner, at
+  debug level every other key with its owner.
+- The screen stack logs at info level as well (`qml` category): the screens main.qml loads into
+  its second and third containers and closes (`Loading second container …`, `Third container
+  closed …`), the charging screen with the reason it came up and the owner it returns to, and the
+  main screen's state and opacity whenever it gets the input back or HOME reaches it. Every entity
+  screen hides the main screen while it is open (`entities/BaseDetail.qml`); one opened on top of
+  another screen shows it again only if it found it shown. A main screen that owns the input with
+  nothing open on top of it while it is hidden is a black screen that no key and no touch leaves:
+  it shows itself and logs the warning `Main screen hidden with nothing open on top of it`, which
+  names a path that is still broken. A screen in the third container moves the second container out
+  of view while it is open, and only its closing moves it back: main.qml's
+  `unloadSecondAndThirdContainer()`, which drops both screens without closing them (an activity
+  started through the API), moves it back itself and logs `Second container moved back into view`.
 
 ## 9. Checklist for a new keypad-navigable screen
 
